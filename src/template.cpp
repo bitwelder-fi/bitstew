@@ -16,10 +16,11 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <config.hpp>
+#include <assert.hpp>
+#include <pimpl.hpp>
+#include <preprocessor.hpp>
 #include <utils/function_traits.hpp>
 #include <utils/lockable.hpp>
-#include <utils/pimpl.hpp>
 #include <utils/scope_value.hpp>
 #include <utils/utility.hpp>
 #include <utils/vector.hpp>

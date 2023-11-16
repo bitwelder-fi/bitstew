@@ -19,7 +19,9 @@
 #ifndef LOCKABLE_HPP
 #define LOCKABLE_HPP
 
-#include <config.hpp>
+#include <cstddef>
+#include <assert.hpp>
+#include <preprocessor.hpp>
 
 namespace utils
 {
@@ -31,7 +33,7 @@ using mutex_type = std::mutex;
 
 #else
 
-struct mutex_type
+struct PROJECT_API mutex_type
 {
     explicit mutex_type() = default;
     ~mutex_type() = default;
@@ -59,8 +61,8 @@ struct mutex_type
     }
 
 private:
-    DISABLE_COPY(mutex_type)
-    DISABLE_MOVE(mutex_type)
+    DISABLE_COPY(mutex_type);
+    DISABLE_MOVE(mutex_type);
 
     size_t m_lockCount = 0u;
 };

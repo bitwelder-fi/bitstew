@@ -16,33 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef CACHES_CONFIG_HPP
-#define CACHES_CONFIG_HPP
-
-#include <platform.hpp>
-
-#define MAYBE_UNUSED(x)         (void)(x)
-//
-// disable copy construction and operator
-//
-#define DISABLE_COPY(Class) \
-    Class(const Class&) = delete;\
-    Class& operator=(const Class&) = delete;
-#define DISABLE_MOVE(Class) \
-    Class(Class&&) = delete; \
-    Class& operator=(Class&&) = delete;
-
-#define DISABLE_COPY_AND_MOVE(Class) \
-    DISABLE_COPY(Class) \
-    DISABLE_MOVE(Class)
-
-#ifdef CONFIG_LIBRARY
-#   define PROJECT_API     CACHES_DECL_EXPORT
-#else
-#   define PROJECT_API     CACHES_DECL_IMPORT
-#endif
-#define TEMPLATE_API
-
+#ifndef ASSERT_HPP
+#define ASSERT_HPP
 
 #ifdef DEBUG
 
@@ -56,4 +31,4 @@
 
 #endif
 
-#endif // CACHES_CONFIG_HPP
+#endif // ASSERT_HPP

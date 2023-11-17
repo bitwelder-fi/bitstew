@@ -1,1 +1,2 @@
-# project_template
+# Meta
+A library of metaprogramming

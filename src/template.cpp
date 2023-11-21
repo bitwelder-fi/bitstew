@@ -24,3 +24,70 @@
 #include <utils/scope_value.hpp>
 #include <utils/utility.hpp>
 #include <utils/vector.hpp>
+
+#include <meta/library_config.hpp>
+#include <meta/meta.hpp>
+#include <meta/thread_pool/thread_pool.hpp>
+
+#include <memory>
+
+namespace meta
+{
+
+class MetaLibraryPrivate
+{
+public:
+    DECLARE_PUBLIC_PTR(MetaLibrary, MetaLibraryPrivate)
+
+    explicit MetaLibraryPrivate()
+    {
+    }
+
+    std::unique_ptr<thread_pool::ThreadPool> threadPool;
+};
+
+MetaLibrary& MetaLibrary::instance()
+{
+    static MetaLibrary meta;
+    return meta;
+}
+
+MetaLibrary::MetaLibrary() :
+    d_ptr(pimpl::make_d_ptr<MetaLibraryPrivate>())
+{
+}
+
+MetaLibrary::~MetaLibrary()
+{
+    uninitialize();
+}
+
+void MetaLibrary::initialize(const LibraryArguments& arguments)
+{
+    D();
+    if (arguments.threadPool.createThreadPool)
+    {
+        d->threadPool = std::make_unique<thread_pool::ThreadPool>(arguments.threadPool.threadCount);
+    }
+}
+
+void MetaLibrary::uninitialize()
+{
+    D();
+    if (d->threadPool)
+    {
+        if (d->threadPool->isRunning())
+        {
+            d->threadPool->stop();
+        }
+        d->threadPool.reset();
+    }
+}
+
+thread_pool::ThreadPool* MetaLibrary::threadPool() const
+{
+    D();
+    return d->threadPool.get();
+}
+
+}

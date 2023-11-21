@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 bitWelder
+ * Copyright (C) 2023 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,16 +16,27 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <gtest/gtest.h>
+#ifndef META_LIBRARY_CONFIG_HPP
+#define META_LIBRARY_CONFIG_HPP
 
-#include <meta/meta.hpp>
-#include <meta/library_config.hpp>
+#include <meta/meta_api.hpp>
+#include <thread>
 
-int main(int argc, char** argv)
+namespace meta
 {
-    ::testing::InitGoogleTest(&argc, argv);
 
-//    meta::MetaLibrary::instance().initialize(meta::LibraryArguments());
+/// The arguments with which the meta library gets initialized.
+struct META_API LibraryArguments
+{
+    struct META_API ThreadPool
+    {
+        size_t threadCount = std::thread::hardware_concurrency();
+        bool createThreadPool = true;
+    } threadPool;
 
-    return RUN_ALL_TESTS();
+    explicit LibraryArguments() = default;
+};
+
 }
+
+#endif

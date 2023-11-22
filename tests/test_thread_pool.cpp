@@ -110,7 +110,9 @@ class ThreadPoolTest : public ::testing::Test
 public:
     static void SetUpTestSuite()
     {
-        meta::MetaLibrary::instance().initialize(meta::LibraryArguments());
+        auto arguments = meta::LibraryArguments();
+        arguments.threadPool.createThreadPool = false;
+        meta::MetaLibrary::instance().initialize(arguments);
     }
     static void TearDownTestSuite()
     {
@@ -118,11 +120,11 @@ public:
     }
 
 protected:
-    ThreadPool* threadPool = nullptr;
+    std::unique_ptr<ThreadPool> threadPool;
 
     void SetUp() override
     {
-        threadPool = meta::MetaLibrary::instance().threadPool();
+        threadPool = std::make_unique<meta::thread_pool::ThreadPool>(std::thread::hardware_concurrency());
         if (!threadPool->isRunning())
         {
             threadPool->start();
@@ -131,7 +133,11 @@ protected:
 
     void TearDown() override
     {
-        threadPool->stop();
+        if (threadPool)
+        {
+            threadPool->stop();
+        }
+        threadPool.reset();
     }
 
     template <typename JobType>
@@ -154,6 +160,11 @@ protected:
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     };
+};
+
+class ThreadPoolStressTest : public ThreadPoolTest
+{
+protected:
 };
 
 }
@@ -199,9 +210,8 @@ TEST_F(ThreadPoolTest, testAddQueuedJobs)
 
 TEST_F(ThreadPoolTest, stressTestExclusiveJobs)
 {
-    const auto threads = meta::MetaLibrary::instance().threadPool()->getThreadCount();
-    QueuedTaskScenario<QueuedJob> scenario(*this, threads);
-    EXPECT_EQ(scenario.jobCount, threads);
+    QueuedTaskScenario<QueuedJob> scenario(*this, threadPool->getThreadCount());
+    EXPECT_EQ(scenario.jobCount, threadPool->getThreadCount());
 
     EXPECT_EQ(0u, threadPool->getIdleCount());
     EXPECT_TRUE(threadPool->isBusy());

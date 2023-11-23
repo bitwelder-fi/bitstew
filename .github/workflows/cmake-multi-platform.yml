@@ -25,6 +25,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         build_type: [Debug, Release]
+        cpp_compiler: [gcc, clang]
         include:
           - os: macos-latest
             cpp_compiler: clang++

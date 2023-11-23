@@ -22,6 +22,6 @@ jobs:
         cmake --build . --config Debug --target all -- -j8
     - name: Run unit tests
       run: |
-        cd tests/unittest
+        cd tests
         ./unittest
 

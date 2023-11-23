@@ -23,6 +23,5 @@ jobs:
     - name: Run unit tests
       run: |
         cd tests
-        ls -lA
-        ./unittest
+        ./unittests
 

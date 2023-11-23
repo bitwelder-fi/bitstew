@@ -172,7 +172,6 @@
 #   define PROJECT_API      IMPORT_API
 #   define TEMPLATE_API     TEMPLATE_IMPORT_API
 #endif
-#define TEMPLATE_API
 
 #ifndef MAYBE_UNUSED
 #   define MAYBE_UNUSED(x)  (void)(x)

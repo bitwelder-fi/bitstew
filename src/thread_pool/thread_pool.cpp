@@ -33,7 +33,7 @@ namespace thread_pool
 namespace
 {
 
-using MutexLock = std::unique_lock<std::mutex>;
+using UniqueLock = std::unique_lock<std::mutex>;
 using GuardLock = std::lock_guard<std::mutex>;
 
 }
@@ -100,7 +100,7 @@ public:
 
     static TaskPtr popTask(ThreadPool& self)
     {
-        MutexLock lock(self.m_queueLock);
+        UniqueLock lock(self.m_queueLock);
         auto condition = [&self]()
         {
             return !self.m_tasks.empty() || self.m_stop;
@@ -123,7 +123,7 @@ public:
 
     static void removeRunningTask(ThreadPool& self, TaskPtr task)
     {
-        MutexLock lock(self.m_queueLock);
+        UniqueLock lock(self.m_queueLock);
         auto predicate = [task](auto& it)
         {
             auto lock = it.lock();
@@ -139,7 +139,7 @@ public:
 
     static void stopAndSignalTasks(ThreadPool& self)
     {
-        MutexLock lock(self.m_queueLock);
+        UniqueLock lock(self.m_queueLock);
         self.m_stop = true;
         // Pop queued tasks and stop them. Those should not be executed anymore.
         while (!self.m_tasks.empty())
@@ -159,6 +159,35 @@ public:
             locked->stop();
         }
     }
+
+    static void threadMain(ThreadPool* self)
+    {
+        // Increase idle thread count before starting the thread loop.
+        ++self->m_idleThreadCount;
+
+        while (!self->m_stop)
+        {
+            auto currentTask = ThreadPoolPrivate::popTask(*self);
+            if (!currentTask)
+            {
+                continue;
+            }
+            if (self->m_stop)
+            {
+                break;
+            }
+
+            --self->m_idleThreadCount;
+            currentTask->run();
+            ++self->m_idleThreadCount;
+
+            ThreadPoolPrivate::removeRunningTask(*self, currentTask);
+        }
+
+        // Decrease idle thread count before exiting the thread loop.
+        --self->m_idleThreadCount;
+    }
+
 };
 
 
@@ -176,7 +205,7 @@ void ThreadPool::start()
     m_threads.reserve(m_threadCount);
     for (size_t i = 0u; i < m_threadCount; ++i)
     {
-        m_threads.push_back(std::thread(&ThreadPool::threadMain, this));
+        m_threads.push_back(std::thread(&ThreadPoolPrivate::threadMain, this));
         std::this_thread::yield();
     }
     m_isRunning = true;
@@ -212,35 +241,6 @@ void ThreadPool::stop()
 
     m_threads.clear();
     m_isRunning = false;
-}
-
-void ThreadPool::threadMain()
-{
-    // Increase idle thread count before starting the thread loop.
-    ++m_idleThreadCount;
-
-    while (!m_stop)
-    {
-        auto currentTask = ThreadPoolPrivate::popTask(*this);
-        if (!currentTask)
-        {
-            continue;
-        }
-        if (m_stop)
-        {
-            break;
-        }
-
-        --m_idleThreadCount;
-        currentTask->run();
-        ++m_idleThreadCount;
-
-        ThreadPoolPrivate::removeRunningTask(*this, currentTask);
-
-    }
-
-    // Decrease idle thread count before exiting the thread loop.
-    --m_idleThreadCount;
 }
 
 TaskFuture ThreadPool::addTask(TaskPtr task)
@@ -286,7 +286,7 @@ bool ThreadPool::isBusy()
 {
     bool busy = false;
     {
-        MutexLock lock(m_queueLock);
+        UniqueLock lock(m_queueLock);
         busy = !m_tasks.empty() || !m_runningTasks.empty();
     }
     return busy;

@@ -61,12 +61,14 @@ public:
     virtual ~Task();
 
     /// Returns the status of the task.
+    /// \return The status of the task.
     Status getStatus() const
     {
         return m_status.load();
     }
 
-    /// Returns the thread which owns the task.
+    /// Returns the thread which runs the task.
+    /// \return The identifier of the thread which runs the task.
     std::thread::id getOwningThread() const
     {
         return m_owningThread;
@@ -78,12 +80,14 @@ public:
     /// Stops the task. Call this to schedule the downinding of the task.
     void stop();
 
+    /// Returns whether the stop got signalled on the task.
     bool isStopped() const
     {
         return m_stopSignalled;
     }
 
     /// Returns the future object which notifies the completion of the task.
+    /// \return The future object of the task. Use this to wait for the task completion.
     TaskFuture getFuture();
 
 protected:
@@ -117,7 +121,7 @@ protected:
         m_status = status;
     }
 
-    /// The thread pool to which it was queued.
+    /// The thread pool to which the task is queued.
     ThreadPool* m_threadPool = nullptr;
 
 private:
@@ -132,65 +136,67 @@ private:
     std::atomic_bool m_stopSignalled = false;
 };
 
-/// The thread pool.
+/// The thread pool. Queues and distributes tasks to available threads.
 class META_API ThreadPool
 {
 public:
-    /// Constructor. Creates the thread pool and launches the threads.
+    /// Constructor. Creates the thread pool.
     explicit ThreadPool(size_t threadCount) :
         m_threadCount(threadCount)
     {
     }
-    /// Destructor. Stops the jobs and joins the threads.
+    /// Destructor. Stops and joins the threads.
     ~ThreadPool();
 
     /// Starts the thread pool.
     void start();
+
     /// Stops the thread pool.
     void stop();
+
     /// Returns whether the thread pool is running.
+    /// \return If the thread pool is running, returns \e true, otherwise \e false.
     bool isRunning() const
     {
         return m_isRunning;
     }
-    /// Returns whether the thread pool was signalled to stop.
+    /// Returns whether the thread pool got signalled to stop.
+    /// \return If the thread pool was signalled to stop, returns \e true, otherwise \e false.
     bool isStopped() const
     {
         return m_stop;
     }
 
-    /// Returns the running thread count of a thread pool. If the thread pool is stopped, returns 0u.
+    /// Returns the number of running threads of a thread pool.
+    /// \return The number of threads running. If the thread pool is stopped, returns 0u.
     size_t getThreadCount() const
     {
         return m_isRunning ? m_threadCount : 0u;
     }
-    /// Returns the idle thread count of the thread pool.
+
+    /// Returns the number of idle threads of the thread pool.
+    /// \return The number of idle threads.
     size_t getIdleCount() const
     {
         return m_idleThreadCount;
     }
 
-    /// Adds a task to queue for execution.
-    /// \param task The task to add to the pool.
-    /// \returns The task future.
+    /// Queues a task to for execution.
+    /// \param task The task queue for execution.
+    /// \returns The future object of the task.
     TaskFuture addTask(TaskPtr task);
 
-    /// Add multiple tasks to queue for execution.
+    /// Queue multiple tasks for execution.
     /// \param tasks The tasks to queue for execution.
-    /// \returns The futures of the tasks.
+    /// \returns The futures objects of the queued tasks.
     std::vector<TaskFuture> addTasks(std::vector<TaskPtr> tasks);
 
-    /// Returns if the thread pool is busy executing tasks.
+    /// Returns whether the thread pool is busy executing tasks.
+    /// \retirn If the thread pool is executing tasks, returns \e true, otherwise \e false.
     bool isBusy();
-
-    /// Returns the thread pool size.
-    size_t getSize() const;
 
 private:
     class ThreadPoolPrivate;
-
-    // The thread's main loop.
-    void threadMain();
 
     // The amount of threads to create.
     const size_t m_threadCount = 0u;

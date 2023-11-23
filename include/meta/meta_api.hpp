@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 bitWelder
+ * Copyright (C) 2023 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,16 +16,17 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <gtest/gtest.h>
+#ifndef META_API_HPP
+#define META_API_HPP
 
-#include <meta/meta.hpp>
-#include <meta/library_config.hpp>
+#include <preprocessor.hpp>
 
-int main(int argc, char** argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
+#ifdef CONFIG_LIBRARY
+#   define META_API             EXPORT_API
+#   define META_TEMPLATE_API    TEMPLATE_EXPORT_API
+#else
+#   define META_API             IMPORT_API
+#   define META_TEMPLATE_API    TEMPLATE_IMPORT_API
+#endif
 
-//    meta::Domain::instance().initialize(meta::LibraryArguments());
-
-    return RUN_ALL_TESTS();
-}
+#endif // META_API_HPP

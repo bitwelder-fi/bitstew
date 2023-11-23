@@ -24,3 +24,70 @@
 #include <utils/scope_value.hpp>
 #include <utils/utility.hpp>
 #include <utils/vector.hpp>
+
+#include <meta/library_config.hpp>
+#include <meta/meta.hpp>
+#include <meta/thread_pool/thread_pool.hpp>
+
+#include <memory>
+
+namespace meta
+{
+
+class MetaLibraryPrivate
+{
+public:
+    DECLARE_PUBLIC_PTR(Domain, MetaLibraryPrivate)
+
+    explicit MetaLibraryPrivate()
+    {
+    }
+
+    std::unique_ptr<thread_pool::ThreadPool> threadPool;
+};
+
+Domain& Domain::instance()
+{
+    static Domain meta;
+    return meta;
+}
+
+Domain::Domain() :
+    d_ptr(pimpl::make_d_ptr<MetaLibraryPrivate>())
+{
+}
+
+Domain::~Domain()
+{
+    uninitialize();
+}
+
+void Domain::initialize(const LibraryArguments& arguments)
+{
+    D();
+    if (arguments.threadPool.createThreadPool)
+    {
+        d->threadPool = std::make_unique<thread_pool::ThreadPool>(arguments.threadPool.threadCount);
+    }
+}
+
+void Domain::uninitialize()
+{
+    D();
+    if (d->threadPool)
+    {
+        if (d->threadPool->isRunning())
+        {
+            d->threadPool->stop();
+        }
+        d->threadPool.reset();
+    }
+}
+
+thread_pool::ThreadPool* Domain::threadPool() const
+{
+    D();
+    return d->threadPool.get();
+}
+
+}

@@ -20,6 +20,7 @@
 #include <assert.hpp>
 #include <utils/scope_value.hpp>
 
+#include <algorithm>
 #include <condition_variable>
 #include <future>
 #include <thread>

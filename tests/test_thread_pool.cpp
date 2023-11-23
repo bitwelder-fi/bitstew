@@ -112,11 +112,11 @@ public:
     {
         auto arguments = meta::LibraryArguments();
         arguments.threadPool.createThreadPool = false;
-        meta::MetaLibrary::instance().initialize(arguments);
+        meta::Domain::instance().initialize(arguments);
     }
     static void TearDownTestSuite()
     {
-        meta::MetaLibrary::instance().uninitialize();
+        meta::Domain::instance().uninitialize();
     }
 
 protected:

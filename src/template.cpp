@@ -37,7 +37,7 @@ namespace meta
 class MetaLibraryPrivate
 {
 public:
-    DECLARE_PUBLIC_PTR(MetaLibrary, MetaLibraryPrivate)
+    DECLARE_PUBLIC_PTR(Domain, MetaLibraryPrivate)
 
     explicit MetaLibraryPrivate()
     {
@@ -46,23 +46,23 @@ public:
     std::unique_ptr<thread_pool::ThreadPool> threadPool;
 };
 
-MetaLibrary& MetaLibrary::instance()
+Domain& Domain::instance()
 {
-    static MetaLibrary meta;
+    static Domain meta;
     return meta;
 }
 
-MetaLibrary::MetaLibrary() :
+Domain::Domain() :
     d_ptr(pimpl::make_d_ptr<MetaLibraryPrivate>())
 {
 }
 
-MetaLibrary::~MetaLibrary()
+Domain::~Domain()
 {
     uninitialize();
 }
 
-void MetaLibrary::initialize(const LibraryArguments& arguments)
+void Domain::initialize(const LibraryArguments& arguments)
 {
     D();
     if (arguments.threadPool.createThreadPool)
@@ -71,7 +71,7 @@ void MetaLibrary::initialize(const LibraryArguments& arguments)
     }
 }
 
-void MetaLibrary::uninitialize()
+void Domain::uninitialize()
 {
     D();
     if (d->threadPool)
@@ -84,7 +84,7 @@ void MetaLibrary::uninitialize()
     }
 }
 
-thread_pool::ThreadPool* MetaLibrary::threadPool() const
+thread_pool::ThreadPool* Domain::threadPool() const
 {
     D();
     return d->threadPool.get();

@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
 
-//    meta::MetaLibrary::instance().initialize(meta::LibraryArguments());
+//    meta::Domain::instance().initialize(meta::LibraryArguments());
 
     return RUN_ALL_TESTS();
 }

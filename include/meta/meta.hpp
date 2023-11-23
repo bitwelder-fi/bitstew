@@ -34,26 +34,28 @@ class ThreadPool;
 struct LibraryArguments;
 class MetaLibraryPrivate;
 
-/// The meta library singleton.
-class META_API MetaLibrary
+/// The domain holds the meta library elements.
+class META_API Domain
 {
 public:
-    /// Retuirns the instance of the meta library.
-    static MetaLibrary& instance();
+    /// Returns the instance of the meta library domain.
+    static Domain& instance();
 
-    /// Initializes the meta library.
-    /// \param arguments The library initialization arguments.
+    /// Initializes the meta library domain.
+    /// \param arguments The library comain initialization arguments.
     void initialize(const LibraryArguments& arguments);
 
-    /// Uninitialize the library.
+    /// Uninitialize the meta library domain.
     void uninitialize();
 
     /// Returns the thread pool of the library.
+    /// \return The thread pool of the library, or nullptr, if the library is iniotialized without
+    ///         a thread pool.
     thread_pool::ThreadPool* threadPool() const;
 
 private:
-    explicit MetaLibrary();
-    ~MetaLibrary();
+    explicit Domain();
+    ~Domain();
 
     DECLARE_PRIVATE_PTR(MetaLibraryPrivate)
 };

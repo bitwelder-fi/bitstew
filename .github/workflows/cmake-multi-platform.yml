@@ -57,7 +57,7 @@ jobs:
         -DBUILD_GMOCK=OFF 
         -DBUILD_SHARED_LIBS=ON 
         -DINSTALL_GTEST=ON 
-        -DMOX_TESTS=ON
+        -DBUILD_WITH_TESTS=ON
         -S ${{ github.workspace }}
 
     - name: Build

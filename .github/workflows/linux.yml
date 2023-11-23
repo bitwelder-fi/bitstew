@@ -15,10 +15,10 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DBUILD_GMOCK=OFF -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON -DBUILD_WITH_TESTS=ON ../
+        cmake -DBUILD_GMOCK=OFF -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON -DBUILD_WITH_TESTS=ON -S ${{ github.workspace }}
     - name: Build debug
       run: |
-        cmake -DBUILD_GMOCK=OFF -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON -DBUILD_WITH_TESTS=ON ../
+        cmake -DBUILD_GMOCK=OFF -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON -DBUILD_WITH_TESTS=ON -S ${{ github.workspace }}
         cmake --build . --config Debug --target all -- -j8
     - name: Run unit tests
       run: |

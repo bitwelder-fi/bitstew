@@ -1,25 +1,16 @@
-set(HEADERS
-
-    ${PROJECT_HEADER_PATH}/utils/function_traits.hpp
-    ${PROJECT_HEADER_PATH}/utils/lockable.hpp
-    ${PROJECT_HEADER_PATH}/utils/scope_value.hpp
-    ${PROJECT_HEADER_PATH}/utils/utility.hpp
-    ${PROJECT_HEADER_PATH}/utils/vector.hpp
-
-    ${PROJECT_HEADER_PATH}/assert.hpp
-    ${PROJECT_HEADER_PATH}/pimpl.hpp
-    ${PROJECT_HEADER_PATH}/preprocessor.hpp
-
-    ${PROJECT_HEADER_PATH}/meta/meta.hpp
-    ${PROJECT_HEADER_PATH}/meta/meta_api.hpp
-    ${PROJECT_HEADER_PATH}/meta/library_config.hpp
-    ${PROJECT_HEADER_PATH}/meta/thread_pool/thread_pool.hpp
-    )
-
-set(PRIVATE_HEADERS
-    )
-
 set(SOURCES
-    ${PROJECT_SOURCE_PATH}/template.cpp
-    ${PROJECT_SOURCE_PATH}/thread_pool/thread_pool.cpp
-    )
+template.cpp
+thread_pool/thread_pool.cpp
+../include/assert.hpp
+../include/meta/library_config.hpp
+../include/meta/meta.hpp
+../include/meta/meta_api.hpp
+../include/meta/thread_pool/thread_pool.hpp
+../include/pimpl.hpp
+../include/preprocessor.hpp
+../include/utils/function_traits.hpp
+../include/utils/lockable.hpp
+../include/utils/scope_value.hpp
+../include/utils/utility.hpp
+../include/utils/vector.hpp
+)

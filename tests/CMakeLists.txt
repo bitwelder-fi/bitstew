@@ -6,6 +6,7 @@ enable_testing()
 include(configure-target)
 
 set (SOURCES
+    test_utils.hpp
     test_main.cpp
     test_thread_pool.cpp
 )

@@ -15,6 +15,7 @@ echo "Updating filelist file " ${FILELIST}
 
 echo "set(SOURCES" > ${FILELIST}
 find -E * -type f -regex $SOURCE_FILTER|sort >> ${FILELIST}
+find -E * -type f -regex $HEADER_FILTER|sort >> ${FILELIST}
 find -E ../include/* -type f -regex $HEADER_FILTER|sort >> ${FILELIST}
 echo ")" >> ${FILELIST}
 

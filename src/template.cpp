@@ -27,7 +27,7 @@
 
 #include <meta/library_config.hpp>
 #include <meta/meta.hpp>
-#include <meta/thread_pool/thread_pool.hpp>
+#include <meta/tasks/task_scheduler.hpp>
 
 #include <memory>
 
@@ -43,7 +43,7 @@ public:
     {
     }
 
-    std::unique_ptr<thread_pool::ThreadPool> threadPool;
+    std::unique_ptr<TaskScheduler> taskScheduler;
 };
 
 Domain& Domain::instance()
@@ -65,29 +65,29 @@ Domain::~Domain()
 void Domain::initialize(const LibraryArguments& arguments)
 {
     D();
-    if (arguments.threadPool.createThreadPool)
+    if (arguments.taskScheduler.createThreadPool)
     {
-        d->threadPool = std::make_unique<thread_pool::ThreadPool>(arguments.threadPool.threadCount);
+        d->taskScheduler = std::make_unique<TaskScheduler>(arguments.taskScheduler.threadCount);
     }
 }
 
 void Domain::uninitialize()
 {
     D();
-    if (d->threadPool)
+    if (d->taskScheduler)
     {
-        if (d->threadPool->isRunning())
+        if (d->taskScheduler->isRunning())
         {
-            d->threadPool->stop();
+            d->taskScheduler->stop();
         }
-        d->threadPool.reset();
+        d->taskScheduler.reset();
     }
 }
 
-thread_pool::ThreadPool* Domain::threadPool() const
+TaskScheduler* Domain::taskScheduler() const
 {
     D();
-    return d->threadPool.get();
+    return d->taskScheduler.get();
 }
 
 }

@@ -16,28 +16,19 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_LIBRARY_CONFIG_HPP
-#define META_LIBRARY_CONFIG_HPP
+#ifndef TEST_UTILS_HPP
+#define TEST_UTILS_HPP
 
-#include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
+#include <gtest/gtest.h>
 
-namespace meta
-{
+#ifdef CONFIG_MULTI_THREADED
 
-/// The arguments with which the meta library gets initialized.
-struct META_API LibraryArguments
-{
-    /// The task scheduler arguments.
-    struct META_API TaskScheduler
-    {
-        size_t threadCount = Thread::hardware_concurrency();
-        bool createThreadPool = true;
-    } taskScheduler;
+#define SKIP_IF_NOT_MULTI_THREADED
 
-    explicit LibraryArguments() = default;
-};
+#else
 
-}
+#define SKIP_IF_NOT_MULTI_THREADED GTEST_SKIP_("Test not possible in single threaded environment.")
 
 #endif
+
+#endif // TEST_UTILS_HPP

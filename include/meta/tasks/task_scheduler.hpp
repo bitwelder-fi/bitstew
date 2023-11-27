@@ -33,7 +33,6 @@ class Task;
 class TaskScheduler;
 
 using TaskPtr = std::shared_ptr<Task>;
-using TaskWeakPtr = std::weak_ptr<Task>;
 
 /// The task scheduler queues and distributes tasks to available threads. Though the system allows you
 /// to have several task schedulers per application, it is recommended to use only one instance of
@@ -149,7 +148,7 @@ private:
     // The scheduled tasks.
     std::deque<TaskPtr> m_tasks;
     // The running tasks.
-    std::vector<TaskWeakPtr> m_runningTasks;
+    std::vector<TaskPtr> m_runningTasks;
     // The executor threads of the pool.
     std::vector<Thread> m_threads;
     // Tells the task scheduler to stop executing.

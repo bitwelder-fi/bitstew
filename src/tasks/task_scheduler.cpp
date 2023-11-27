@@ -63,12 +63,7 @@ public:
     static void removeRunningTask(TaskScheduler& self, TaskPtr task)
     {
         UniqueLock lock(self.m_queueLock);
-        auto predicate = [task](auto& it)
-        {
-            auto lock = it.lock();
-            return lock && lock == task;
-        };
-        auto it = std::find_if(self.m_runningTasks.begin(), self.m_runningTasks.end(), predicate);
+        auto it = std::find(self.m_runningTasks.begin(), self.m_runningTasks.end(), task);
         if (it != self.m_runningTasks.end())
         {
             self.m_runningTasks.erase(it);
@@ -82,12 +77,7 @@ public:
         // Stop the running tasks.
         for (auto& task : self.m_runningTasks)
         {
-            auto locked = task.lock();
-            if (!locked)
-            {
-                continue;
-            }
-            locked->stop();
+            task->stop();
         }
     }
 

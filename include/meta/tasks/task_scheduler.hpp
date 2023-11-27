@@ -22,7 +22,9 @@
 #include <meta/meta.hpp>
 #include <meta/threading.hpp>
 
+#include <chrono>
 #include <deque>
+#include <memory>
 
 namespace meta
 {

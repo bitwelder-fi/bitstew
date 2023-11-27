@@ -25,6 +25,7 @@
 #include <chrono>
 #include <deque>
 #include <memory>
+#include <vector>
 
 namespace meta
 {

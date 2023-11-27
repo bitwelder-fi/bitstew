@@ -236,7 +236,6 @@ TaskCompletionWatchObject TaskScheduler::tryQueueTask(TaskPtr task)
     }
 
     m_lockCondition.notify_one();
-    schedule();
 
     return task->getCompletionWatchObject();
 }

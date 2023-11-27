@@ -192,7 +192,7 @@ protected:
     std::queue<std::string> m_queue;
 };
 
-class ThreadPoolTest : public ::testing::Test
+class TaskSchedulerTest : public ::testing::Test
 {
 public:
     static void SetUpTestSuite()
@@ -247,9 +247,9 @@ protected:
     struct QueuedTaskScenario : ScenarioBase<JobType>
     {
         SecureInt jobCount = 0u;
-        ThreadPoolTest& test;
+        TaskSchedulerTest& test;
 
-        explicit QueuedTaskScenario(ThreadPoolTest& test, size_t tasks) :
+        explicit QueuedTaskScenario(TaskSchedulerTest& test, size_t tasks) :
             test(test)
         {
             this->jobs.reserve(tasks);
@@ -266,9 +266,9 @@ protected:
     template <class JobType>
     struct ReschedulingTaskSchenario : ScenarioBase<JobType>
     {
-        ThreadPoolTest& test;
+        TaskSchedulerTest& test;
 
-        explicit ReschedulingTaskSchenario(ThreadPoolTest& test, size_t taskCount) :
+        explicit ReschedulingTaskSchenario(TaskSchedulerTest& test, size_t taskCount) :
             test(test)
         {
             this->jobs.reserve(taskCount);
@@ -293,7 +293,7 @@ TEST(Tasks, testJob)
     EXPECT_EQ(1u, jobCount);
 }
 
-TEST_F(ThreadPoolTest, testAddJobs)
+TEST_F(TaskSchedulerTest, testAddJobs)
 {
     constexpr auto maxJobs = 50u;
     QueuedTaskScenario<Job> scenario(*this, maxJobs);
@@ -309,7 +309,7 @@ TEST_F(ThreadPoolTest, testAddJobs)
     EXPECT_FALSE(taskScheduler->isBusy());
 }
 
-TEST_F(ThreadPoolTest, testAddQueuedJobs)
+TEST_F(TaskSchedulerTest, testAddQueuedJobs)
 {
     SKIP_IF_NOT_MULTI_THREADED;
     QueuedTaskScenario<QueuedJob> scenario(*this, 1u);
@@ -324,7 +324,7 @@ TEST_F(ThreadPoolTest, testAddQueuedJobs)
     ASSERT_GE(1u, m_output->getBuffer().size());
 }
 
-TEST_F(ThreadPoolTest, stressTestExclusiveJobs)
+TEST_F(TaskSchedulerTest, stressTestExclusiveJobs)
 {
     SKIP_IF_NOT_MULTI_THREADED;
     QueuedTaskScenario<QueuedJob> scenario(*this, taskScheduler->getThreadCount());
@@ -336,13 +336,14 @@ TEST_F(ThreadPoolTest, stressTestExclusiveJobs)
 
 }
 
-TEST_F(ThreadPoolTest, reschedulingTask)
+TEST_F(TaskSchedulerTest, reschedulingTask)
 {
     ReschedulingTaskSchenario<RescheduledJob> scenario(*this, 1u);
     scenario[0]->push("1st string");
     scenario[0]->push("2nd string");
     scenario[0]->push("3rd string");
     scenario[0]->push("4th string");
+    taskScheduler->schedule();
     scenario[0]->m_jobWatch.wait();
 
     EXPECT_EQ(4u, m_output->getBuffer().size());

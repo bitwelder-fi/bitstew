@@ -35,7 +35,6 @@
 #include <assert.hpp>
 #include <pimpl.hpp>
 
-#include <chrono>
 #include <functional>
 #include <memory>
 
@@ -252,18 +251,18 @@ public:
     void swap(Thread& other);
     DISABLE_COPY(Thread);
 
-    bool joinable() const _NOEXCEPT
+    bool joinable() const
     {
         return m_joinable;
     }
     void join();
     void detach();
-    ThreadId get_id() const _NOEXCEPT
+    ThreadId get_id() const
     {
         return 0u;
     }
 
-    static unsigned hardware_concurrency() _NOEXCEPT
+    static unsigned hardware_concurrency()
     {
         return 0;
     }

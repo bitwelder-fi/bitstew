@@ -218,7 +218,7 @@ bool TaskScheduler::isBusy()
     return busy;
 }
 
-TaskFuture TaskScheduler::tryQueueTask(TaskPtr task)
+TaskCompletionWatchObject TaskScheduler::tryQueueTask(TaskPtr task)
 {
     abortIfFail(task);
     const auto taskStatus = task->getStatus();
@@ -226,7 +226,7 @@ TaskFuture TaskScheduler::tryQueueTask(TaskPtr task)
 
     if (m_stopSignalled)
     {
-        return {};
+        return TaskCompletionWatchObject();
     }
 
     {
@@ -238,10 +238,10 @@ TaskFuture TaskScheduler::tryQueueTask(TaskPtr task)
     m_lockCondition.notify_one();
     schedule();
 
-    return task->getFuture();
+    return task->getCompletionWatchObject();
 }
 
-std::vector<TaskFuture> TaskScheduler::tryQueueTasks(std::vector<TaskPtr> tasks)
+std::vector<TaskCompletionWatchObject> TaskScheduler::tryQueueTasks(std::vector<TaskPtr> tasks)
 {
     abortIfFail(!tasks.empty());
     if (m_stopSignalled)
@@ -249,7 +249,7 @@ std::vector<TaskFuture> TaskScheduler::tryQueueTasks(std::vector<TaskPtr> tasks)
         return {};
     }
 
-    std::vector<TaskFuture> result;
+    std::vector<TaskCompletionWatchObject> result;
 
     {
         GuardLock lock(m_queueLock);
@@ -258,7 +258,7 @@ std::vector<TaskFuture> TaskScheduler::tryQueueTasks(std::vector<TaskPtr> tasks)
         for (auto& task : tasks)
         {
             detail::TaskPrivate::notifyTaskQueued(*task, this);
-            result.push_back(task->getFuture());
+            result.push_back(task->getCompletionWatchObject());
         }
     }
 

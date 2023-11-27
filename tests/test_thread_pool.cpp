@@ -34,10 +34,27 @@ namespace
 
 using SecureInt = Atomic<size_t>;
 
+class Output
+{
+    std::vector<std::string> buffer;
+public:
+    void write(std::string_view text)
+    {
+        buffer.emplace_back(std::string(text));
+    }
+
+    const std::vector<std::string>& getBuffer() const
+    {
+        return buffer;
+    }
+};
+using OutputPtr = std::shared_ptr<Output>;
+
+
 class Job : public Task
 {
 public:
-    explicit Job(SecureInt& jobCount) :
+    explicit Job(OutputPtr, SecureInt& jobCount) :
         m_jobCount(jobCount)
     {
     }
@@ -59,10 +76,14 @@ protected:
 class RescheduledJob : public Task
 {
     TaskScheduler* m_scheduler = nullptr;
+    OutputPtr m_out;
 public:
 
-    explicit RescheduledJob(TaskScheduler* scheduler) :
-        m_scheduler(scheduler)
+    TaskCompletionWatchObject m_jobWatch;
+
+    explicit RescheduledJob(TaskScheduler* scheduler, OutputPtr out) :
+        m_scheduler(scheduler),
+        m_out(out)
     {
     }
 
@@ -70,7 +91,6 @@ public:
     {
         if (isStopped())
         {
-            std::cout << "Task stopped\n";
             return;
         }
 
@@ -82,7 +102,7 @@ public:
         const auto status = getStatus();
         if (status == Status::Deferred || status == Status::Stopped)
         {
-            m_scheduler->tryQueueTask(shared_from_this());
+            m_jobWatch = m_scheduler->tryQueueTask(shared_from_this());
         }
     }
 
@@ -99,7 +119,7 @@ protected:
         {
             auto text = m_queue.front();
             m_queue.pop();
-            std::cout << "Queued log: " << text << std::endl;
+            m_out->write(text);
         }
     }
 
@@ -115,9 +135,11 @@ protected:
 
 class QueuedJob : public Job
 {
+    OutputPtr m_out;
 public:
-    explicit QueuedJob(SecureInt& jobCount) :
-        Job(jobCount)
+    explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
+        Job(out, jobCount),
+        m_out(out)
     {
     }
 
@@ -156,7 +178,7 @@ protected:
             }
             auto text = m_queue.front();
             m_queue.pop();
-            std::cout << "Queued log: " << text << std::endl;
+            m_out->write(text);
         }
     }
 
@@ -186,6 +208,7 @@ public:
 
 protected:
     std::unique_ptr<TaskScheduler> taskScheduler;
+    OutputPtr m_output;
 
     void SetUp() override
     {
@@ -194,6 +217,8 @@ protected:
         {
             taskScheduler->start();
         }
+
+        m_output = std::make_shared<Output>();
     }
 
     void TearDown() override
@@ -203,13 +228,15 @@ protected:
             taskScheduler->stop();
         }
         taskScheduler.reset();
+        m_output.reset();
     }
 
     template <class JobType>
     struct ScenarioBase
     {
         std::vector<TaskPtr> jobs;
-        std::vector<TaskFuture> futures;
+        std::vector<TaskCompletionWatchObject> futures;
+
         std::shared_ptr<JobType> operator[](int index)
         {
             return std::static_pointer_cast<JobType>(jobs[index]);
@@ -228,10 +255,10 @@ protected:
             this->jobs.reserve(tasks);
             while (tasks-- != 0u)
             {
-                this->jobs.push_back(std::make_shared<JobType>(jobCount));
+                this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
             }
             this->futures = test.taskScheduler->tryQueueTasks(this->jobs);
-            ThisThread::sleep_for(std::chrono::milliseconds(1));
+            test.taskScheduler->schedule(std::chrono::milliseconds(1));
         }
 
     };
@@ -247,7 +274,7 @@ protected:
             this->jobs.reserve(taskCount);
             while (taskCount-- != 0u)
             {
-                this->jobs.push_back(std::make_shared<JobType>(test.taskScheduler.get()));
+                this->jobs.push_back(std::make_shared<JobType>(test.taskScheduler.get(), test.m_output));
             }
         }
     };
@@ -258,7 +285,8 @@ protected:
 TEST(Tasks, testJob)
 {
     SecureInt jobCount = 0u;
-    Job job(jobCount);
+    OutputPtr out = std::make_shared<Output>();
+    Job job(out, jobCount);
     job.setStatus(Job::Status::Scheduled);
     job.run();
     EXPECT_EQ(Job::Status::Stopped, job.getStatus());
@@ -293,6 +321,7 @@ TEST_F(ThreadPoolTest, testAddQueuedJobs)
     taskScheduler->schedule();
     EXPECT_EQ(taskScheduler->getThreadCount() - 1u, taskScheduler->getIdleCount());
     EXPECT_TRUE(taskScheduler->isBusy());
+    ASSERT_GE(1u, m_output->getBuffer().size());
 }
 
 TEST_F(ThreadPoolTest, stressTestExclusiveJobs)
@@ -314,6 +343,7 @@ TEST_F(ThreadPoolTest, reschedulingTask)
     scenario[0]->push("2nd string");
     scenario[0]->push("3rd string");
     scenario[0]->push("4th string");
-    // std::cout << taskScheduler->getTaskCount() << std::endl;
-    taskScheduler->schedule();
+    scenario[0]->m_jobWatch.wait();
+
+    EXPECT_EQ(4u, m_output->getBuffer().size());
 }

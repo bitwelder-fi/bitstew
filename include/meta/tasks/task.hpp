@@ -83,11 +83,14 @@ public:
 
     /// Returns the future object which notifies the completion of the task.
     /// \return The future object of the task. Use this to wait for the task completion.
-    TaskFuture getFuture();
+    TaskCompletionWatchObject getCompletionWatchObject();
 
 protected:
     /// Constructor.
-    explicit Task() = default;
+    explicit Task();
+
+    /// Resets the task for reuse.
+    void reset();
 
     /// The main function of the task. Override this to implement task specific logic.
     virtual void runOverride(){}
@@ -118,8 +121,8 @@ private:
     friend class detail::TaskPrivate;
     // The thread which owns the task.
     ThreadId m_owningThread;
-    // TaskPromise for completion.
-    TaskPromise m_completed;
+    // TaskCompletionSignal for completion.
+    TaskCompletionSignal m_completed;
     // The task status.
     Atomic<Status> m_status = Status::Deferred;
 };

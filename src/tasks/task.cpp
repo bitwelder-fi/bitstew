@@ -62,8 +62,7 @@ void TaskPrivate::runTask(Task& self)
 
     // Create a new promise as the current one is already consumed. Refetching the future of a promise
     // throws exception.
-    TaskPromise newPromise;
-    self.m_completed.swap(newPromise);
+    self.reset();
     self.m_taskScheduler = nullptr;
     self.onTaskCompleted();
 }
@@ -71,9 +70,20 @@ void TaskPrivate::runTask(Task& self)
 } // namespace detail
 
 
+Task::Task()
+{
+    reset();
+}
+
 Task::~Task()
 {
     abortIfFail(m_status == Status::Deferred || m_status == Status::Stopped);
+}
+
+void Task::reset()
+{
+    TaskCompletionSignal signal;
+    m_completed.swap(signal);
 }
 
 void Task::run()
@@ -87,7 +97,7 @@ void Task::stop()
     stopOverride();
 }
 
-TaskFuture Task::getFuture()
+TaskCompletionWatchObject Task::getCompletionWatchObject()
 {
     return m_completed.get_future();
 }

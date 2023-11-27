@@ -111,13 +111,13 @@ public:
     /// \param task The task queue for execution.
     /// \returns The future object of the task. If the task scheduler is stopped, returns an invalid
     ///          task future.
-    TaskFuture tryQueueTask(TaskPtr task);
+    TaskCompletionWatchObject tryQueueTask(TaskPtr task);
 
     /// Queue multiple tasks for execution.
     /// \param tasks The tasks to queue for execution.
     /// \returns The futures objects of the queued tasks. If the task scheduler is stopped, returns
     ///          invalid task futures.
-    std::vector<TaskFuture> tryQueueTasks(std::vector<TaskPtr> tasks);
+    std::vector<TaskCompletionWatchObject> tryQueueTasks(std::vector<TaskPtr> tasks);
 
     /// Returns the queued task count.
     /// \return The queued task count.

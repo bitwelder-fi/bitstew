@@ -47,68 +47,73 @@ bool Mutex::try_lock()
 }
 
 
-TaskPromise::TaskPromise() :
+TaskCompletionSignal::TaskCompletionSignal() :
     m_data(std::make_shared<PromiseData>())
 {
     m_data->syncValue = false;
 }
 
-TaskPromise::TaskPromise(TaskPromise&& other)
+TaskCompletionSignal::TaskCompletionSignal(TaskCompletionSignal&& other)
 {
     swap(other);
 }
 
-TaskPromise& TaskPromise::operator=(TaskPromise&& other)
+TaskCompletionSignal& TaskCompletionSignal::operator=(TaskCompletionSignal&& other)
 {
-    TaskPromise tmp(std::forward<TaskPromise>(other));
+    TaskCompletionSignal tmp(std::forward<TaskCompletionSignal>(other));
     swap(tmp);
     return *this;
 }
 
-void TaskPromise::swap(TaskPromise& other)
+void TaskCompletionSignal::swap(TaskCompletionSignal& other)
 {
     std::swap(other.m_data, m_data);
 }
 
-TaskFuture TaskPromise::get_future()
+TaskCompletionWatchObject TaskCompletionSignal::get_future()
 {
-    TaskFuture future(m_data);
+    TaskCompletionWatchObject future(m_data);
     return future;
 }
 
-void TaskPromise::set_value()
+void TaskCompletionSignal::set_value()
 {
     abortIfFail(m_data);
     m_data->syncValue = true;
 }
 
 
-TaskFuture::TaskFuture(TaskPromise::PromiseDataPtr data) :
+TaskCompletionWatchObject::TaskCompletionWatchObject(TaskCompletionSignal::PromiseDataPtr data) :
     m_data(data)
 {
 }
 
-TaskFuture::TaskFuture(TaskFuture&& other)
+TaskCompletionWatchObject::TaskCompletionWatchObject(TaskCompletionWatchObject&& other)
 {
     swap(other);
 }
 
-TaskFuture& TaskFuture::operator=(TaskFuture&& other)
+TaskCompletionWatchObject& TaskCompletionWatchObject::operator=(TaskCompletionWatchObject&& other)
 {
-    TaskFuture tmp(std::forward<TaskFuture>(other));
+    TaskCompletionWatchObject tmp(std::forward<TaskCompletionWatchObject>(other));
     swap(tmp);
     return *this;
 }
 
-void TaskFuture::swap(TaskFuture& other)
+void TaskCompletionWatchObject::swap(TaskCompletionWatchObject& other)
 {
     std::swap(other.m_data, m_data);
 }
 
-void TaskFuture::wait()
+void TaskCompletionWatchObject::wait()
 {
     abortIfFail(m_data);
     while (!m_data->syncValue);
+}
+
+bool TaskCompletionWatchObject::valid() const
+{
+    return m_data != nullptr;
 }
 
 

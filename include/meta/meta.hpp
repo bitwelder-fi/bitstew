@@ -26,11 +26,7 @@
 namespace meta
 {
 
-namespace thread_pool
-{
-class ThreadPool;
-}
-
+class TaskScheduler;
 struct LibraryArguments;
 class MetaLibraryPrivate;
 
@@ -48,10 +44,10 @@ public:
     /// Uninitialize the meta library domain.
     void uninitialize();
 
-    /// Returns the thread pool of the library.
-    /// \return The thread pool of the library, or nullptr, if the library is iniotialized without
-    ///         a thread pool.
-    thread_pool::ThreadPool* threadPool() const;
+    /// Returns the task scheduler of the library.
+    /// \return The task scheduler of the library, or nullptr, if the library is initialized without
+    ///         a task scheduler.
+    TaskScheduler* taskScheduler() const;
 
 private:
     explicit Domain();

@@ -16,24 +16,45 @@
  * <http://www.gnu.org/licenses/>
  */
 
+#include "test_utils.hpp"
+
 #include <gtest/gtest.h>
 #include <meta/meta.hpp>
 #include <meta/library_config.hpp>
-#include <meta/thread_pool/thread_pool.hpp>
+#include <meta/tasks/task.hpp>
+#include <meta/tasks/task_scheduler.hpp>
 
+#include <queue>
 #include <string>
 
-using namespace meta::thread_pool;
+using namespace meta;
 
 namespace
 {
 
-using SecureInt = std::atomic<size_t>;
+using SecureInt = Atomic<size_t>;
+
+class Output
+{
+    std::vector<std::string> buffer;
+public:
+    void write(std::string_view text)
+    {
+        buffer.emplace_back(std::string(text));
+    }
+
+    const std::vector<std::string>& getBuffer() const
+    {
+        return buffer;
+    }
+};
+using OutputPtr = std::shared_ptr<Output>;
+
 
 class Job : public Task
 {
 public:
-    explicit Job(SecureInt& jobCount) :
+    explicit Job(OutputPtr, SecureInt& jobCount) :
         m_jobCount(jobCount)
     {
     }
@@ -46,72 +67,138 @@ public:
 protected:
     void runOverride() override
     {
-        m_jobCount++;
+        ++m_jobCount;
     }
 
     SecureInt& m_jobCount;
 };
 
-class QueuedJob : public Job
+class RescheduledJob : public Task
 {
+    TaskScheduler* m_scheduler = nullptr;
+    OutputPtr m_out;
 public:
-    explicit QueuedJob(SecureInt& jobCount) :
-        Job(jobCount)
+
+    TaskCompletionWatchObject m_jobWatch;
+
+    explicit RescheduledJob(TaskScheduler* scheduler, OutputPtr out) :
+        m_scheduler(scheduler),
+        m_out(out)
     {
     }
 
-    void push(std::string string)
+    void push(std::string_view text)
     {
+        if (isStopped())
         {
-            std::lock_guard<std::mutex> lock(m_lock);
-            m_queue.push(string);
+            return;
+        }
+
+        {
+            GuardLock lock(m_lock);
+            m_queue.push(std::string(text));
         }
         m_signal.notify_one();
-    }
-
-    void notifyTaskQueued() override
-    {
+        const auto status = getStatus();
+        if (status == Status::Deferred || status == Status::Stopped)
+        {
+            m_jobWatch = m_scheduler->tryQueueTask(shared_from_this());
+        }
     }
 
 protected:
     void runOverride() override
     {
-        m_jobCount++;
-        while (!isStopped())
+        UniqueLock lock(m_lock);
+        auto condition = [this]()
         {
-            std::unique_lock<std::mutex> lock(m_lock);
-            auto condition = [this]()
-            {
-                return !this->m_queue.empty() || isStopped();
-            };
-            m_signal.wait(lock, condition);
-            if (m_queue.empty())
-            {
-                continue;
-            }
+            return !this->m_queue.empty() || isStopped();
+        };
+        m_signal.wait(lock, condition);
+        while (!m_queue.empty())
+        {
             auto text = m_queue.front();
             m_queue.pop();
-            std::cout << "Queued log: " << text << std::endl;
+            m_out->write(text);
         }
     }
 
     void stopOverride() override
     {
-        m_signal.notify_one();
+        m_signal.notify_all();
     }
 
-    std::mutex m_lock;
-    std::condition_variable m_signal;
+    Mutex m_lock;
+    ConditionVariable m_signal;
     std::queue<std::string> m_queue;
 };
 
-class ThreadPoolTest : public ::testing::Test
+class QueuedJob : public Job
+{
+    OutputPtr m_out;
+public:
+    explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
+        Job(out, jobCount),
+        m_out(out)
+    {
+    }
+
+    void push(std::string string)
+    {
+        if (isStopped())
+        {
+            return;
+        }
+        {
+            GuardLock lock(m_lock);
+            m_queue.push(string);
+        }
+        m_signal.notify_one();
+    }
+
+protected:
+    void runOverride() override
+    {
+        ++m_jobCount;
+        while (!isStopped())
+        {
+            UniqueLock lock(m_lock);
+            auto condition = [this]()
+            {
+                return !this->m_queue.empty() || isStopped() || m_taskScheduler->isStopSignalled();
+            };
+            m_signal.wait(lock, condition);
+            if (m_queue.empty())
+            {
+                if (m_taskScheduler->isStopSignalled())
+                {
+                    break;
+                }
+                continue;
+            }
+            auto text = m_queue.front();
+            m_queue.pop();
+            m_out->write(text);
+        }
+    }
+
+    void stopOverride() override
+    {
+        m_signal.notify_all();
+    }
+
+    Mutex m_lock;
+    ConditionVariable m_signal;
+    std::queue<std::string> m_queue;
+};
+
+class TaskSchedulerTest : public ::testing::Test
 {
 public:
     static void SetUpTestSuite()
     {
         auto arguments = meta::LibraryArguments();
-        arguments.threadPool.createThreadPool = false;
+        arguments.taskScheduler.createThreadPool = false;
         meta::Domain::instance().initialize(arguments);
     }
     static void TearDownTestSuite()
@@ -120,51 +207,77 @@ public:
     }
 
 protected:
-    std::unique_ptr<ThreadPool> threadPool;
+    std::unique_ptr<TaskScheduler> taskScheduler;
+    OutputPtr m_output;
 
     void SetUp() override
     {
-        threadPool = std::make_unique<meta::thread_pool::ThreadPool>(std::thread::hardware_concurrency());
-        if (!threadPool->isRunning())
+        taskScheduler = std::make_unique<meta::TaskScheduler>(Thread::hardware_concurrency());
+        if (!taskScheduler->isRunning())
         {
-            threadPool->start();
+            taskScheduler->start();
         }
+
+        m_output = std::make_shared<Output>();
     }
 
     void TearDown() override
     {
-        if (threadPool)
+        if (taskScheduler)
         {
-            threadPool->stop();
+            taskScheduler->stop();
         }
-        threadPool.reset();
+        taskScheduler.reset();
+        m_output.reset();
     }
 
-    template <typename JobType>
-    struct QueuedTaskScenario
+    template <class JobType>
+    struct ScenarioBase
     {
-        SecureInt jobCount = 0u;
-        ThreadPoolTest& test;
         std::vector<TaskPtr> jobs;
-        std::vector<TaskFuture> futures;
+        std::vector<TaskCompletionWatchObject> futures;
 
-        explicit QueuedTaskScenario(ThreadPoolTest& test, size_t tasks) :
-            test(test)
+        std::shared_ptr<JobType> operator[](int index)
         {
-            jobs.reserve(tasks);
-            while (tasks-- != 0u)
-            {
-                jobs.push_back(std::make_shared<JobType>(jobCount));
-            }
-            futures = test.threadPool->addTasks(jobs);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            return std::static_pointer_cast<JobType>(jobs[index]);
         }
     };
-};
 
-class ThreadPoolStressTest : public ThreadPoolTest
-{
-protected:
+    template <typename JobType>
+    struct QueuedTaskScenario : ScenarioBase<JobType>
+    {
+        SecureInt jobCount = 0u;
+        TaskSchedulerTest& test;
+
+        explicit QueuedTaskScenario(TaskSchedulerTest& test, size_t tasks) :
+            test(test)
+        {
+            this->jobs.reserve(tasks);
+            while (tasks-- != 0u)
+            {
+                this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
+            }
+            this->futures = test.taskScheduler->tryQueueTasks(this->jobs);
+            test.taskScheduler->schedule(std::chrono::milliseconds(1));
+        }
+
+    };
+
+    template <class JobType>
+    struct ReschedulingTaskSchenario : ScenarioBase<JobType>
+    {
+        TaskSchedulerTest& test;
+
+        explicit ReschedulingTaskSchenario(TaskSchedulerTest& test, size_t taskCount) :
+            test(test)
+        {
+            this->jobs.reserve(taskCount);
+            while (taskCount-- != 0u)
+            {
+                this->jobs.push_back(std::make_shared<JobType>(test.taskScheduler.get(), test.m_output));
+            }
+        }
+    };
 };
 
 }
@@ -172,18 +285,19 @@ protected:
 TEST(Tasks, testJob)
 {
     SecureInt jobCount = 0u;
-    Job job(jobCount);
-    job.setStatus(Job::Status::Queued);
+    OutputPtr out = std::make_shared<Output>();
+    Job job(out, jobCount);
+    job.setStatus(Job::Status::Scheduled);
     job.run();
     EXPECT_EQ(Job::Status::Stopped, job.getStatus());
     EXPECT_EQ(1u, jobCount);
 }
 
-TEST_F(ThreadPoolTest, testAddJobs)
+TEST_F(TaskSchedulerTest, testAddJobs)
 {
     constexpr auto maxJobs = 50u;
     QueuedTaskScenario<Job> scenario(*this, maxJobs);
-    EXPECT_EQ(scenario.jobCount, maxJobs);
+    ASSERT_EQ(scenario.jobCount, maxJobs);
 
     size_t jobCount = 0u;
     for (auto& future : scenario.futures)
@@ -192,27 +306,45 @@ TEST_F(ThreadPoolTest, testAddJobs)
         future.wait();
     }    
     EXPECT_EQ(jobCount, maxJobs);
-    EXPECT_FALSE(threadPool->isBusy());
+    EXPECT_FALSE(taskScheduler->isBusy());
 }
 
-TEST_F(ThreadPoolTest, testAddQueuedJobs)
+TEST_F(TaskSchedulerTest, testAddQueuedJobs)
 {
+    SKIP_IF_NOT_MULTI_THREADED;
     QueuedTaskScenario<QueuedJob> scenario(*this, 1u);
     EXPECT_EQ(scenario.jobCount, 1u);
 
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Second test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Third test string");
-    std::this_thread::yield();
-    EXPECT_EQ(threadPool->getThreadCount() - 1u, threadPool->getIdleCount());
-    EXPECT_TRUE(threadPool->isBusy());
+    taskScheduler->schedule();
+    EXPECT_EQ(taskScheduler->getThreadCount() - 1u, taskScheduler->getIdleCount());
+    EXPECT_TRUE(taskScheduler->isBusy());
+    ASSERT_GE(1u, m_output->getBuffer().size());
 }
 
-TEST_F(ThreadPoolTest, stressTestExclusiveJobs)
+TEST_F(TaskSchedulerTest, stressTestExclusiveJobs)
 {
-    QueuedTaskScenario<QueuedJob> scenario(*this, threadPool->getThreadCount());
-    EXPECT_EQ(scenario.jobCount, threadPool->getThreadCount());
+    SKIP_IF_NOT_MULTI_THREADED;
+    QueuedTaskScenario<QueuedJob> scenario(*this, taskScheduler->getThreadCount());
+    EXPECT_EQ(scenario.jobCount, taskScheduler->getThreadCount());
 
-    EXPECT_EQ(0u, threadPool->getIdleCount());
-    EXPECT_TRUE(threadPool->isBusy());
+    // taskScheduler->schedule(std::chrono::milliseconds(100));
+    EXPECT_EQ(0u, taskScheduler->getIdleCount());
+    EXPECT_TRUE(taskScheduler->isBusy());
+
+}
+
+TEST_F(TaskSchedulerTest, reschedulingTask)
+{
+    ReschedulingTaskSchenario<RescheduledJob> scenario(*this, 1u);
+    scenario[0]->push("1st string");
+    scenario[0]->push("2nd string");
+    scenario[0]->push("3rd string");
+    scenario[0]->push("4th string");
+    taskScheduler->schedule();
+    scenario[0]->m_jobWatch.wait();
+
+    EXPECT_EQ(4u, m_output->getBuffer().size());
 }

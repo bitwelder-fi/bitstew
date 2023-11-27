@@ -16,28 +16,27 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_LIBRARY_CONFIG_HPP
-#define META_LIBRARY_CONFIG_HPP
+#ifndef META_TASK_SCHEDULER_PRIVATE_HPP
+#define META_TASK_SCHEDULER_PRIVATE_HPP
 
-#include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
+#include <meta/tasks/task.hpp>
+#include <meta/tasks/task_scheduler.hpp>
 
-namespace meta
+namespace meta { namespace detail {
+
+class TaskPrivate
 {
+public:
+    static void notifyTaskQueued(Task& self, TaskScheduler* pool);
 
-/// The arguments with which the meta library gets initialized.
-struct META_API LibraryArguments
-{
-    /// The task scheduler arguments.
-    struct META_API TaskScheduler
-    {
-        size_t threadCount = Thread::hardware_concurrency();
-        bool createThreadPool = true;
-    } taskScheduler;
+    static void notifyTaskScheduled(Task& self);
 
-    explicit LibraryArguments() = default;
+    static void runTask(Task& self);
+
+    static bool isTaskQueued(Task& self);
 };
 
-}
 
-#endif
+}} // namespace meta::detail
+
+#endif // META_TASK_SCHEDULER_PRIVATE_HPP

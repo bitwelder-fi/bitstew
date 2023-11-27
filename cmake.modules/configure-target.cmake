@@ -1,12 +1,14 @@
 include(configure-platform)
 
-option(CONFIG_THREAD_SAFE "Build with threads safe." OFF)
-
 # local function, configure common options
 macro(__common_config arg_target)
     # compile defs
     if (CONFIG_ENABLE_LOGS)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_ENABLE_LOGS)
+    endif()
+
+    if (BUILD_MULTI_THREADED)
+        target_compile_definitions(${arg_target} PUBLIC CONFIG_MULTI_THREADED)
     endif()
 
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")

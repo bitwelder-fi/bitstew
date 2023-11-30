@@ -270,7 +270,7 @@ size_t TaskScheduler::getTaskCount() const
 
 void TaskScheduler::schedule()
 {
-    schedule(std::chrono::nanoseconds(0));
+    schedule(std::chrono::nanoseconds(1));
 }
 
 void TaskScheduler::schedule(const std::chrono::nanoseconds& delay)

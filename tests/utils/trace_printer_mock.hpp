@@ -16,14 +16,25 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/log/trace_output.hpp>
-#include <iostream>
+#ifndef TRACE_PRINTER_MOC_HPP
+#define TRACE_PRINTER_MOC_HPP
 
-namespace meta { namespace log {
+#include <gmock/gmock.h>
+#include <meta/log/trace.hpp>
+#include <meta/log/trace_printer.hpp>
 
-void ConsoleOut::write(std::string_view text)
+class MockPrinter : public meta::TracePrinter
 {
-    std::cout << text << std::endl;
-}
+public:
+    std::string format(const meta::TraceRecord& trace) const
+    {
+        return trace.message;
+    }
+    void write(std::string text) final
+    {
+        log(text);
+    }
+    MOCK_METHOD(void, log, (const std::string& text));
+};
 
-}} // namespace meta::log
+#endif

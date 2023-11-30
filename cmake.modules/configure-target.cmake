@@ -9,6 +9,7 @@ macro(__common_config arg_target)
 
     if (BUILD_MULTI_THREADED)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_MULTI_THREADED)
+        target_compile_options(${arg_target} PUBLIC -pthread)
     endif()
 
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -21,11 +22,6 @@ macro(__common_config arg_target)
 
     if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         target_compile_definitions(${arg_target} PUBLIC PLATFORM_CONFIG_HOST_MACOSX)
-    endif()
-
-    if (WRAP_THREAD_SAFE)
-        target_compile_definitions(${arg_target} PUBLIC PLATFORM_CONFIG_THREAD_ENABLED)
-        target_compile_options(${arg_target} PUBLIC -pthread)
     endif()
 
     # compile options

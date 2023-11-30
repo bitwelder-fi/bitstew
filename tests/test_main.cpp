@@ -17,6 +17,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include <meta/meta.hpp>
 #include <meta/library_config.hpp>

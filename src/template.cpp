@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 bitWelder
+ * Copyright (C) 2023 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -29,6 +29,8 @@
 #include <meta/meta.hpp>
 #include <meta/tasks/task_scheduler.hpp>
 
+#include <meta/log/trace.hpp>
+
 #include <memory>
 
 namespace meta
@@ -44,6 +46,7 @@ public:
     }
 
     std::unique_ptr<TaskScheduler> taskScheduler;
+    std::shared_ptr<Tracer> tracer;
 };
 
 Domain& Domain::instance()
@@ -68,7 +71,20 @@ void Domain::initialize(const LibraryArguments& arguments)
     if (arguments.taskScheduler.createThreadPool)
     {
         d->taskScheduler = std::make_unique<TaskScheduler>(arguments.taskScheduler.threadCount);
+        d->taskScheduler->start();
     }
+
+#ifdef CONFIG_ENABLE_LOGS
+    d->tracer = std::make_unique<Tracer>(d->taskScheduler.get());
+    d->tracer->setLogLevel(arguments.tracer.logLevel);
+
+    TracePrinterPtr printer = std::make_shared<ConsoleOut>();
+    printer = std::make_shared<MessageSeparator>(printer);
+    printer = std::make_shared<ThreadIdDecorator>(printer);
+    // printer = std::make_shared<TimeStampDecorator>(printer);
+    printer = std::make_shared<LogLevelDecorator>(printer);
+    d->tracer->addTracePrinter(printer);
+#endif
 }
 
 void Domain::uninitialize()
@@ -82,12 +98,19 @@ void Domain::uninitialize()
         }
         d->taskScheduler.reset();
     }
+    d->tracer.reset();
 }
 
 TaskScheduler* Domain::taskScheduler() const
 {
     D();
     return d->taskScheduler.get();
+}
+
+Tracer* Domain::tracer() const
+{
+    D();
+    return d->tracer.get();
 }
 
 }

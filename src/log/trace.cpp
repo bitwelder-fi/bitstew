@@ -16,19 +16,70 @@
  * <http://www.gnu.org/licenses/>
  */
 
+#include <assert.hpp>
 #include <meta/log/trace.hpp>
-#include <meta/log/trace_output.hpp>
-#include <meta/thread_pool/thread_pool.hpp>
+#include <meta/log/trace_printer.hpp>
+#include <meta/tasks/task_scheduler.hpp>
+#include <meta/threading.hpp>
 
-namespace meta { namespace log {
+namespace meta
+{
+
+struct TracerPrivate
+{
+    static void log(Tracer& self, const TraceRecord& trace)
+    {
+        if (static_cast<size_t>(trace.logLevel) > static_cast<size_t>(self.m_logLevel.load()))
+        {
+            return;
+        }
+
+        {
+            GuardLock lock(self.m_mutex);
+            self.m_buffer.push(trace);
+        }
+        self.m_signal.notify_one();
+
+        if (self.m_taskScheduler)
+        {
+            const auto status = self.getStatus();
+            if (status == Task::Status::Deferred || status == Task::Status::Stopped)
+            {
+                self.m_taskScheduler->tryQueueTask(self.shared_from_this());
+            }
+            // self.m_taskScheduler->schedule();
+            return;
+        }
+
+        // The thread pool is not active, run the task.
+        self.setStatus(Task::Status::Scheduled);
+        self.run();
+    }
+
+    static void print(Tracer& self, const TraceRecord& trace)
+    {
+        for (auto& out : self.m_outputs)
+        {
+            auto text = out->format(trace);
+            out->write(text);
+        }
+    }
+};
+
+
+Tracer::Tracer(TaskScheduler* taskScheduler) :
+    m_taskScheduler(taskScheduler)
+{
+}
 
 Tracer::~Tracer()
 {
 }
 
-void Tracer::runOnce()
+// Consume the buffer when scheduled.
+void Tracer::runOverride()
 {
-    utils::UniqueLock lock(m_mutex);
+    UniqueLock lock(m_mutex);
     auto condition = [this]()
     {
         return !this->m_buffer.empty() || isStopped();
@@ -36,62 +87,121 @@ void Tracer::runOnce()
     m_signal.wait(lock, condition);
     while (!m_buffer.empty())
     {
-        auto text = m_buffer.front();
+        auto trace = m_buffer.front();
         m_buffer.pop();
-        for (auto& out : m_outputs)
-        {
-            out->write(text);
-        }
+        TracerPrivate::print(*this, trace);
     }
 }
 
-// Consume the buffer when scheduled.
-void Tracer::runOverride()
+void Tracer::stopOverride()
 {
-    if (m_threadPool)
-    {
-        while (!isStopped())
-        {
-            runOnce();
-        }
-    }
-    else
-    {
-        runOnce();
-    }
+    m_signal.notify_all();
 }
 
-void Tracer::addOutput(TraceOutputPtr output)
+void Tracer::addTracePrinter(TracePrinterPtr output)
 {
-    utils::GuardLock lock(m_mutex);
-    m_outputs.push_back(std::move(output));
+    GuardLock lock(m_mutex);
+    m_outputs.push_back(output);
 }
 
-void Tracer::clearOutputs()
+void Tracer::clearTracePrinters()
 {
-    utils::GuardLock lock(m_mutex);
+    GuardLock lock(m_mutex);
     m_outputs.clear();
 }
 
-void Tracer::log(std::string_view text)
-{
-    auto threadPool = meta::Domain::instance().threadPool();
-    if (threadPool)
-    {
-        {
-            utils::GuardLock lock(m_mutex);
-            m_buffer.push(std::string(text));
-        }
-        // Push this task into the pool.
-        threadPool->addTask(shared_from_this());
-        // Notify tracer.
-        m_signal.notify_one();
-        return;
-    }
 
-    // The thread pool is not active, run the task.
-    setStatus(Status::Queued);
-    run();
+LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const char* file, unsigned line) :
+    TraceRecord(level, ThisThread::get_id(), function, file, line, ""),
+    m_tracer(tracer)
+
+{
 }
 
-}} // namespace meta::log
+LogLine::LogLine(LogLevel level, const char* function, const char* file, unsigned line) :
+    LogLine(meta::Domain::instance().tracer(), level, function, file, line)
+{
+}
+
+LogLine::~LogLine()
+{
+    message = std::string(m_printer.str());
+    TracerPrivate::log(*m_tracer, *this);
+}
+
+std::ostream& LogLine::operator()()
+{
+    return m_printer;
+}
+
+
+std::string  LogLevelDecorator::format(const TraceRecord& trace) const
+{
+    switch (trace.logLevel)
+    {
+        case LogLevel::Fatal:
+        {
+            return "[FATAL] " + getPrinter()->format(trace);
+        }
+        case LogLevel::Error:
+        {
+            return "[ERROR] " + getPrinter()->format(trace);
+        }
+        case LogLevel::Warning:
+        {
+            return "[WARNING] " + getPrinter()->format(trace);
+        }
+        case LogLevel::Info:
+        {
+            return "[INFO] " + getPrinter()->format(trace);
+        }
+        case LogLevel::Debug:
+        {
+            return "[DEBUG] " + getPrinter()->format(trace);
+        }
+        default:
+        {
+            return getPrinter()->format(trace);
+        }
+    }
+}
+
+
+std::string ThreadIdDecorator::format(const TraceRecord& trace) const
+{
+    std::ostringstream ss;
+    ss << "tid[" << trace.threadId << "] " << getPrinter()->format(trace);
+    return ss.str();
+}
+
+
+std::string FunctionDecorator::format(const TraceRecord& trace) const
+{
+    return trace.function + ' ' + getPrinter()->format(trace);
+}
+
+
+FileLineDecorator::FileLineDecorator(TracePrinterPtr printer, std::string_view basePath) :
+    PrinterFormatter(printer),
+    m_basePath(basePath)
+{
+}
+
+std::string FileLineDecorator::format(const TraceRecord& trace) const
+{
+    std::string file(trace.file);
+    if (!m_basePath.empty())
+    {
+        auto basePathPos = file.find(m_basePath);
+        if (basePathPos != std::string::npos)
+        {
+            file.erase(basePathPos, m_basePath.length());
+        }
+    }
+
+    std::ostringstream ss;
+    ss << file << ":" << trace.line << ' ' << getPrinter()->format(trace);
+    return ss.str();
+}
+
+} // namespace meta

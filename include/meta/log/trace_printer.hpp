@@ -21,33 +21,42 @@
 
 #include <meta/meta.hpp>
 
+#include <memory>
 #include <string_view>
 
-namespace meta {namespace log
+namespace meta
 {
 
+struct TraceRecord;
 /// Trace logger interface.
-class META_API TraceOutput
+class META_API TracePrinter
 {
 public:
     /// Destructor.
-    virtual ~TraceOutput() = default;
-    /// Writes a text to the output.
-    /// \param text The text to write to the output.
-    virtual void write(std::string_view text) = 0;
+    virtual ~TracePrinter() = default;
+
+    virtual std::string format(const TraceRecord& trace) const = 0;
+
+    /// Writes a trace record to the output.
+    /// \param trace The trace record to write to the output.
+    virtual void write(std::string text) = 0;
 };
+using TracePrinterPtr = std::shared_ptr<TracePrinter>;
 
 /// Console output.
-class META_API ConsoleOut : public TraceOutput
+class META_API ConsoleOut : public TracePrinter
 {
 public:
     /// Constructor.
     explicit ConsoleOut() = default;
 
-    /// Overide of TraceOutput::write(). Writes the text to the standard output.
-    void write(std::string_view text) override;
+    /// Overrides TracePrinter::format().
+    std::string format(const TraceRecord& trace) const override;
+
+    /// Overide of TracePrinter::write(). Writes the text to the standard output.
+    void write(std::string text) override;
 };
 
-}} // namespace meta::log
+} // namespace meta
 
 #endif // META_TRACE_OUTPUT_HPP

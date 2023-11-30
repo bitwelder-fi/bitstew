@@ -16,34 +16,21 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_LIBRARY_CONFIG_HPP
-#define META_LIBRARY_CONFIG_HPP
-
-#include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
 #include <meta/log/trace.hpp>
+#include <meta/log/trace_printer.hpp>
+#include <iostream>
 
 namespace meta
 {
 
-/// The arguments with which the meta library gets initialized.
-struct META_API LibraryArguments
+std::string ConsoleOut::format(const TraceRecord& trace) const
 {
-    /// The task scheduler arguments.
-    struct META_API TaskScheduler
-    {
-        size_t threadCount = Thread::hardware_concurrency();
-        bool createThreadPool = true;
-    } taskScheduler;
-
-    struct META_API Tracer
-    {
-        LogLevel logLevel = LogLevel::Debug;
-    } tracer;
-
-    explicit LibraryArguments() = default;
-};
-
+    return trace.message;
 }
 
-#endif
+void ConsoleOut::write(std::string text)
+{
+    std::cout << text << std::endl;
+}
+
+} // namespace meta

@@ -26,6 +26,7 @@
 namespace meta
 {
 
+class Tracer;
 class TaskScheduler;
 struct LibraryArguments;
 class MetaLibraryPrivate;
@@ -48,6 +49,10 @@ public:
     /// \return The task scheduler of the library, or nullptr, if the library is initialized without
     ///         a task scheduler.
     TaskScheduler* taskScheduler() const;
+
+    /// Returns the tracer of the library. The method is only available when tracing is eanbled.
+    /// \return The tracer of the library.
+    Tracer* tracer() const;
 
 private:
     explicit Domain();

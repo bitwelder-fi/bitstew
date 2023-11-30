@@ -6,8 +6,10 @@ enable_testing()
 include(configure-target)
 
 set (SOURCES
+    utils/trace_printer_mock.hpp
     test_utils.hpp
     test_main.cpp
+    test_log_fixtures.hpp
     test_log.cpp
     test_thread_pool.cpp
 )
@@ -26,6 +28,11 @@ FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed.
 add_executable(unittests ${SOURCES})
-target_link_libraries(unittests gtest_main ${PROJECT_LIBRARY})
+target_link_libraries(unittests GTest::gtest_main GTest::gmock_main ${PROJECT_LIBRARY})
 configure_target(unittests)
 add_test(NAME test-1 COMMAND unittests "--gtest_output=xml:unittest.xml" WORKING_DIRECTORY "${CACHES_BUILD_PATH}")
+
+# add_executable(unittests ${SOURCES})
+# target_link_libraries(unittests GTest::gtest_main GTest::gmock_main ${PROJECT_LIBRARY})
+# include(GoogleTest)
+# gtest_discover_tests(unittests)

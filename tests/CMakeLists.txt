@@ -28,11 +28,13 @@ FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed.
 add_executable(unittests ${SOURCES})
-target_link_libraries(unittests gtest_main gmock_main ${PROJECT_LIBRARY})
-configure_target(unittests)
-add_test(NAME test-1 COMMAND unittests "--gtest_output=xml:unittest.xml" WORKING_DIRECTORY "${CACHES_BUILD_PATH}")
+# target_include_directories(unittests PUBLIC "${GMOCK_INCLUDE_DIRS}" "${GTEST_INCLUDE_DIRS}")
+# target_link_libraries(unittests gtest_main gmock_main ${PROJECT_LIBRARY})
+# configure_target(unittests)
+# add_test(NAME test-1 COMMAND unittests "--gtest_output=xml:unittest.xml" WORKING_DIRECTORY "${CACHES_BUILD_PATH}")
 
-# add_executable(unittests ${SOURCES})
-# target_link_libraries(unittests GTest::gtest_main GTest::gmock_main ${PROJECT_LIBRARY})
-# include(GoogleTest)
-# gtest_discover_tests(unittests)
+target_link_libraries(unittests GTest::gtest_main GTest::gmock_main ${PROJECT_LIBRARY})
+include(GoogleTest)
+gtest_discover_tests(unittests)
+
+print_config(unittests)

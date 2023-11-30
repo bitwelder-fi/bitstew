@@ -80,6 +80,4 @@ function(configure_target arg_target)
     else()
         __configure_library(${arg_target})
     endif()
-
-    print_config(${arg_target})
 endfunction()

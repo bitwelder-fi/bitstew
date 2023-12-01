@@ -16,34 +16,25 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_LIBRARY_CONFIG_HPP
-#define META_LIBRARY_CONFIG_HPP
+#ifndef TRACE_PRINTER_MOC_HPP
+#define TRACE_PRINTER_MOC_HPP
 
-#include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
+#include <gmock/gmock.h>
 #include <meta/log/trace.hpp>
+#include <meta/log/trace_printer.hpp>
 
-namespace meta
+class MockPrinter : public meta::TracePrinter
 {
-
-/// The arguments with which the meta library gets initialized.
-struct META_API LibraryArguments
-{
-    /// The task scheduler arguments.
-    struct META_API TaskScheduler
+public:
+    std::string format(const meta::TraceRecord& trace) const
     {
-        size_t threadCount = Thread::hardware_concurrency();
-        bool createThreadPool = true;
-    } taskScheduler;
-
-    struct META_API Tracer
+        return trace.message;
+    }
+    void write(std::string text) final
     {
-        LogLevel logLevel = LogLevel::Debug;
-    } tracer;
-
-    explicit LibraryArguments() = default;
+        log(text);
+    }
+    MOCK_METHOD(void, log, (const std::string& text));
 };
-
-}
 
 #endif

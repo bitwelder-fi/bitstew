@@ -153,7 +153,7 @@ public:
             GuardLock lock(m_lock);
             m_queue.push(string);
         }
-        m_signal.notify_one();
+        m_signal.notify_all();
     }
 
 protected:
@@ -176,9 +176,12 @@ protected:
                 }
                 continue;
             }
-            auto text = m_queue.front();
-            m_queue.pop();
-            m_out->write(text);
+            while (!m_queue.empty())
+            {
+                auto text = m_queue.front();
+                m_queue.pop();
+                m_out->write(text);
+            }
         }
     }
 
@@ -194,18 +197,6 @@ protected:
 
 class TaskSchedulerTest : public ::testing::Test
 {
-public:
-    static void SetUpTestSuite()
-    {
-        auto arguments = meta::LibraryArguments();
-        arguments.taskScheduler.createThreadPool = false;
-        meta::Domain::instance().initialize(arguments);
-    }
-    static void TearDownTestSuite()
-    {
-        meta::Domain::instance().uninitialize();
-    }
-
 protected:
     std::unique_ptr<TaskScheduler> taskScheduler;
     OutputPtr m_output;
@@ -318,10 +309,10 @@ TEST_F(TaskSchedulerTest, testAddQueuedJobs)
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Second test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Third test string");
-    taskScheduler->schedule();
+    taskScheduler->schedule(std::chrono::milliseconds(10));
     EXPECT_EQ(taskScheduler->getThreadCount() - 1u, taskScheduler->getIdleCount());
     EXPECT_TRUE(taskScheduler->isBusy());
-    ASSERT_GE(1u, m_output->getBuffer().size());
+    EXPECT_EQ(m_output->getBuffer().size(), 3u);
 }
 
 TEST_F(TaskSchedulerTest, stressTestExclusiveJobs)

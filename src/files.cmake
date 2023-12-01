@@ -1,4 +1,6 @@
 set(SOURCES
+log/trace.cpp
+log/trace_printer.cpp
 tasks/task.cpp
 tasks/task_scheduler.cpp
 template.cpp
@@ -6,6 +8,8 @@ threading.cpp
 tasks/task_scheduler_private.h
 ../include/assert.hpp
 ../include/meta/library_config.hpp
+../include/meta/log/trace.hpp
+../include/meta/log/trace_printer.hpp
 ../include/meta/meta.hpp
 ../include/meta/meta_api.hpp
 ../include/meta/tasks/task.hpp

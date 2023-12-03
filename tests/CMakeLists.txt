@@ -12,6 +12,7 @@ set (SOURCES
     test_log_fixtures.hpp
     test_log.cpp
     test_thread_pool.cpp
+    test_meta_class.cpp
 )
 
 # find_package(GTest REQUIRED)

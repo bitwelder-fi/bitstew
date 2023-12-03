@@ -25,7 +25,7 @@ macro(__common_config arg_target)
     endif()
 
     # compile options
-    target_compile_options(${arg_target} PUBLIC -std=c++17 -Werror -Wall -W -fPIC)
+    target_compile_options(${arg_target} PUBLIC -std=c++20 -Werror -Wall -W -fPIC)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(${arg_target} PUBLIC -stdlib=libc++ -Winconsistent-missing-override)

@@ -35,9 +35,10 @@ class META_API MetaObject
 {
 public:
     /// The metadata of a meta object.
-    AbstractMetaData(MetaObject)
+    BaseMetaData(MetaObject)
     {
     };
+    static MetaObjectPtr create(std::string_view name);
 
     /// Destructor.
     virtual ~MetaObject() = default;
@@ -51,10 +52,7 @@ public:
 
 protected:
     /// Constructor.
-    explicit MetaObject(std::string_view name) :
-        m_name(name)
-    {
-    }
+    explicit MetaObject(std::string_view name);
 
 private:
     const std::string m_name;

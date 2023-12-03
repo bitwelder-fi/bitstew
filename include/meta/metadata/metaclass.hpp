@@ -36,9 +36,9 @@ class META_API MetaClass
 {
 public:
 
-    virtual MetaObjectPtr create(std::string_view name) = 0;
+    virtual MetaObjectPtr create(std::string_view name) const = 0;
     template <class ClassType>
-    std::shared_ptr<ClassType> create(std::string_view name)
+    std::shared_ptr<ClassType> create(std::string_view name) const
     {
         return std::dynamic_pointer_cast<ClassType>(create(name));
     }
@@ -60,29 +60,25 @@ protected:
     std::string m_name;
 };
 
-namespace data
+namespace detail
 {
 
-/// Meta class implementation.
-template <class DeclaredMetaClass, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API MetaClassImpl : public MetaClass
+/// Meta class implementation with no super classes.
+template <class DeclaredMetaClass, class DeclaredClass>
+class META_TEMPLATE_API CoreMetaClassImpl : public MetaClass
 {
-    using SuperClassContainer = std::array<const MetaClass*, sizeof...(SuperClasses)>;
-    SuperClassContainer m_superClasses;
-
 public:
-    MetaClassImpl() :
-        m_superClasses({{SuperClasses::getStaticMetaClass()...}})
+    CoreMetaClassImpl()
     {
     }
 
-    const MetaClass* getBaseClass(size_t index) const final
+    const MetaClass* getBaseClass(size_t) const override
     {
-        return m_superClasses.at(index);
+        return {};
     }
-    size_t getBaseClassCount() const final
+    size_t getBaseClassCount() const override
     {
-        return m_superClasses.size();
+        return 0u;
     }
     bool isAbstract() const final
     {
@@ -102,6 +98,58 @@ public:
     }
 
 protected:
+    bool hasSuperClass(const MetaClass&) const override
+    {
+        return false;
+    }
+};
+
+/// Meta class implementation for abstract classes, with base classes that have no metadata.
+template <class DeclaredMetaClass, class DeclaredClass>
+class META_TEMPLATE_API AbstractBaseMetaClass : public CoreMetaClassImpl<DeclaredMetaClass, DeclaredClass>
+{
+public:
+    MetaObjectPtr create(std::string_view) const override
+    {
+        return {};
+    }
+};
+
+/// Meta class implementation for non-abstract classes, with base classes that have no metadata.
+template <class DeclaredMetaClass, class DeclaredClass>
+class META_TEMPLATE_API BaseMetaClass : public CoreMetaClassImpl<DeclaredMetaClass, DeclaredClass>
+{
+public:
+    MetaObjectPtr create(std::string_view name) const override
+    {
+        return DeclaredClass::create(name);
+    }
+};
+
+
+/// Meta class implementation with one or more superclasses that have metadata.
+template <class DeclaredMetaClass, class DeclaredClass, class... SuperClasses>
+class META_TEMPLATE_API AbstractStaticMetaClass : public AbstractBaseMetaClass<DeclaredMetaClass, DeclaredClass>
+{
+    using SuperClassContainer = std::array<const MetaClass*, sizeof...(SuperClasses)>;
+    SuperClassContainer m_superClasses;
+
+public:
+    AbstractStaticMetaClass() :
+        m_superClasses({{SuperClasses::getStaticMetaClass()...}})
+    {
+    }
+
+    const MetaClass* getBaseClass(size_t index) const final
+    {
+        return m_superClasses.at(index);
+    }
+    size_t getBaseClassCount() const final
+    {
+        return m_superClasses.size();
+    }
+
+protected:
     bool hasSuperClass(const MetaClass& metaClass) const final
     {
         for (auto& meta : m_superClasses)
@@ -117,29 +165,52 @@ protected:
 };
 
 template <class DeclaredMetaClass, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API StaticMetaClass : public MetaClassImpl<DeclaredMetaClass, DeclaredClass, SuperClasses...>
+class META_TEMPLATE_API StaticMetaClass : public AbstractStaticMetaClass<DeclaredMetaClass, DeclaredClass, SuperClasses...>
 {
 public:
-    MetaObjectPtr create(std::string_view name) override
+    MetaObjectPtr create(std::string_view name) const override
     {
         return DeclaredClass::create(name);
     }
 };
 
-/// Meta Class for abstract meta objects.
-template <class DeclaredMetaClass, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API AbstractStaticMetaClass : public MetaClassImpl<DeclaredMetaClass, DeclaredClass, SuperClasses...>
-{
-public:
-    MetaObjectPtr create(std::string_view) override
-    {
-        return {};
-    }
-};
-
-} // namespace data
+} // namespace detail
 
 } // namespace meta
+
+/// Defines the metadata of an abstract base class. Use this macro when the class does not derive from
+/// classes with metadata.
+#define AbstractBaseMetaData(DeclaredClass)         \
+struct StaticMetaClass;                             \
+static const StaticMetaClass* getStaticMetaClass()  \
+{                                                   \
+    static StaticMetaClass metaClass;               \
+    return &metaClass;                              \
+}                                                   \
+struct META_API StaticMetaClass : public meta::detail::AbstractBaseMetaClass<StaticMetaClass, DeclaredClass>
+
+/// Defines the metadata of a base class. Use this macro when the class does not derive from classes
+/// with metadata.
+#define BaseMetaData(DeclaredClass)                 \
+struct StaticMetaClass;                             \
+static const StaticMetaClass* getStaticMetaClass()  \
+{                                                   \
+    static StaticMetaClass metaClass;               \
+    return &metaClass;                              \
+}                                                   \
+struct META_API StaticMetaClass : public meta::detail::BaseMetaClass<StaticMetaClass, DeclaredClass>
+
+/// Defines a metadata of an abstract class. The first argument must be the class for which you declare
+/// the meta data. The rest of the arguments should refer to the base classes, preferrably in the
+/// order of their declaration.
+#define AbstractMetaData(...)                       \
+struct StaticMetaClass;                             \
+static const StaticMetaClass* getStaticMetaClass()  \
+{                                                   \
+    static StaticMetaClass metaClass;               \
+    return &metaClass;                              \
+}                                                   \
+struct META_API StaticMetaClass : public meta::detail::AbstractStaticMetaClass<StaticMetaClass, __VA_ARGS__>
 
 /// Defines a metadata of a class. The first argument must be the class for which you declare the meta
 /// data. The rest of the arguments should refer to the base classes, preferrably in the order of
@@ -151,19 +222,7 @@ static const StaticMetaClass* getStaticMetaClass()  \
     static StaticMetaClass metaClass;               \
     return &metaClass;                              \
 }                                                   \
-struct META_API StaticMetaClass : public meta::data::StaticMetaClass<StaticMetaClass, __VA_ARGS__>
+struct META_API StaticMetaClass : public meta::detail::StaticMetaClass<StaticMetaClass, __VA_ARGS__>
 
-
-/// Defines a metadata of a class. The first argument must be the class for which you declare the meta
-/// data. The rest of the arguments should refer to the base classes, preferrably in the order of
-/// their declaration.
-#define AbstractMetaData(...)                       \
-struct StaticMetaClass;                             \
-static const StaticMetaClass* getStaticMetaClass()  \
-{                                                   \
-    static StaticMetaClass metaClass;               \
-    return &metaClass;                              \
-}                                                   \
-struct META_API StaticMetaClass : public meta::data::AbstractStaticMetaClass<StaticMetaClass, __VA_ARGS__>
 
 #endif // META_METACLASS_HPP

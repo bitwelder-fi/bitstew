@@ -21,4 +21,14 @@
 namespace meta
 {
 
+MetaObject::MetaObject(std::string_view name) :
+    m_name(name)
+{
+}
+
+MetaObjectPtr MetaObject::create(std::string_view name)
+{
+    return MetaObjectPtr(new MetaObject(name));
+}
+
 }

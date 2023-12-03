@@ -46,20 +46,37 @@ public:
     virtual ~Interface() = default;
     virtual void text() = 0;
 
-    AbstractMetaData(Interface)
+    AbstractBaseMetaData(Interface)
     {
     };
 };
 
-class Object : public AbstractClass, public Interface
+class PreObject : public AbstractClass
+{
+public:
+    AbstractMetaData(PreObject, AbstractClass)
+    {
+    };
+    virtual void func3() = 0;
+
+protected:
+    explicit PreObject(std::string_view name) :
+        AbstractClass(name)
+    {
+    }
+};
+
+class Object : public PreObject, public Interface
 {
 public:
     void func() override
     {}
     void text() override
     {}
+    void func3() final
+    {}
 
-    MetaData(Object, AbstractClass, Interface)
+    MetaData(Object, PreObject, Interface)
     {
     };
 
@@ -70,7 +87,7 @@ public:
 
 protected:
     explicit Object(std::string_view name) :
-        AbstractClass(name)
+        PreObject(name)
     {
     }
 };
@@ -150,4 +167,23 @@ TEST_F(ObjectFactoryTest, testFindMetaClass)
     EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
 
     EXPECT_EQ(Interface::getStaticMetaClass(), m_factory->findMetaClass("meta.Interface"));
+}
+
+TEST_F(ObjectFactoryTest, testMetaClassCreate)
+{
+    m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass());
+
+    auto metaClass = m_factory->findMetaClass("meta.Object");
+    ASSERT_EQ(Object::getStaticMetaClass(), metaClass);
+    ASSERT_NE(nullptr, metaClass->create("doing"));
+    auto castedObject = metaClass->create<Object>("next");
+    ASSERT_NE(nullptr, castedObject);
+}
+
+TEST_F(ObjectFactoryTest, testMetaClassCastedCreate)
+{
+    m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass());
+    auto metaClass = m_factory->findMetaClass("meta.Object");
+    auto castedObject = metaClass->create<Object>("next");
+    EXPECT_NE(nullptr, castedObject);
 }

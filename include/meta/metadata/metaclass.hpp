@@ -90,7 +90,8 @@ public:
     }
     bool isMetaClassOf(const MetaObject& object) const final
     {
-        return dynamic_cast<const DeclaredClass*>(&object) != nullptr;
+        auto address = dynamic_cast<const DeclaredClass*>(&object);
+        return address != nullptr;
     }
 
     template <class TDerivedClass>

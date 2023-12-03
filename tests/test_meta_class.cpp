@@ -17,6 +17,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/metadata/metaobject.hpp>
 
@@ -74,6 +75,21 @@ protected:
     }
 };
 
+class ObjectFactoryTest : public ::testing::Test
+{
+protected:
+    std::unique_ptr<meta::ObjectFactory> m_factory;
+    void SetUp() override
+    {
+        m_factory = std::make_unique<meta::ObjectFactory>();
+    }
+
+    void TearDown() override
+    {
+        m_factory.reset();
+    }
+};
+
 }
 
 TEST(MetaClassTests, testMetaObject)
@@ -113,4 +129,25 @@ TEST(MetaClassTests, testObject)
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*meta::MetaObject::getStaticMetaClass()));
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*AbstractClass::getStaticMetaClass()));
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*Interface::getStaticMetaClass()));
+}
+
+TEST_F(ObjectFactoryTest, testRegister)
+{
+    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
+    EXPECT_FALSE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
+}
+
+TEST_F(ObjectFactoryTest, testOverride)
+{
+    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", AbstractClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->overrideMetaClass("meta.Object", Object::getStaticMetaClass()));
+}
+
+TEST_F(ObjectFactoryTest, testFindMetaClass)
+{
+    EXPECT_TRUE(m_factory->registerMetaClass("meta.AbstractClass", AbstractClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass("meta.Interface", Interface::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
+
+    EXPECT_EQ(Interface::getStaticMetaClass(), m_factory->findMetaClass("meta.Interface"));
 }

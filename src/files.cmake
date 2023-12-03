@@ -1,6 +1,7 @@
 set(SOURCES
 log/trace.cpp
 log/trace_printer.cpp
+metadata/factory.cpp
 metadata/metaclass.cpp
 metadata/metaobject.cpp
 tasks/task.cpp
@@ -14,6 +15,7 @@ tasks/task_scheduler_private.h
 ../include/meta/log/trace_printer.hpp
 ../include/meta/meta.hpp
 ../include/meta/meta_api.hpp
+../include/meta/metadata/factory.hpp
 ../include/meta/metadata/metaclass.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/metadata/metaobject.hpp

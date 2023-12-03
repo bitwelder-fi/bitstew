@@ -35,18 +35,41 @@ using MetaObjectPtr = std::shared_ptr<MetaObject>;
 class META_API MetaClass
 {
 public:
-
+    /// Creates an object of the class to which the meta class is connected.
+    /// \param name The name of the meta object created.
     virtual MetaObjectPtr create(std::string_view name) const = 0;
+
+    /// Cast the created meta object to the given class type.
     template <class ClassType>
     std::shared_ptr<ClassType> create(std::string_view name) const
     {
         return std::dynamic_pointer_cast<ClassType>(create(name));
     }
 
+    /// Returns the meta class of the base class at index.
+    /// \param index The base class index.
+    /// \return The meta class of teh base class at index.
     virtual const MetaClass* getBaseClass(size_t index) const = 0;
+
+    /// Returns the number of base classes with meta data.
+    /// \return The number of base classes with meta data.
     virtual size_t getBaseClassCount() const = 0;
+
+    /// Returns whether the class to which the meta class is connected is abstract.
+    /// \return If the class to which the meta class is connected is abstract, returns \e true,
+    ///         otherwise \e false.
     virtual bool isAbstract() const = 0;
-    virtual bool isMetaClassOf(const MetaObject&) const = 0;
+
+    /// Returns whether this meta class is the meta class of the meta object.
+    /// \param The meta object to check.
+    /// \return If this meta class is the meta class of the meta object, returns \e true, otherwise
+    ///         \e false.
+    virtual bool isMetaClassOf(const MetaObject& object) const = 0;
+
+    /// Returns whether this MetaClass is or is derived from the \a metaClass.
+    /// \param metaClass The metaClass instance to check.
+    /// \return If this MetaClass is or is derived from the metaClass, returns \e true, otherwise
+    ///         \e false.
     bool isDerivedFrom(const MetaClass& metaClass) const;
 
 protected:
@@ -55,23 +78,19 @@ protected:
     /// Destructor.
     virtual ~MetaClass();
 
-    virtual bool hasSuperClass(const MetaClass& metaClass) const = 0;
-
-    std::string m_name;
+    /// Checks whether a \a metaClass is a super metac class of this meta class.
+    virtual bool hasSuperClass(const MetaClass& /*metaClass*/) const
+    {
+        return false;
+    }
 };
-
-namespace detail
-{
 
 /// Meta class implementation with no super classes.
 template <class DeclaredMetaClass, class DeclaredClass>
 class META_TEMPLATE_API CoreMetaClassImpl : public MetaClass
 {
 public:
-    CoreMetaClassImpl()
-    {
-    }
-
+    CoreMetaClassImpl() {}
     const MetaClass* getBaseClass(size_t) const override
     {
         return {};
@@ -96,13 +115,10 @@ public:
         auto metaClass = TDerivedClass::getStaticMetaClass();
         return hasSuperClass(*metaClass);
     }
-
-protected:
-    bool hasSuperClass(const MetaClass&) const override
-    {
-        return false;
-    }
 };
+
+namespace detail
+{
 
 /// Meta class implementation for abstract classes, with base classes that have no metadata.
 template <class DeclaredMetaClass, class DeclaredClass>

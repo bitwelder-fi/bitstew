@@ -27,6 +27,8 @@
 
 #include <meta/library_config.hpp>
 #include <meta/meta.hpp>
+#include <meta/metadata/factory.hpp>
+#include <meta/metadata/metaobject.hpp>
 #include <meta/tasks/task_scheduler.hpp>
 
 #include <meta/log/trace.hpp>
@@ -47,6 +49,7 @@ public:
 
     std::unique_ptr<TaskScheduler> taskScheduler;
     std::shared_ptr<Tracer> tracer;
+    std::unique_ptr<ObjectFactory> objectFactory;
 };
 
 Domain& Domain::instance()
@@ -85,6 +88,9 @@ void Domain::initialize(const LibraryArguments& arguments)
     printer = std::make_shared<LogLevelDecorator>(printer);
     d->tracer->addTracePrinter(printer);
 #endif
+
+    d->objectFactory = std::make_unique<ObjectFactory>();
+    d->objectFactory->registerMetaClass("meta.MetaObject", MetaObject::getStaticMetaClass());
 }
 
 void Domain::uninitialize()
@@ -111,6 +117,12 @@ Tracer* Domain::tracer() const
 {
     D();
     return d->tracer.get();
+}
+
+ObjectFactory* Domain::objectFactory() const
+{
+    D();
+    return d->objectFactory.get();
 }
 
 }

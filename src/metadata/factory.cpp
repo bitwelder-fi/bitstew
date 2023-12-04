@@ -16,20 +16,42 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/factory.hpp>
 #include <assert.hpp>
+#include <meta/log/trace.hpp>
+#include <meta/metadata/factory.hpp>
 
 namespace meta
 {
 
+namespace
+{
+
+/// Dot, column, dash and underscores are allowed
+bool isMetaClassNameValid(std::string_view name)
+{
+    return name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
+}
+
+}
+
 bool ObjectFactory::registerMetaClass(std::string_view className, const MetaClass* metaClass)
 {
+    if (!isMetaClassNameValid(className))
+    {
+        META_LOG_ERROR("Invalid meta class name: " << className);
+        return false;
+    }
     auto result = m_registry.insert(std::make_pair(className, metaClass));
     return result.second;
 }
 
 bool ObjectFactory::overrideMetaClass(std::string_view className, const MetaClass* metaClass)
 {
+    if (!isMetaClassNameValid(className))
+    {
+        META_LOG_ERROR("Invalid meta class name: " << className);
+        return false;
+    }
     auto it = m_registry.find(className);
     if (it != m_registry.end())
     {
@@ -42,6 +64,11 @@ bool ObjectFactory::overrideMetaClass(std::string_view className, const MetaClas
 
 const MetaClass* ObjectFactory::findMetaClass(std::string_view className) const
 {
+    if (!isMetaClassNameValid(className))
+    {
+        META_LOG_ERROR("Invalid meta class name: " << className);
+        return {};
+    }
     auto it = m_registry.find(className);
     return it != m_registry.end() ? it->second : nullptr;
 }

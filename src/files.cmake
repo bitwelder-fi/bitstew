@@ -1,4 +1,5 @@
 set(SOURCES
+arguments/argument_type.cpp
 log/trace.cpp
 log/trace_printer.cpp
 metadata/factory.cpp
@@ -10,6 +11,8 @@ template.cpp
 threading.cpp
 tasks/task_scheduler_private.h
 ../include/assert.hpp
+../include/meta/arguments/argument_type.hpp
+../include/meta/arguments/argument_type_impl.hpp
 ../include/meta/library_config.hpp
 ../include/meta/log/trace.hpp
 ../include/meta/log/trace_printer.hpp

@@ -5,15 +5,8 @@ enable_testing()
 
 include(configure-target)
 
-set (SOURCES
-    utils/trace_printer_mock.hpp
-    test_utils.hpp
-    test_main.cpp
-    test_log_fixtures.hpp
-    test_log.cpp
-    test_thread_pool.cpp
-    test_meta_class.cpp
-)
+# get the files
+include(files.cmake)
 
 # find_package(GTest REQUIRED)
 # include_directories(${GTEST_INCLUDE_DIRS}/include)

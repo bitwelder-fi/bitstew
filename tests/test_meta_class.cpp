@@ -17,9 +17,13 @@
  */
 
 #include <gtest/gtest.h>
+#include "utils/trace_printer_mock.hpp"
+
+#include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/metadata/metaobject.hpp>
+#include <meta/library_config.hpp>
 
 namespace
 {
@@ -107,6 +111,51 @@ protected:
     }
 };
 
+using MetaClassNameParam = std::tuple<std::string, bool>;
+class MetaClassNameValidityTest : public ObjectFactoryTest, public ::testing::WithParamInterface<MetaClassNameParam>
+{
+protected:
+    std::string metaClassName;
+    bool isValid;
+
+    void SetUp() override
+    {
+        auto config = meta::LibraryArguments();
+        config.taskScheduler.createThreadPool = false;
+        meta::Domain::instance().initialize(config);
+
+        // mock the logging
+        auto logger = std::make_shared<MockPrinter>();
+        meta::Domain::instance().tracer()->clearTracePrinters();
+        meta::Domain::instance().tracer()->addTracePrinter(logger);
+
+        ObjectFactoryTest::SetUp();
+
+        auto args = GetParam();
+        metaClassName = get<std::string>(args);
+        isValid = get<bool>(args);
+
+        if (!isValid)
+        {
+            auto argument = "Invalid meta class name: " + metaClassName;
+            EXPECT_CALL(*logger, log(argument));
+        }
+    }
+};
+
+class MetaDomainTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        meta::Domain::instance().initialize(meta::LibraryArguments());
+    }
+    void TearDown() override
+    {
+        meta::Domain::instance().uninitialize();
+    }
+};
+
 }
 
 TEST(MetaClassTests, testMetaObject)
@@ -148,6 +197,47 @@ TEST(MetaClassTests, testObject)
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*Interface::getStaticMetaClass()));
 }
 
+INSTANTIATE_TEST_SUITE_P(NameValidity, MetaClassNameValidityTest,
+                         ::testing::Values(
+                            MetaClassNameParam("meta.Object", true),
+                            MetaClassNameParam("meta:Object", true),
+                            MetaClassNameParam("meta-Object", true),
+                            MetaClassNameParam("meta_Object", true),
+                            MetaClassNameParam("meta~Object", false),
+                            MetaClassNameParam("meta`Object", false),
+                            MetaClassNameParam("meta!Object", false),
+                            MetaClassNameParam("meta@Object", false),
+                            MetaClassNameParam("meta#Object", false),
+                            MetaClassNameParam("meta$Object", false),
+                            MetaClassNameParam("meta$Object", false),
+                            MetaClassNameParam("meta%Object", false),
+                            MetaClassNameParam("meta^Object", false),
+                            MetaClassNameParam("meta&Object", false),
+                            MetaClassNameParam("meta*Object", false),
+                            MetaClassNameParam("meta(Object", false),
+                            MetaClassNameParam("meta)Object", false),
+                            MetaClassNameParam("meta+Object", false),
+                            MetaClassNameParam("meta=Object", false),
+                            MetaClassNameParam("meta{Object", false),
+                            MetaClassNameParam("meta[Object", false),
+                            MetaClassNameParam("meta}Object", false),
+                            MetaClassNameParam("meta]Object", false),
+                            MetaClassNameParam("meta|Object", false),
+                            MetaClassNameParam("meta\\Object", false),
+                            MetaClassNameParam("meta;Object", false),
+                            MetaClassNameParam("meta\"Object", false),
+                            MetaClassNameParam("meta'Object", false),
+                            MetaClassNameParam("meta<Object", false),
+                            MetaClassNameParam("meta,Object", false),
+                            MetaClassNameParam("meta>Object", false),
+                            MetaClassNameParam("meta?Object", false),
+                            MetaClassNameParam("meta/Object", false),
+                            MetaClassNameParam("meta Object", false)));
+TEST_P(MetaClassNameValidityTest, testMetaClassName)
+{
+    EXPECT_EQ(isValid, m_factory->registerMetaClass(metaClassName, Interface::getStaticMetaClass()));
+}
+
 TEST_F(ObjectFactoryTest, testRegister)
 {
     EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
@@ -186,4 +276,15 @@ TEST_F(ObjectFactoryTest, testMetaClassCastedCreate)
     auto metaClass = m_factory->findMetaClass("meta.Object");
     auto castedObject = metaClass->create<Object>("next");
     EXPECT_NE(nullptr, castedObject);
+}
+
+TEST_F(MetaDomainTest, testDomainHasObjectFactory)
+{
+    EXPECT_NE(nullptr, meta::Domain::instance().objectFactory());
+}
+
+TEST_F(MetaDomainTest, testDomainObjectFactoryRegistryContent)
+{
+    ASSERT_NE(nullptr, meta::Domain::instance().objectFactory());
+    EXPECT_NE(nullptr, meta::Domain::instance().objectFactory()->findMetaClass("meta.MetaObject"));
 }

@@ -30,6 +30,7 @@ class Tracer;
 class TaskScheduler;
 struct LibraryArguments;
 class MetaLibraryPrivate;
+class ObjectFactory;
 
 /// The domain holds the meta library elements.
 class META_API Domain
@@ -53,6 +54,10 @@ public:
     /// Returns the tracer of the library. The method is only available when tracing is eanbled.
     /// \return The tracer of the library.
     Tracer* tracer() const;
+
+    /// Returns the object factory of the domain.
+    /// \return The object factory of the domain.
+    ObjectFactory* objectFactory() const;
 
 private:
     explicit Domain();

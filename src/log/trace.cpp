@@ -116,6 +116,7 @@ LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const cha
     m_tracer(tracer)
 
 {
+    abortIfFail(m_tracer);
 }
 
 LogLine::LogLine(LogLevel level, const char* function, const char* file, unsigned line) :

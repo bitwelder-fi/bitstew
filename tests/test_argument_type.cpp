@@ -75,8 +75,8 @@ struct Class
 
 TEST(ArgumentData, testArgumentData)
 {
-    auto argument = meta::ArgumentData("one");
-    EXPECT_EQ("one", argument);
+    auto argument = meta::ArgumentData(std::string("one"));
+    EXPECT_EQ(std::string("one"), argument);
 }
 
 TEST_F(PackagedArguments, testPackArguments)

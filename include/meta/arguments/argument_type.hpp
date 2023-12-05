@@ -99,6 +99,12 @@ struct META_API PackagedArguments
     template <typename... Arguments>
     PackagedArguments(Arguments&&... arguments);
 
+    /// Creates packaged arguments from a subset of an other packaged arguments.
+    PackagedArguments(Iterator begin, Iterator end);
+
+    /// Catenates two packaged arguments.
+    PackagedArguments& operator+=(const PackagedArguments& rhs);
+
     /// Returns the argument data at index.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
@@ -150,17 +156,6 @@ private:
     std::vector<ArgumentData> m_pack;
 };
 
-
-/// Invokes a \a method of an \a object with the given \a arguments.
-/// \tparam TClass The class type of the method.
-/// \tparam TRet The return type of the methoid.
-/// \tparam TArgs... The argument types of the method.
-/// \param method The method to invoke.
-/// \param object The object for which to invoke the method.
-/// \param arguments The packaged arguments with which to invoke the method.
-/// \return The return value of the method. If the method is void type, returns an undefined value.
-template <class TClass, class TRet, class... TArgs>
-auto invoke(TRet(TClass::*method)(TArgs...), TClass* object, const PackagedArguments& arguments);
 
 /// Invokes a \a function with the given \a arguments.
 /// \tparam Function The function signature.

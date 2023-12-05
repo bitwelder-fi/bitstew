@@ -38,6 +38,17 @@ void PackagedArguments::swap(PackagedArguments& other)
     m_pack.swap(other.m_pack);
 }
 
+PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
+    m_pack(begin, end)
+{
+}
+
+PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
+{
+    m_pack.insert(end(), rhs.begin(), rhs.end());
+    return *this;
+}
+
 ArgumentData PackagedArguments::get(size_t index) const
 {
     return m_pack.at(index);

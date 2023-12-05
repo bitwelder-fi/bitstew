@@ -224,17 +224,17 @@ TEST_F(PackagedArguments, invokeFunctionWithLesserArguments)
 TEST_F(PackagedArguments, invokeMethod)
 {
     auto object = Class();
-    auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
+    auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
-    meta::invoke(&Class::method, &object, pack);
+    meta::invoke(&Class::method, pack);
 }
 
 TEST_F(PackagedArguments, invokeMethodWithLesserArguments)
 {
     auto object = Class();
-    auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
+    auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
-    meta::invoke(&Class::method2, &object, pack);
+    meta::invoke(&Class::method2, pack);
 }

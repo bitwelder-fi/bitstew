@@ -90,21 +90,33 @@ auto PackagedArguments::toTuple(TRet (TClass::*)(TArgs...)) const
 }
 
 
-template <class TClass, class TRet, class... TArgs>
-auto invoke(TRet(TClass::*method)(TArgs...), TClass* object, const PackagedArguments& arguments)
-{
-    using Signature = TRet(TClass::*)(TArgs...);
-    constexpr std::size_t N = traits::function_traits<Signature>::arity;
-    auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Signature>::template convert<N>(arguments));
-    return std::apply(method, pack);
-}
+// template <class Method>
+// auto invoke(Method method, typename traits::function_traits<Method>::object* object, const PackagedArguments& arguments)
+// {
+//     constexpr std::size_t N = traits::function_traits<Method>::arity;
+//     auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Method>::template convert<N>(arguments));
+//     return std::apply(method, pack);
+// }
 
 template <typename Function>
 auto invoke(Function function, const PackagedArguments& arguments)
 {
-    constexpr std::size_t N = traits::function_traits<Function>::arity;
-    auto pack = detail::PackToTuple<Function>::template convert<N>(arguments);
-    return std::apply(function, pack);
+    if constexpr (std::is_member_function_pointer_v<Function>)
+    {
+        using ClassType = typename traits::function_traits<Function>::object;
+        auto object = static_cast<ClassType*>(arguments.get(0u));
+        const auto args = PackagedArguments(arguments.begin() + 1, arguments.end());
+
+        constexpr std::size_t N = traits::function_traits<Function>::arity;
+        auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Function>::template convert<N>(args));
+        return std::apply(function, pack);
+    }
+    else
+    {
+        constexpr std::size_t N = traits::function_traits<Function>::arity;
+        auto pack = detail::PackToTuple<Function>::template convert<N>(arguments);
+        return std::apply(function, pack);
+    }
 }
 
 }

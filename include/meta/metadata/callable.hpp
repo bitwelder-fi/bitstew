@@ -39,15 +39,7 @@ public:
     /// The default constructor.
     explicit Callable() = default;
 
-    /// Creates a callable object for a method.
-    /// \tparam Method The function type.
-    /// \param name The name of the function.
-    /// \param method The method of the callable.
-    /// \param object The object of the callable.
-    template<class TClass, class TRet, class... TArgs>
-    explicit Callable(std::string_view name, TRet(TClass::*method)(TArgs...), TClass* object);
-
-    /// Creates a callable object for a function, a functor or a lambda.
+    /// Creates a callable object for a function, a functor, a lambda or a method.
     /// \tparam Function The function type.
     /// \param name The name of the function.
     /// \param function The function of the callable.
@@ -96,6 +88,21 @@ protected:
     /// The descriptor of the callable.
     CallableDescriptor m_descriptor;
 };
+
+/// Invokes a callable with the packaged arguments.
+inline auto META_API invoke(Callable& callable, const PackagedArguments& arguments)
+{
+    return callable.apply(arguments);
+}
+
+/// Invokes a callable of a method with an object and packaged arguments.
+template <class TClass>
+auto invoke(Callable& callable, TClass* object, const PackagedArguments& arguments)
+{
+    PackagedArguments args(object);
+    args += arguments;
+    return callable.apply(args);
+}
 
 }
 

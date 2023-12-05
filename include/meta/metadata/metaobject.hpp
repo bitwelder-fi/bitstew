@@ -21,6 +21,7 @@
 
 #include <meta/meta_api.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/metadata/callable.hpp>
 
 #include <memory>
 
@@ -34,6 +35,7 @@ using MetaObjectPtr = std::shared_ptr<MetaObject>;
 class META_API MetaObject
 {
 public:
+
     /// The metadata of a meta object.
     BaseMetaData(MetaObject)
     {
@@ -49,6 +51,8 @@ public:
     {
         return m_name;
     }
+
+    static inline Callable _getName{"getName", &MetaObject::getName};
 
 protected:
     /// Constructor.

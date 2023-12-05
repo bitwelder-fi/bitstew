@@ -135,9 +135,9 @@ TEST_F(Callable, callableIntWithArguments)
 TEST_F(Callable, methodWithNoArguments)
 {
     Class object;
-    meta::Callable callable("voidNoArgs", &Class::voidNoArgs, &object);
+    meta::Callable callable("voidNoArgs", &Class::voidNoArgs);
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
-    auto arguments = meta::PackagedArguments();
+    auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
     EXPECT_TRUE(result == std::nullopt);
 }
@@ -145,9 +145,9 @@ TEST_F(Callable, methodWithNoArguments)
 TEST_F(Callable, methodIntWithNoArguments)
 {
     Class object;
-    meta::Callable callable("intNoArgs", &Class::intNoArgs, &object);
+    meta::Callable callable("intNoArgs", &Class::intNoArgs);
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
-    auto arguments = meta::PackagedArguments();
+    auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
     EXPECT_EQ(42, *result);
 }
@@ -155,9 +155,9 @@ TEST_F(Callable, methodIntWithNoArguments)
 TEST_F(Callable, methodWithArguments)
 {
     Class object;
-    meta::Callable callable("voidStringInt", &Class::voidStringInt, &object);
+    meta::Callable callable("voidStringInt", &Class::voidStringInt);
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
-    auto arguments = meta::PackagedArguments(std::string("one"), 2);
+    auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
     EXPECT_TRUE(result == std::nullopt);
 }
@@ -165,9 +165,9 @@ TEST_F(Callable, methodWithArguments)
 TEST_F(Callable, methodIntWithArguments)
 {
     Class object;
-    meta::Callable callable("intStringInt", &Class::intStringInt, &object);
+    meta::Callable callable("intStringInt", &Class::intStringInt);
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
-    auto arguments = meta::PackagedArguments(std::string("one"), 2);
+    auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
     EXPECT_EQ(42, *result);
 }
@@ -175,9 +175,9 @@ TEST_F(Callable, methodIntWithArguments)
 TEST_F(Callable, methodWithRefArgument)
 {
     Class object;
-    meta::Callable callable("Class.ref", &Class::ref, &object);
+    meta::Callable callable("Class.ref", &Class::ref);
     int i = 41;
-    auto arguments = meta::PackagedArguments(&i);
+    auto arguments = meta::PackagedArguments(&object, &i);
     callable.apply(arguments);
     EXPECT_EQ(42, i);
 }

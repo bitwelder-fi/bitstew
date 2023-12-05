@@ -31,27 +31,7 @@ Callable::Callable(std::string_view name, Function function)
         }
         else
         {
-            auto retval = meta::invoke(function, arguments);
-            return ArgumentData(retval);
-        }
-    };
-    m_descriptor.invokable = std::move(invokable);
-    m_descriptor.name = name;
-}
-
-template<class TClass, class TRet, class... TArgs>
-Callable::Callable(std::string_view name, TRet(TClass::*method)(TArgs...), TClass* object)
-{
-    auto invokable = [method, object](const PackagedArguments& arguments) -> std::optional<ArgumentData>
-    {
-        if constexpr (std::is_void_v<TRet>)
-        {
-            meta::invoke(method, object, arguments);
-            return {};
-        }
-        else
-        {
-            auto ret = meta::invoke(method, object, arguments);
+            auto ret = meta::invoke(function, arguments);
             return ArgumentData(ret);
         }
     };

@@ -82,7 +82,7 @@ public:
     void func3() final
     {}
 
-    meta::Callable metaFunc{"Object.func", &Object::func, this};
+    static inline meta::Callable metaFunc{"Object.func", &Object::func};
 
     MetaData(Object, PreObject, Interface)
     {

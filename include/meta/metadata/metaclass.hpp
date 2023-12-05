@@ -24,10 +24,12 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 namespace meta
 {
 
+class Callable;
 class MetaObject;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
@@ -72,6 +74,21 @@ public:
     ///         \e false.
     bool isDerivedFrom(const MetaClass& metaClass) const;
 
+    /// Adds a callable to the meta class. The callable is either a method of the class, or an attached
+    /// function, or a lambda. The method fails if the meta class already has a callable with the same
+    /// name.
+    /// \param callable The callable object to add.
+    /// \return If the method is added with success, returns \e true, otherwise \e false. On failure,
+    ///         and tracing is enabled, an error log is printed.
+    /// \see Callable
+    bool addMethod(Callable& callable);
+
+    /// Tries to find a callable with the given name.
+    /// \param name The name of the callable to find.
+    /// \return The callable with the name, or \e nullptr if no callable with the name is found.
+    /// \see Callable
+    Callable* findMethod(std::string_view name);
+
 protected:
     /// Constructor. Creates a metaclass with a base class and name.
     explicit MetaClass() = default;
@@ -83,6 +100,14 @@ protected:
     {
         return false;
     }
+
+    /// The callable container type.
+    using CallableContainer = std::unordered_map<std::string_view, Callable*>;
+
+    /// The name of the meta class.
+    std::string m_name;
+    /// The callable container of the meta class.
+    CallableContainer m_callables;
 };
 
 /// Meta class implementation with no super classes.

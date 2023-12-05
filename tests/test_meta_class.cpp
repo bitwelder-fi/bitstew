@@ -25,6 +25,8 @@
 #include <meta/metadata/metaobject.hpp>
 #include <meta/library_config.hpp>
 
+#include <meta/metadata/callable.hpp>
+
 namespace
 {
 
@@ -80,8 +82,11 @@ public:
     void func3() final
     {}
 
+    meta::Callable metaFunc{"Object.func", &Object::func, this};
+
     MetaData(Object, PreObject, Interface)
     {
+        // meta::Callable("Object.func", &Object::func);
     };
 
     static std::shared_ptr<Object> create(std::string_view name)

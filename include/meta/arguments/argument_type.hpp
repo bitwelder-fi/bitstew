@@ -82,6 +82,17 @@ struct META_API PackagedArguments
     /// The iterator of the argument container.
     using Iterator = Container::const_iterator;
 
+    /// Default constructor.
+    explicit PackagedArguments() = default;
+    /// Move constructor.
+    PackagedArguments(PackagedArguments&& other);
+    /// Move operator.
+    PackagedArguments& operator=(PackagedArguments&& other);
+    /// Swaps this packaged arguments with \a other.
+    void swap(PackagedArguments& other);
+
+    DISABLE_COPY(PackagedArguments);
+
     /// Creates an argument pack with the \a arguments.
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
@@ -132,12 +143,32 @@ struct META_API PackagedArguments
     /// \return The tuple prepared with the arguments ready to invoke a callable.
     /// \throws std::bad_any_cast when the argument types of the signature do not match the type
     ///         of the argument value stored in the package.
-    template <class MethodSignature>
-    auto toTuple(MethodSignature, typename traits::function_traits<MethodSignature>::object* instance) const;
+    template <class TClass, class TRet, class... TArgs>
+    auto toTuple(TRet (TClass::*signature)(TArgs...)) const;
 
 private:
     std::vector<ArgumentData> m_pack;
 };
+
+
+/// Invokes a \a method of an \a object with the given \a arguments.
+/// \tparam TClass The class type of the method.
+/// \tparam TRet The return type of the methoid.
+/// \tparam TArgs... The argument types of the method.
+/// \param method The method to invoke.
+/// \param object The object for which to invoke the method.
+/// \param arguments The packaged arguments with which to invoke the method.
+/// \return The return value of the method. If the method is void type, returns an undefined value.
+template <class TClass, class TRet, class... TArgs>
+auto invoke(TRet(TClass::*method)(TArgs...), TClass* object, const PackagedArguments& arguments);
+
+/// Invokes a \a function with the given \a arguments.
+/// \tparam Function The function signature.
+/// \param function The function to invoke.
+/// \param arguments The packaged arguments with which to invoke the function.
+/// \return The return value of the function. If the function is void type, returns an undefined value.
+template <typename Function>
+auto invoke(Function function, const PackagedArguments& arguments);
 
 } // namespace meta
 

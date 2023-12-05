@@ -16,41 +16,32 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/arguments/argument_type.hpp>
+#include <meta/metadata/callable.hpp>
 
 namespace meta
 {
 
-PackagedArguments::PackagedArguments(PackagedArguments&& other)
+Callable::Callable(Callable&& other)
 {
     swap(other);
 }
 
-PackagedArguments& PackagedArguments::operator=(PackagedArguments&& other)
+Callable& Callable::operator=(Callable&& other)
 {
-    PackagedArguments tmp(std::forward<PackagedArguments>(other));
+    Callable tmp(std::forward<Callable>(other));
     swap(tmp);
     return *this;
 }
 
-void PackagedArguments::swap(PackagedArguments& other)
+void Callable::swap(Callable& other)
 {
-    m_pack.swap(other.m_pack);
+    std::swap(other.m_descriptor.name, m_descriptor.name);
+    std::swap(other.m_descriptor.invokable, m_descriptor.invokable);
 }
 
-ArgumentData PackagedArguments::get(size_t index) const
+bool Callable::isValid() const
 {
-    return m_pack.at(index);
-}
-
-size_t PackagedArguments::getSize() const
-{
-    return m_pack.size();
-}
-
-bool PackagedArguments::isEmpty() const
-{
-    return m_pack.empty();
+    return static_cast<bool>(m_descriptor.invokable);
 }
 
 }

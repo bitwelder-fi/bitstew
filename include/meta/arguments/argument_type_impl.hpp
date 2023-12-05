@@ -81,12 +81,30 @@ auto PackagedArguments::toTuple(FunctionSignature) const
     return detail::PackToTuple<FunctionSignature>::template convert<N>(*this);
 }
 
-template <class MethodSignature>
-auto PackagedArguments::toTuple(MethodSignature, typename traits::function_traits<MethodSignature>::object* instance) const
+template <class TClass, class TRet, class... TArgs>
+auto PackagedArguments::toTuple(TRet (TClass::*)(TArgs...)) const
 {
-    constexpr std::size_t N = traits::function_traits<MethodSignature>::arity;
-    return std::tuple_cat(std::make_tuple(static_cast<typename traits::function_traits<MethodSignature>::object*>(instance)),
-                          detail::PackToTuple<MethodSignature>::template convert<N>(*this));
+    using Signature = TRet (TClass::*)(TArgs...);
+    constexpr std::size_t N = traits::function_traits<Signature>::arity;
+    return detail::PackToTuple<Signature>::template convert<N>(*this);
+}
+
+
+template <class TClass, class TRet, class... TArgs>
+auto invoke(TRet(TClass::*method)(TArgs...), TClass* object, const PackagedArguments& arguments)
+{
+    using Signature = TRet(TClass::*)(TArgs...);
+    constexpr std::size_t N = traits::function_traits<Signature>::arity;
+    auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Signature>::template convert<N>(arguments));
+    return std::apply(method, pack);
+}
+
+template <typename Function>
+auto invoke(Function function, const PackagedArguments& arguments)
+{
+    constexpr std::size_t N = traits::function_traits<Function>::arity;
+    auto pack = detail::PackToTuple<Function>::template convert<N>(arguments);
+    return std::apply(function, pack);
 }
 
 }

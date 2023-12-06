@@ -22,6 +22,36 @@
 namespace meta
 {
 
+bool Metaclass::isDerivedFrom(const Metaclass& metaClass) const
+{
+    if (&metaClass == this)
+    {
+        return true;
+    }
+    return m_descriptor->hasSuperClass(metaClass);
+}
+
+bool Metaclass::addMethod(Callable& callable)
+{
+    auto result = m_callables.insert({callable.getName(), &callable});
+    if (!result.second)
+    {
+        META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
+    }
+    return result.second;
+}
+
+Callable* Metaclass::findMethod(std::string_view name)
+{
+    auto it = m_callables.find(name);
+    return it != m_callables.end() ? it->second : nullptr;
+}
+
+
+
+
+
+
 MetaClass::~MetaClass()
 {
 }

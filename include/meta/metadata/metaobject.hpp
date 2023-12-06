@@ -53,6 +53,23 @@ public:
     }
 
     static inline Callable _getName{"getName", &MetaObject::getName};
+    struct META_API MetaclassType : detail::StaticMetaclass<MetaObject>
+    {
+        MetaclassType(std::string_view name) :
+            detail::StaticMetaclass<MetaObject>(name)
+        {
+            addMethod(MetaObject::_getName);
+        }
+    };
+    struct META_API StaticMetaclass : MetaclassType
+    {
+        StaticMetaclass(std::string_view name) :
+            MetaclassType(name)
+        {
+            // seal!
+        }
+    };
+    static inline StaticMetaclass staticMetaclass{"meta.MetaObject"};
 
 protected:
     /// Constructor.

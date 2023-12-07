@@ -22,8 +22,39 @@
 namespace meta
 {
 
+MetaObjectPtr Metaclass::create(std::string_view name) const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->create(name);
+}
+
+const Metaclass* Metaclass::getBaseClass(size_t index) const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->getBaseClass(index);
+}
+
+size_t Metaclass::getBaseClassCount() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->getBaseClassCount();
+}
+
+bool Metaclass::isAbstract() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->isAbstract();
+}
+
+bool Metaclass::isMetaClassOf(const MetaObject& object) const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->isMetaClassOf(object);
+}
+
 bool Metaclass::isDerivedFrom(const Metaclass& metaClass) const
 {
+    abortIfFail(m_descriptor);
     if (&metaClass == this)
     {
         return true;
@@ -33,7 +64,8 @@ bool Metaclass::isDerivedFrom(const Metaclass& metaClass) const
 
 bool Metaclass::addMethod(Callable& callable)
 {
-    auto result = m_callables.insert({callable.getName(), &callable});
+    abortIfFail(m_descriptor && !m_descriptor->sealed);
+    auto result = m_descriptor->callables.insert({callable.getName(), &callable});
     if (!result.second)
     {
         META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
@@ -43,8 +75,9 @@ bool Metaclass::addMethod(Callable& callable)
 
 Callable* Metaclass::findMethod(std::string_view name)
 {
-    auto it = m_callables.find(name);
-    return it != m_callables.end() ? it->second : nullptr;
+    abortIfFail(m_descriptor);
+    auto it = m_descriptor->callables.find(name);
+    return it != m_descriptor->callables.end() ? it->second : nullptr;
 }
 
 

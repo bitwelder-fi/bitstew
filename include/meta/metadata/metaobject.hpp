@@ -31,6 +31,8 @@ namespace meta
 class MetaObject;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
+
+
 /// The base class of any object that defines a meta class.
 class META_API MetaObject
 {
@@ -52,6 +54,7 @@ public:
         return m_name;
     }
 
+
     static inline Callable _getName{"getName", &MetaObject::getName};
     struct META_API MetaclassType : detail::StaticMetaclass<MetaObject>
     {
@@ -61,13 +64,12 @@ public:
             addMethod(MetaObject::_getName);
         }
     };
+    using MetaclassTypePtr = const MetaclassType*;
     struct META_API StaticMetaclass : MetaclassType
     {
         StaticMetaclass(std::string_view name) :
             MetaclassType(name)
-        {
-            // seal!
-        }
+        { m_descriptor->sealed = true; }
     };
     static inline StaticMetaclass staticMetaclass{"meta.MetaObject"};
 

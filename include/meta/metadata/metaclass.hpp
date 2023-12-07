@@ -20,6 +20,7 @@
 #define META_METACLASS_HPP
 
 #include <meta/meta_api.hpp>
+#include <assert.hpp>
 
 #include <memory>
 #include <string>
@@ -36,16 +37,15 @@ using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
 class META_API Metaclass
 {
+    DISABLE_COPY(Metaclass);
+
 public:
     /// Destructor.
     virtual ~Metaclass() = default;
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    MetaObjectPtr create(std::string_view name) const
-    {
-        return m_descriptor->create(name);
-    }
+    MetaObjectPtr create(std::string_view name) const;
 
     /// Cast the created meta object to the given class type.
     template <class ClassType>
@@ -57,34 +57,22 @@ public:
     /// Returns the meta class of the base class at index.
     /// \param index The base class index.
     /// \return The meta class of the base class at index.
-    const Metaclass* getBaseClass(size_t index) const
-    {
-        return m_descriptor->getBaseClass(index);
-    }
+    const Metaclass* getBaseClass(size_t index) const;
 
     /// Returns the number of base classes with meta data.
     /// \return The number of base classes with meta data.
-    size_t getBaseClassCount() const
-    {
-        return m_descriptor->getBaseClassCount();
-    }
+    size_t getBaseClassCount() const;
 
     /// Returns whether the class to which the meta class is connected is abstract.
     /// \return If the class to which the meta class is connected is abstract, returns \e true,
     ///         otherwise \e false.
-    bool isAbstract() const
-    {
-        return m_descriptor->isAbstract();
-    }
+    bool isAbstract() const;
 
     /// Returns whether this meta class is the meta class of the meta object.
     /// \param The meta object to check.
     /// \return If this meta class is the meta class of the meta object, returns \e true, otherwise
     ///         \e false.
-    bool isMetaClassOf(const MetaObject& object) const
-    {
-        return m_descriptor->isMetaClassOf(object);
-    }
+    bool isMetaClassOf(const MetaObject& object) const;
 
     /// Returns whether this MetaClass is or is derived from the \a metaClass.
     /// \param metaClass The metaClass instance to check.
@@ -95,6 +83,7 @@ public:
     template <class TDerivedClass>
     bool isDerivedFromClass() const
     {
+        abortIfFail(m_descriptor);
         return m_descriptor->hasSuperClass(TDerivedClass::staticMetaclass);
     }
 
@@ -114,8 +103,19 @@ public:
     Callable* findMethod(std::string_view name);
 
 protected:
+    /// The descriptor of the metaclass.
     struct META_API DescriptorInterface
     {
+        /// The callable container type.
+        using CallableContainer = std::unordered_map<std::string_view, Callable*>;
+
+        /// The name of the meta class.
+        std::string name;
+        /// The callable container of the meta class.
+        CallableContainer callables;
+        /// Whether the metaclass is sealed.
+        bool sealed = false;
+
         virtual ~DescriptorInterface() = default;
         virtual MetaObjectPtr create(std::string_view /*name*/) const
         {
@@ -129,30 +129,23 @@ protected:
         {
             return 0u;
         }
-        virtual bool isAbstract() const = 0;
-        virtual bool isMetaClassOf(const MetaObject& object) const = 0;
-        /// Checks whether a \a metaClass is a super metaclass of this metaclass.
         virtual bool hasSuperClass(const Metaclass& /*metaClass*/) const
         {
             return false;
         }
+        virtual bool isAbstract() const = 0;
+        virtual bool isMetaClassOf(const MetaObject& object) const = 0;
     };
     using DescriptorPtr = std::unique_ptr<DescriptorInterface>;
 
-    /// Constructor. Creates a metaclass with a base class and name.
+    /// Constructor. Creates a metaclass with a name and descriptor.
     explicit Metaclass(std::string_view name, DescriptorPtr descriptor) :
-        m_name(name),
         m_descriptor(std::move(descriptor))
     {
+        m_descriptor->name = name;
     }
 
-    /// The callable container type.
-    using CallableContainer = std::unordered_map<std::string_view, Callable*>;
-
-    /// The name of the meta class.
-    std::string m_name;
-    /// The callable container of the meta class.
-    CallableContainer m_callables;
+    /// The descriptor of the metaclass.
     DescriptorPtr m_descriptor;
 };
 
@@ -160,53 +153,13 @@ protected:
 namespace detail
 {
 
-template <class DeclaredClass>
-class META_TEMPLATE_API BaseMetaclass : public Metaclass
-{
-    struct META_API Descriptor : DescriptorInterface
-    {
-        MetaObjectPtr create(std::string_view name) const override
-        {
-            if constexpr (std::is_abstract_v<DeclaredClass>)
-            {
-                return {};
-            }
-            else
-            {
-                return DeclaredClass::create(name);
-            }
-        }
-
-        bool isAbstract() const override
-        {
-            return std::is_abstract_v<DeclaredClass>;
-        }
-        bool isMetaClassOf(const MetaObject& object) const override
-        {
-            auto address = dynamic_cast<const DeclaredClass*>(&object);
-            return address != nullptr;
-        }
-    };
-
-public:
-    explicit BaseMetaclass(std::string_view name) :
-        Metaclass(name, std::make_unique<Descriptor>())
-    {
-    }
-};
-
 template <class DeclaredClass, class... SuperClasses>
 class META_TEMPLATE_API StaticMetaclass : public Metaclass
 {
+    static constexpr auto arity = sizeof... (SuperClasses);
+
     struct META_API Descriptor : DescriptorInterface
     {
-        using SuperClassContainer = std::array<const Metaclass*, sizeof...(SuperClasses)>;
-        SuperClassContainer m_superClasses;
-
-        explicit Descriptor() :
-            m_superClasses({{SuperClasses::staticMetaclass...}})
-        {
-        }
         MetaObjectPtr create(std::string_view name) const override
         {
             if constexpr (std::is_abstract_v<DeclaredClass>)
@@ -221,31 +174,50 @@ class META_TEMPLATE_API StaticMetaclass : public Metaclass
 
         const Metaclass* getBaseClass(size_t index) const final
         {
-            return m_superClasses.at(index);
+            if constexpr (arity)
+            {
+                auto superMetas = std::array<const Metaclass*, arity>({{SuperClasses::staticMetaclass...}});
+                return superMetas[index];
+            }
+            else
+            {
+                return {};
+            }
         }
         size_t getBaseClassCount() const final
         {
-            return m_superClasses.size();
+            if constexpr (arity)
+            {
+                return arity;
+            }
+            else
+            {
+                return 0u;
+            }
         }
-
         bool hasSuperClass(const Metaclass& metaClass) const final
         {
-            for (auto& meta : m_superClasses)
+            if constexpr (arity)
             {
-                if (meta->isDerivedFrom(metaClass))
+                auto superMetas = std::array<const Metaclass*, arity>({{SuperClasses::staticMetaclass...}});
+                for (auto& meta : superMetas)
                 {
-                    return true;
+                    if (meta->isDerivedFrom(metaClass))
+                    {
+                        return true;
+                    }
                 }
             }
 
             return false;
         }
 
-        bool isAbstract() const override
+        bool isAbstract() const final
         {
             return std::is_abstract_v<DeclaredClass>;
         }
-        bool isMetaClassOf(const MetaObject& object) const override
+
+        bool isMetaClassOf(const MetaObject& object) const final
         {
             auto address = dynamic_cast<const DeclaredClass*>(&object);
             return address != nullptr;

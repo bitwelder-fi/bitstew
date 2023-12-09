@@ -63,17 +63,6 @@ bool operator!=(const T& lhs, const ArgumentData& rhs)
     return lhs != static_cast<const T&>(rhs);
 }
 
-template <typename T>
-bool operator==(const ArgumentData& lhs, const T& rhs)
-{
-    return static_cast<const T&>(lhs) == rhs;
-}
-template <typename T>
-bool operator!=(const ArgumentData& lhs, const T& rhs)
-{
-    return static_cast<const T&>(lhs) != rhs;
-}
-
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {

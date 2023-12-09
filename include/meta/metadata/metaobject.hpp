@@ -37,11 +37,7 @@ using MetaObjectPtr = std::shared_ptr<MetaObject>;
 class META_API MetaObject
 {
 public:
-
-    /// The metadata of a meta object.
-    BaseMetaData(MetaObject)
-    {
-    };
+    /// Creates a meta-object.
     static MetaObjectPtr create(std::string_view name);
 
     /// Destructor.
@@ -54,24 +50,11 @@ public:
         return m_name;
     }
 
-
-    static inline Callable _getName{"getName", &MetaObject::getName};
-    struct META_API MetaclassType : detail::StaticMetaclass<MetaObject>
+    /// The metadata of a meta object.
+    META_CLASS("meta.MetaObject", MetaObject)
     {
-        MetaclassType(std::string_view name) :
-            detail::StaticMetaclass<MetaObject>(name)
-        {
-            addMethod(MetaObject::_getName);
-        }
+        META_METHOD(MetaObject, getName);
     };
-    using MetaclassTypePtr = const MetaclassType*;
-    struct META_API StaticMetaclass : MetaclassType
-    {
-        StaticMetaclass(std::string_view name) :
-            MetaclassType(name)
-        { m_descriptor->sealed = true; }
-    };
-    static inline StaticMetaclass staticMetaclass{"meta.MetaObject"};
 
 protected:
     /// Constructor.

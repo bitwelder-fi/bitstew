@@ -33,7 +33,7 @@ namespace
 class AbstractClass : public meta::MetaObject
 {
 public:
-    AbstractMetaData(AbstractClass, meta::MetaObject)
+    META_CLASS("AbstractClass", AbstractClass, meta::MetaObject)
     {
     };
 
@@ -52,7 +52,7 @@ public:
     virtual ~Interface() = default;
     virtual void text() = 0;
 
-    AbstractBaseMetaData(Interface)
+    META_CLASS("Interface", Interface)
     {
     };
 };
@@ -60,7 +60,7 @@ public:
 class PreObject : public AbstractClass
 {
 public:
-    AbstractMetaData(PreObject, AbstractClass)
+    META_CLASS("PreObject", PreObject, AbstractClass)
     {
     };
     virtual void func3() = 0;
@@ -82,11 +82,10 @@ public:
     void func3() final
     {}
 
-    static inline meta::Callable metaFunc{"Object.func", &Object::func};
-
-    MetaData(Object, PreObject, Interface)
+    META_CLASS("Object", Object, PreObject, Interface)
     {
-        // meta::Callable("Object.func", &Object::func);
+        meta::Callable func{"Object.func", &Object::func};
+        META_METHOD(Object, func);
     };
 
     static std::shared_ptr<Object> create(std::string_view name)

@@ -90,14 +90,6 @@ auto PackagedArguments::toTuple(TRet (TClass::*)(TArgs...)) const
 }
 
 
-// template <class Method>
-// auto invoke(Method method, typename traits::function_traits<Method>::object* object, const PackagedArguments& arguments)
-// {
-//     constexpr std::size_t N = traits::function_traits<Method>::arity;
-//     auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Method>::template convert<N>(arguments));
-//     return std::apply(method, pack);
-// }
-
 template <typename Function>
 auto invoke(Function function, const PackagedArguments& arguments)
 {

@@ -17,42 +17,47 @@
  */
 
 #include <meta/metadata/callable.hpp>
-#include <meta/metadata/metaclass_impl.hpp>
+#include <meta/metadata/metaclass.hpp>
 
 namespace meta
 {
 
-MetaObjectPtr Metaclass::create(std::string_view name) const
+std::optional<ArgumentData> MetaClass::MetaMethod::call(MetaObject* object, const PackagedArguments& arguments)
+{
+    return invoke(*this, object, arguments);
+}
+
+MetaObjectPtr MetaClass::create(std::string_view name) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->create(name);
 }
 
-const Metaclass* Metaclass::getBaseClass(size_t index) const
+const MetaClass* MetaClass::getBaseClass(size_t index) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->getBaseClass(index);
 }
 
-size_t Metaclass::getBaseClassCount() const
+size_t MetaClass::getBaseClassCount() const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->getBaseClassCount();
 }
 
-bool Metaclass::isAbstract() const
+bool MetaClass::isAbstract() const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->isAbstract();
 }
 
-bool Metaclass::isMetaClassOf(const MetaObject& object) const
+bool MetaClass::isMetaClassOf(const MetaObject& object) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->isMetaClassOf(object);
 }
 
-bool Metaclass::isDerivedFrom(const Metaclass& metaClass) const
+bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
 {
     abortIfFail(m_descriptor);
     if (&metaClass == this)
@@ -62,7 +67,7 @@ bool Metaclass::isDerivedFrom(const Metaclass& metaClass) const
     return m_descriptor->hasSuperClass(metaClass);
 }
 
-bool Metaclass::addMethod(Callable& callable)
+bool MetaClass::addMethod(Callable& callable)
 {
     abortIfFail(m_descriptor && !m_descriptor->sealed);
     auto result = m_descriptor->callables.insert({callable.getName(), &callable});
@@ -73,45 +78,15 @@ bool Metaclass::addMethod(Callable& callable)
     return result.second;
 }
 
-Callable* Metaclass::findMethod(std::string_view name)
+Callable* MetaClass::findMethod(std::string_view name) const
 {
     abortIfFail(m_descriptor);
     auto it = m_descriptor->callables.find(name);
-    return it != m_descriptor->callables.end() ? it->second : nullptr;
-}
-
-
-
-
-
-
-MetaClass::~MetaClass()
-{
-}
-
-bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
-{
-    if (&metaClass == this)
+    if (it == m_descriptor->callables.end())
     {
-        return true;
+        return {};
     }
-    return hasSuperClass(metaClass);
-}
-
-bool MetaClass::addMethod(Callable& callable)
-{
-    auto result = m_callables.insert({callable.getName(), &callable});
-    if (!result.second)
-    {
-        META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
-    }
-    return result.second;
-}
-
-Callable* MetaClass::findMethod(std::string_view name)
-{
-    auto it = m_callables.find(name);
-    return it != m_callables.end() ? it->second : nullptr;
+    return it->second;
 }
 
 }

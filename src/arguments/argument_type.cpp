@@ -49,12 +49,12 @@ PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
     return *this;
 }
 
-ArgumentData PackagedArguments::get(size_t index) const
+ArgumentData PackagedArguments::get(std::size_t index) const
 {
     return m_pack.at(index);
 }
 
-size_t PackagedArguments::getSize() const
+std::size_t PackagedArguments::getSize() const
 {
     return m_pack.size();
 }

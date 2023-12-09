@@ -33,13 +33,13 @@ MetaObjectPtr MetaClass::create(std::string_view name) const
     return m_descriptor->create(name);
 }
 
-const MetaClass* MetaClass::getBaseClass(size_t index) const
+const MetaClass* MetaClass::getBaseClass(std::size_t index) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->getBaseClass(index);
 }
 
-size_t MetaClass::getBaseClassCount() const
+std::size_t MetaClass::getBaseClassCount() const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->getBaseClassCount();

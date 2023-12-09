@@ -128,7 +128,7 @@ public:
 
     /// Returns the printer as \a PrinterClass at \a index.
     template <class PrinterClass>
-    std::shared_ptr<PrinterClass> getPrinterAt(size_t index)
+    std::shared_ptr<PrinterClass> getPrinterAt(std::size_t index)
     {
         UniqueLock lock(m_mutex);
         auto printer = m_outputs.at(index);
@@ -155,12 +155,12 @@ protected:
     void runOverride() override;
     void stopOverride() override;
 
-    TracePrinterPtr getTracePrinterAt(size_t index)
+    TracePrinterPtr getTracePrinterAt(std::size_t index)
     {
         GuardLock lock(m_mutex);
         return m_outputs.at(index);
     }
-    size_t getTracePrinterCount() const
+    std::size_t getTracePrinterCount() const
     {
         return m_outputs.size();
     }

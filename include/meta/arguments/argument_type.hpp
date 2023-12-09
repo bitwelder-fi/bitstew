@@ -86,7 +86,7 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    PackagedArguments(Arguments&&... arguments);
+    PackagedArguments(Arguments... arguments);
 
     /// Creates packaged arguments from a subset of an other packaged arguments.
     PackagedArguments(Iterator begin, Iterator end);
@@ -97,10 +97,10 @@ struct META_API PackagedArguments
     /// Returns the argument data at index.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
-    ArgumentData get(size_t index) const;
+    ArgumentData get(std::size_t index) const;
 
     /// Returns the size of the pack.
-    size_t getSize() const;
+    std::size_t getSize() const;
 
     /// Returns whether the pack is empty.
     bool isEmpty() const;
@@ -122,7 +122,7 @@ struct META_API PackagedArguments
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
     template <typename T>
-    T get(size_t index) const;
+    T get(std::size_t index) const;
 
     /// Converts the argument package into a tuple, using the signature of a function.
     /// \tparam FunctionSignature The function signature to use when converting the arguments.

@@ -60,7 +60,7 @@ ArgumentData::operator T() const
 }
 
 template <typename... Arguments>
-PackagedArguments::PackagedArguments(Arguments&&... arguments)
+PackagedArguments::PackagedArguments(Arguments... arguments)
 {
     std::array<ArgumentData, sizeof... (Arguments)> aa = {{ArgumentData(arguments)...}};
     m_pack.reserve(aa.size());
@@ -68,7 +68,7 @@ PackagedArguments::PackagedArguments(Arguments&&... arguments)
 }
 
 template <typename T>
-T PackagedArguments::get(size_t index) const
+T PackagedArguments::get(std::size_t index) const
 {
     return m_pack.at(index);
 }

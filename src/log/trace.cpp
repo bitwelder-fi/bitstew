@@ -29,7 +29,7 @@ struct TracerPrivate
 {
     static void log(Tracer& self, const TraceRecord& trace)
     {
-        if (static_cast<size_t>(trace.logLevel) > static_cast<size_t>(self.m_logLevel.load()))
+        if (static_cast<std::size_t>(trace.logLevel) > static_cast<std::size_t>(self.m_logLevel.load()))
         {
             return;
         }

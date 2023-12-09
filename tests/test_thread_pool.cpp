@@ -32,7 +32,7 @@ using namespace meta;
 namespace
 {
 
-using SecureInt = Atomic<size_t>;
+using SecureInt = Atomic<std::size_t>;
 
 class Output
 {
@@ -240,7 +240,7 @@ protected:
         SecureInt jobCount = 0u;
         TaskSchedulerTest& test;
 
-        explicit QueuedTaskScenario(TaskSchedulerTest& test, size_t tasks) :
+        explicit QueuedTaskScenario(TaskSchedulerTest& test, std::size_t tasks) :
             test(test)
         {
             this->jobs.reserve(tasks);
@@ -259,7 +259,7 @@ protected:
     {
         TaskSchedulerTest& test;
 
-        explicit ReschedulingTaskSchenario(TaskSchedulerTest& test, size_t taskCount) :
+        explicit ReschedulingTaskSchenario(TaskSchedulerTest& test, std::size_t taskCount) :
             test(test)
         {
             this->jobs.reserve(taskCount);
@@ -290,7 +290,7 @@ TEST_F(TaskSchedulerTest, testAddJobs)
     QueuedTaskScenario<Job> scenario(*this, maxJobs);
     ASSERT_EQ(scenario.jobCount, maxJobs);
 
-    size_t jobCount = 0u;
+    std::size_t jobCount = 0u;
     for (auto& future : scenario.futures)
     {
         ++jobCount;

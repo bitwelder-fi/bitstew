@@ -77,11 +77,11 @@ public:
     /// Returns the meta class of the base class at index.
     /// \param index The base class index.
     /// \return The meta class of the base class at index.
-    const MetaClass* getBaseClass(size_t index) const;
+    const MetaClass* getBaseClass(std::size_t index) const;
 
     /// Returns the number of base classes with meta data.
     /// \return The number of base classes with meta data.
-    size_t getBaseClassCount() const;
+    std::size_t getBaseClassCount() const;
 
     /// Returns whether the class to which the meta class is connected is abstract.
     /// \return If the class to which the meta class is connected is abstract, returns \e true,
@@ -141,11 +141,11 @@ protected:
         {
             return {};
         }
-        virtual const MetaClass* getBaseClass(size_t /*index*/) const
+        virtual const MetaClass* getBaseClass(std::size_t /*index*/) const
         {
             return {};
         }
-        virtual size_t getBaseClassCount() const
+        virtual std::size_t getBaseClassCount() const
         {
             return 0u;
         }

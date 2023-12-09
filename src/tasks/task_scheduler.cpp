@@ -122,7 +122,7 @@ public:
 };
 
 
-TaskScheduler::TaskScheduler(size_t threadCount) :
+TaskScheduler::TaskScheduler(std::size_t threadCount) :
 #ifndef CONFIG_MULTI_THREADED
     m_threadCount(0u)
 #else
@@ -145,7 +145,7 @@ void TaskScheduler::start()
     m_idleThreadCount = 0u;
 
     m_threads.reserve(m_threadCount);
-    for (size_t i = 0u; i < m_threadCount; ++i)
+    for (std::size_t i = 0u; i < m_threadCount; ++i)
     {
         m_threads.push_back(Thread(&TaskSchedulerPrivate::threadMain, this));
         schedule();
@@ -263,7 +263,7 @@ std::vector<TaskCompletionWatchObject> TaskScheduler::tryQueueTasks(std::vector<
     return result;
 }
 
-size_t TaskScheduler::getTaskCount() const
+std::size_t TaskScheduler::getTaskCount() const
 {
     return m_tasks.size();
 }

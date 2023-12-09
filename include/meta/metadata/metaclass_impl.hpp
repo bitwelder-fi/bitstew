@@ -44,7 +44,7 @@ class META_TEMPLATE_API MetaclassImpl : public MetaClass
             }
         }
 
-        const MetaClass* getBaseClass(size_t index) const final
+        const MetaClass* getBaseClass(std::size_t index) const final
         {
             if constexpr (arity)
             {
@@ -56,7 +56,7 @@ class META_TEMPLATE_API MetaclassImpl : public MetaClass
                 return {};
             }
         }
-        size_t getBaseClassCount() const final
+        std::size_t getBaseClassCount() const final
         {
             if constexpr (arity)
             {

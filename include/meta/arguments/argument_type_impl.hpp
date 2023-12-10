@@ -17,6 +17,7 @@
  */
 
 #include <meta/log/trace.hpp>
+#include <array>
 #include <tuple>
 
 namespace meta

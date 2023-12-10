@@ -82,7 +82,7 @@ TEST(ArgumentData, invalidArgumentData)
 TEST(ArgumentData, testArgumentData)
 {
     auto argument = meta::ArgumentData(std::string("one"));
-    EXPECT_EQ(std::string("one"), argument);
+    EXPECT_EQ(std::string("one"), static_cast<std::string>(argument));
 }
 
 TEST_F(PackagedArguments, testPackArguments)

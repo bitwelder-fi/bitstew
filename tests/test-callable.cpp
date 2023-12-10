@@ -111,7 +111,7 @@ TEST_F(Callable, callableIntWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto arguments = meta::PackagedArguments();
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(Callable, callableWithArguments)
@@ -129,7 +129,7 @@ TEST_F(Callable, callableIntWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(Callable, methodWithNoArguments)
@@ -149,7 +149,7 @@ TEST_F(Callable, methodIntWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(Callable, methodWithArguments)
@@ -169,7 +169,7 @@ TEST_F(Callable, methodIntWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(Callable, methodWithRefArgument)

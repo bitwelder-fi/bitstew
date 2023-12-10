@@ -136,8 +136,8 @@ protected:
         ObjectFactoryTest::SetUp();
 
         auto args = GetParam();
-        metaClassName = get<std::string>(args);
-        isValid = get<bool>(args);
+        metaClassName = std::get<std::string>(args);
+        isValid = std::get<bool>(args);
 
         if (!isValid)
         {

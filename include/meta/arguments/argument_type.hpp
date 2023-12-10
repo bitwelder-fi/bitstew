@@ -52,16 +52,16 @@ public:
     operator T() const;
 };
 
-template <typename T>
-bool operator==(const T& lhs, const ArgumentData& rhs)
-{
-    return lhs == static_cast<const T&>(rhs);
-}
-template <typename T>
-bool operator!=(const T& lhs, const ArgumentData& rhs)
-{
-    return lhs != static_cast<const T&>(rhs);
-}
+// template <typename T>
+// bool operator==(const T& lhs, const ArgumentData& rhs)
+// {
+//     return lhs == static_cast<const T&>(rhs);
+// }
+// template <typename T>
+// bool operator!=(const T& lhs, const ArgumentData& rhs)
+// {
+//     return lhs != static_cast<const T&>(rhs);
+// }
 
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments

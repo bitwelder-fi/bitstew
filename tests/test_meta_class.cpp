@@ -57,6 +57,22 @@ public:
     };
 };
 
+class OverrideClass : public meta::MetaObject, public Interface
+{
+public:
+    META_CLASS("AbstractClass", OverrideClass, meta::MetaObject, Interface)
+    {
+    };
+
+    virtual void func() = 0;
+
+protected:
+    explicit OverrideClass(std::string_view name) :
+        meta::MetaObject(name)
+    {
+    }
+};
+
 class PreObject : public AbstractClass
 {
 public:
@@ -122,6 +138,29 @@ protected:
     std::string metaClassName;
     bool isValid;
 
+    class TestClass
+    {
+    public:
+        static inline constexpr char __MetaName[]{"TestClass"};
+        struct TestMetaClass : meta::detail::MetaclassImpl<__MetaName, TestClass>
+        {
+            void setMetaName(std::string_view name)
+            {
+                m_descriptor->name = std::string(name);
+            }
+        };
+        static inline TestMetaClass _staticMetaClass;
+        static const meta::MetaClass* getStaticMetaClass()
+        {
+            return &_staticMetaClass;
+        }
+
+        static meta::MetaObjectPtr create(std::string_view)
+        {
+            return {};
+        }
+    };
+
     void SetUp() override
     {
         auto config = meta::LibraryArguments();
@@ -144,6 +183,8 @@ protected:
             auto argument = "Invalid meta class name: " + metaClassName;
             EXPECT_CALL(*logger, log(argument));
         }
+
+        TestClass::_staticMetaClass.setMetaName(metaClassName);
     }
 };
 
@@ -239,35 +280,60 @@ INSTANTIATE_TEST_SUITE_P(NameValidity, MetaClassNameValidityTest,
                             MetaClassNameParam("meta Object", false)));
 TEST_P(MetaClassNameValidityTest, testMetaClassName)
 {
-    EXPECT_EQ(isValid, m_factory->registerMetaClass(metaClassName, Interface::getStaticMetaClass()));
+    EXPECT_EQ(isValid, m_factory->registerMetaClass(TestClass::getStaticMetaClass()));
 }
 
 TEST_F(ObjectFactoryTest, testRegister)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
-    EXPECT_FALSE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
+    EXPECT_FALSE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
+}
+
+TEST_F(ObjectFactoryTest, deepRegister)
+{
+    m_factory->registerMetaClass(Object::getStaticMetaClass());
+    EXPECT_EQ(5u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("Object"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("PreObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
 }
 
 TEST_F(ObjectFactoryTest, testOverride)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", AbstractClass::getStaticMetaClass()));
-    EXPECT_TRUE(m_factory->overrideMetaClass("meta.Object", Object::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
+}
+
+TEST_F(ObjectFactoryTest, deepOverride)
+{
+    EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
+    EXPECT_EQ(2u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
+
+    EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
+    EXPECT_EQ(3u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
 }
 
 TEST_F(ObjectFactoryTest, testFindMetaClass)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass("meta.AbstractClass", AbstractClass::getStaticMetaClass()));
-    EXPECT_TRUE(m_factory->registerMetaClass("meta.Interface", Interface::getStaticMetaClass()));
-    EXPECT_TRUE(m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass(Interface::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
 
-    EXPECT_EQ(Interface::getStaticMetaClass(), m_factory->findMetaClass("meta.Interface"));
+    EXPECT_EQ(Interface::getStaticMetaClass(), m_factory->findMetaClass("Interface"));
 }
 
 TEST_F(ObjectFactoryTest, testMetaClassCreate)
 {
-    m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass());
+    m_factory->registerMetaClass(Object::getStaticMetaClass());
 
-    auto metaClass = m_factory->findMetaClass("meta.Object");
+    auto metaClass = m_factory->findMetaClass("Object");
     ASSERT_EQ(Object::getStaticMetaClass(), metaClass);
     ASSERT_NE(nullptr, metaClass->create("doing"));
     auto castedObject = metaClass->create<Object>("next");
@@ -276,8 +342,8 @@ TEST_F(ObjectFactoryTest, testMetaClassCreate)
 
 TEST_F(ObjectFactoryTest, testMetaClassCastedCreate)
 {
-    m_factory->registerMetaClass("meta.Object", Object::getStaticMetaClass());
-    auto metaClass = m_factory->findMetaClass("meta.Object");
+    m_factory->registerMetaClass(Object::getStaticMetaClass());
+    auto metaClass = m_factory->findMetaClass("Object");
     auto castedObject = metaClass->create<Object>("next");
     EXPECT_NE(nullptr, castedObject);
 }

@@ -68,6 +68,9 @@ public:
         return std::dynamic_pointer_cast<ClassType>(create(name));
     }
 
+    /// Returns the name of the metaclass.
+    std::string_view getName() const;
+
     /// Returns the meta class of the base class at index.
     /// \param index The base class index.
     /// \return The meta class of the base class at index.
@@ -162,6 +165,13 @@ protected:
     /// The descriptor of the metaclass.
     DescriptorPtr m_descriptor;
 };
+
+
+/// Tests the string passed as argument against metaname correctness. A metaname can contain numeric
+/// and alphanumeric characters, dots, columns, dashes and underscores.
+/// \param text The text to check.
+/// \return If teh text is a valid metaname, returns \e true, otherwise \e false.
+META_API bool testMetaName(std::string_view text);
 
 } // namespace meta
 

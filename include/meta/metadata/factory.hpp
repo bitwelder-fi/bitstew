@@ -32,6 +32,7 @@ class MetaClass;
 /// Object factory. Keeps a registry of meta classes of an application.
 class META_API ObjectFactory
 {
+    friend struct ObjectFactoryPrivate;
     using MetaClassMap = std::unordered_map<std::string_view, const MetaClass*>;
     MetaClassMap m_registry;
 
@@ -40,17 +41,15 @@ public:
     using MetaClassIterator = MetaClassMap::const_iterator;
 
     /// Registers a meta class.
-    /// \param className The name under which to register the meta class.
     /// \param metaClass The meta class to register.
     /// \return If the meta class gets registered with success, returns \e true, otherwise \e false.
-    bool registerMetaClass(std::string_view className, const MetaClass* metaClass);
+    bool registerMetaClass(const MetaClass* metaClass);
 
     /// Overrides a meta class which is registered with the class name given as argument. The meta
     /// class must be registered for the function to succeed.
-    /// \param className The name of the meta class to override.
     /// \param metaClass The meta class which overrides the already registered meta class.
     /// \return If the meta class gets overridden with success, returns \e true, otherwise \e false.
-    bool overrideMetaClass(std::string_view className, const MetaClass* metaClass);
+    bool overrideMetaClass(const MetaClass* metaClass);
 
     /// Finds a meta class registered under \a className.
     /// \param className The name under which the metaclass is registered.

@@ -28,6 +28,12 @@ MetaObjectPtr MetaClass::create(std::string_view name) const
     return m_descriptor->create(name);
 }
 
+std::string_view MetaClass::getName() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->name;
+}
+
 const MetaClass* MetaClass::getBaseClass(std::size_t index) const
 {
     abortIfFail(m_descriptor);

@@ -86,7 +86,7 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    PackagedArguments(Arguments... arguments);
+    PackagedArguments(Arguments&&... arguments);
 
     /// Creates packaged arguments from a subset of an other packaged arguments.
     PackagedArguments(Iterator begin, Iterator end);
@@ -124,22 +124,22 @@ struct META_API PackagedArguments
     template <typename T>
     T get(std::size_t index) const;
 
+    /// Converts the argument package into a tuple, using the signature of a method.
+    /// \tparam FunctionSignature The method signature to use when converting the arguments.
+    /// \param object The object to add as first element of the tuple.
+    /// \return The tuple prepared with the arguments ready to invoke the callable.
+    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
+    ///         of the argument value stored in the package.
+    template <class FunctionSignature>
+    auto toTuple(typename traits::function_traits<FunctionSignature>::object* object) const;
+
     /// Converts the argument package into a tuple, using the signature of a function.
     /// \tparam FunctionSignature The function signature to use when converting the arguments.
     /// \return The tuple prepared with the arguments ready to invoke a callable.
     /// \throws std::bad_any_cast when the argument types of the signature do not match the type
     ///         of the argument value stored in the package.
     template <class FunctionSignature>
-    auto toTuple(FunctionSignature) const;
-
-    /// Converts the argument package into a tuple, using the signature of a method.
-    /// \tparam MethodSignature The method signature to use when converting the arguments.
-    /// \param instance The instance of the class with the method to add as first element of the tuple.
-    /// \return The tuple prepared with the arguments ready to invoke a callable.
-    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
-    ///         of the argument value stored in the package.
-    template <class TClass, class TRet, class... TArgs>
-    auto toTuple(TRet (TClass::*signature)(TArgs...)) const;
+    auto toTuple() const;
 
 private:
     std::vector<ArgumentData> m_pack;

@@ -60,7 +60,7 @@ ArgumentData::operator T() const
 }
 
 template <typename... Arguments>
-PackagedArguments::PackagedArguments(Arguments... arguments)
+PackagedArguments::PackagedArguments(Arguments&&... arguments)
 {
     std::array<ArgumentData, sizeof... (Arguments)> aa = {{ArgumentData(arguments)...}};
     m_pack.reserve(aa.size());
@@ -75,18 +75,19 @@ T PackagedArguments::get(std::size_t index) const
 
 
 template <class FunctionSignature>
-auto PackagedArguments::toTuple(FunctionSignature) const
+auto PackagedArguments::toTuple() const
 {
     constexpr std::size_t N = traits::function_traits<FunctionSignature>::arity;
     return detail::PackToTuple<FunctionSignature>::template convert<N>(*this);
 }
 
-template <class TClass, class TRet, class... TArgs>
-auto PackagedArguments::toTuple(TRet (TClass::*)(TArgs...)) const
+template <class FunctionSignature>
+auto PackagedArguments::toTuple(typename traits::function_traits<FunctionSignature>::object* object) const
 {
-    using Signature = TRet (TClass::*)(TArgs...);
-    constexpr std::size_t N = traits::function_traits<Signature>::arity;
-    return detail::PackToTuple<Signature>::template convert<N>(*this);
+    using ClassType = typename traits::function_traits<FunctionSignature>::object;
+    constexpr std::size_t N = traits::function_traits<FunctionSignature>::arity;
+    return std::tuple_cat(std::make_tuple(static_cast<ClassType*>(object)),
+                detail::PackToTuple<FunctionSignature>::template convert<N>(*this));
 }
 
 

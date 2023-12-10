@@ -22,11 +22,6 @@
 namespace meta
 {
 
-std::optional<ArgumentData> MetaClass::MetaMethod::call(MetaObject* object, const PackagedArguments& arguments)
-{
-    return apply(PackagedArguments(object).append(arguments));
-}
-
 MetaObjectPtr MetaClass::create(std::string_view name) const
 {
     abortIfFail(m_descriptor);

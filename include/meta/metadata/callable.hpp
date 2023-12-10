@@ -54,12 +54,21 @@ public:
     /// \param other The callable with which to swap this callable.
     void swap(Callable& other);
 
-    /// Invokes the callable with the passed arguments.
-    /// \param arguments The arguments with which to invoke the callable.
+    /// Invokes the callable with packaged arguments.
+    /// \param arguments The packaged arguments with which to invoke the callable.
     /// \return The return value of the callable. If the callable is void, returns \e nullopt.
     std::optional<ArgumentData> apply(const PackagedArguments& arguments)
     {
         return m_descriptor.invokable(arguments);
+    }
+
+    /// Invokes the callable with an object and packaged arguments.
+    /// \param arguments The arguments with which to invoke the callable.
+    /// \return The return value of the callable. If the callable is void, returns \e nullopt.
+    template <class ClassType>
+    std::optional<ArgumentData> apply(ClassType* object, const PackagedArguments& arguments)
+    {
+        return m_descriptor.invokable(PackagedArguments(object).append(arguments));
     }
 
     /// Returns the name of the callable.
@@ -88,21 +97,6 @@ protected:
     /// The descriptor of the callable.
     CallableDescriptor m_descriptor;
 };
-
-/// Invokes a callable with the packaged arguments.
-// inline auto META_API invoke(Callable& callable, const PackagedArguments& arguments)
-// {
-//     return callable.apply(arguments);
-// }
-
-/// Invokes a callable of a method with an object and packaged arguments.
-// template <class TClass>
-// auto invoke(Callable& callable, TClass* object, const PackagedArguments& arguments)
-// {
-//     PackagedArguments args(object);
-//     args += arguments;
-//     return callable.apply(args);
-// }
 
 }
 

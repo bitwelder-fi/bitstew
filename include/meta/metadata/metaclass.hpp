@@ -52,12 +52,6 @@ public:
         {
             metaClass.addMethod(*this);
         }
-
-        /// Calls the metamethod on an object.
-        /// \param object The object on which to call the metamethod.
-        /// \param arguments The arguments with which to call the metamethod.
-        /// \return The result of the metamethod.
-        std::optional<ArgumentData> call(MetaObject* object, const PackagedArguments& arguments);
     };
 
     /// Destructor.

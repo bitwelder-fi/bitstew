@@ -127,7 +127,7 @@ protected:
     struct META_API DescriptorInterface
     {
         /// The callable container type.
-        using CallableContainer = std::unordered_map<std::string_view, Callable*>;
+        using CallableContainer = std::unordered_map<std::string, Callable*>;
 
         /// The name of the meta class.
         std::string name;

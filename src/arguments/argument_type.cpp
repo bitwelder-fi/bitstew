@@ -45,7 +45,12 @@ PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
 
 PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
 {
-    m_pack.insert(end(), rhs.begin(), rhs.end());
+    return append(rhs);
+}
+
+PackagedArguments& PackagedArguments::append(const PackagedArguments& package)
+{
+    m_pack.insert(m_pack.end(), package.m_pack.begin(), package.m_pack.end());
     return *this;
 }
 

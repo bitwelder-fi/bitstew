@@ -90,19 +90,19 @@ protected:
 };
 
 /// Invokes a callable with the packaged arguments.
-inline auto META_API invoke(Callable& callable, const PackagedArguments& arguments)
-{
-    return callable.apply(arguments);
-}
+// inline auto META_API invoke(Callable& callable, const PackagedArguments& arguments)
+// {
+//     return callable.apply(arguments);
+// }
 
 /// Invokes a callable of a method with an object and packaged arguments.
-template <class TClass>
-auto invoke(Callable& callable, TClass* object, const PackagedArguments& arguments)
-{
-    PackagedArguments args(object);
-    args += arguments;
-    return callable.apply(args);
-}
+// template <class TClass>
+// auto invoke(Callable& callable, TClass* object, const PackagedArguments& arguments)
+// {
+//     PackagedArguments args(object);
+//     args += arguments;
+//     return callable.apply(args);
+// }
 
 }
 

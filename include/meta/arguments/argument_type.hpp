@@ -94,6 +94,11 @@ struct META_API PackagedArguments
     /// Catenates two packaged arguments.
     PackagedArguments& operator+=(const PackagedArguments& rhs);
 
+    /// Appends \a package arguments to this.
+    /// \param package The packaged arguiments to append to this package.
+    /// \return Returns this packaged arguments object.
+    PackagedArguments& append(const PackagedArguments& package);
+
     /// Returns the argument data at index.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.

@@ -24,7 +24,7 @@ namespace meta
 
 std::optional<ArgumentData> MetaClass::MetaMethod::call(MetaObject* object, const PackagedArguments& arguments)
 {
-    return invoke(*this, object, arguments);
+    return apply(PackagedArguments(object).append(arguments));
 }
 
 MetaObjectPtr MetaClass::create(std::string_view name) const
@@ -70,7 +70,7 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
 bool MetaClass::addMethod(Callable& callable)
 {
     abortIfFail(m_descriptor && !m_descriptor->sealed);
-    auto result = m_descriptor->callables.insert({callable.getName(), &callable});
+    auto result = m_descriptor->callables.insert({std::string(callable.getName()), &callable});
     if (!result.second)
     {
         META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
@@ -81,7 +81,7 @@ bool MetaClass::addMethod(Callable& callable)
 Callable* MetaClass::findMethod(std::string_view name) const
 {
     abortIfFail(m_descriptor);
-    auto it = m_descriptor->callables.find(name);
+    auto it = m_descriptor->callables.find(std::string(name));
     if (it == m_descriptor->callables.end())
     {
         return {};

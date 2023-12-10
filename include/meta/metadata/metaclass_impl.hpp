@@ -16,8 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_METACLASS_IMPL_HPP
-#define META_METACLASS_IMPL_HPP
+#include <array>
 
 namespace meta
 {
@@ -106,5 +105,3 @@ public:
 }
 
 }
-
-#endif

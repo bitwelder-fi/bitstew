@@ -27,7 +27,7 @@ Callable::Callable(std::string_view name, Function function)
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
             meta::invoke(function, arguments);
-            return {};
+            return ArgumentData();
         }
         else
         {

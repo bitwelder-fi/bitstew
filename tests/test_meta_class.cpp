@@ -142,7 +142,7 @@ protected:
     {
     public:
         static inline constexpr char __MetaName[]{"TestClass"};
-        struct TestMetaClass : meta::detail::MetaclassImpl<__MetaName, TestClass>
+        struct TestMetaClass : meta::detail::MetaClassImpl<__MetaName, TestClass>
         {
             void setMetaName(std::string_view name)
             {
@@ -357,4 +357,16 @@ TEST_F(MetaDomainTest, testDomainObjectFactoryRegistryContent)
 {
     ASSERT_NE(nullptr, meta::Domain::instance().objectFactory());
     EXPECT_NE(nullptr, meta::Domain::instance().objectFactory()->findMetaClass("meta.MetaObject"));
+}
+
+
+TEST_F(MetaDomainTest, invokeMetaObject_getName)
+{
+    auto metaClass = meta::MetaObject::getStaticMetaClass();
+    auto object = metaClass->create("object");
+    ASSERT_NE(nullptr, object);
+
+    auto result = meta::invoke(object, "getName", meta::PackagedArguments());
+    ASSERT_NE(std::nullopt, result);
+    EXPECT_EQ(std::string_view("object"), *result);
 }

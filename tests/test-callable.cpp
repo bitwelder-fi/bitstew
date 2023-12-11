@@ -102,7 +102,7 @@ TEST_F(Callable, callableWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto arguments = meta::PackagedArguments();
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result->has_value());
 }
 
 TEST_F(Callable, callableIntWithNoArguments)
@@ -120,7 +120,7 @@ TEST_F(Callable, callableWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result->has_value());
 }
 
 TEST_F(Callable, callableIntWithArguments)
@@ -139,7 +139,7 @@ TEST_F(Callable, methodWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result->has_value());
 }
 
 TEST_F(Callable, methodIntWithNoArguments)
@@ -159,7 +159,7 @@ TEST_F(Callable, methodWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result->has_value());
 }
 
 TEST_F(Callable, methodIntWithArguments)

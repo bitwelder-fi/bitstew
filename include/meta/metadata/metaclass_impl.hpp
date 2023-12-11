@@ -25,7 +25,7 @@ namespace detail
 {
 
 template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API MetaclassImpl : public MetaClass
+class META_TEMPLATE_API MetaClassImpl : public MetaClass
 {
     static constexpr auto arity = sizeof... (SuperClasses);
 
@@ -96,7 +96,7 @@ class META_TEMPLATE_API MetaclassImpl : public MetaClass
     };
 
 public:
-    explicit MetaclassImpl() :
+    explicit MetaClassImpl() :
         MetaClass(MetaClassName, std::make_unique<Descriptor>())
     {
     }

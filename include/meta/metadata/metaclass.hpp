@@ -182,16 +182,16 @@ META_API bool testMetaName(std::string_view text);
 /// class for which you declare the meta data. The rest of the arguments should refer to the base
 /// classes, preferrably in the order of their declaration.
 #define META_CLASS(ClassName, ...)                                              \
-struct MetaclassType;                                                           \
-using MetaclassTypePtr = const MetaclassType*;                                  \
+struct MetaClassType;                                                           \
+using MetaClassTypePtr = const MetaClassType*;                                  \
 static const meta::MetaClass* getStaticMetaClass()                              \
 {                                                                               \
-    static MetaclassType metaClass;                                             \
+    static MetaClassType metaClass;                                             \
     return &metaClass;                                                          \
 }                                                                               \
 static inline constexpr char __MetaName[]{ClassName};                           \
-using MetaclassTypeBase = meta::detail::MetaclassImpl<__MetaName, __VA_ARGS__>; \
-struct META_API MetaclassType : MetaclassTypeBase
+using MetaClassTypeBase = meta::detail::MetaClassImpl<__MetaName, __VA_ARGS__>; \
+struct META_API MetaClassType : MetaClassTypeBase
 
 /// Defines a metamethod to a method of a class for a metaclass.
 #define META_METHOD(Class, Method) \

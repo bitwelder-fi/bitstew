@@ -64,6 +64,16 @@ private:
     const std::string m_name;
 };
 
+/// Invokes an invokable of a metaobject. The invokable is called from the metaclass of the metaobject.
+/// \param object The metaobject whose metamethod to call.
+/// \param invokableName The invokable name to call.
+/// \param arguments The arguments with which to invoke the metamethod.
+/// \return returns one of the following:
+///         - If the invokable is found, and has a return value, the return value of the invokable.
+///         - If the invokable is found, and has no return value, returns an invalid ArgumentData.
+///         - If the invokable is not found, returns nullopt.
+META_API std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments);
+
 }
 
 #endif // META_METAOBJECT_HPP

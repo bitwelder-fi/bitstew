@@ -24,6 +24,26 @@
 namespace
 {
 
+template <typename Function>
+auto invokeFunction(Function function, const meta::PackagedArguments& arguments)
+{
+    if constexpr (std::is_member_function_pointer_v<Function>)
+    {
+        using ClassType = typename traits::function_traits<Function>::object;
+        auto object = static_cast<ClassType*>(arguments.get(0u));
+        const auto args = meta::PackagedArguments(arguments.begin() + 1, arguments.end());
+
+        auto pack = args.toTuple<Function>(object);
+        return std::apply(function, pack);
+    }
+    else
+    {
+        constexpr std::size_t N = traits::function_traits<Function>::arity;
+        auto pack = meta::detail::PackToTuple<Function>::template convert<N>(arguments);
+        return std::apply(function, pack);
+    }
+}
+
 class ArgumentTestBase : public DomainTestEnvironment
 {
 protected:
@@ -176,7 +196,7 @@ TEST_F(PackagedArguments, invokeLambda)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
-    meta::invoke(lambda3, pack);
+    invokeFunction(lambda3, pack);
 }
 
 TEST_F(PackagedArguments, invokeLambdaWithLesserArguments)
@@ -184,7 +204,7 @@ TEST_F(PackagedArguments, invokeLambdaWithLesserArguments)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
-    meta::invoke(lambda2, pack);
+    invokeFunction(lambda2, pack);
 }
 
 TEST_F(PackagedArguments, invokeFunctor)
@@ -193,7 +213,7 @@ TEST_F(PackagedArguments, invokeFunctor)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
-    meta::invoke(functor, pack);
+    invokeFunction(functor, pack);
 }
 
 TEST_F(PackagedArguments, invokeFunctorWithLesserArguments)
@@ -202,7 +222,7 @@ TEST_F(PackagedArguments, invokeFunctorWithLesserArguments)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
-    meta::invoke(functor, pack);
+    invokeFunction(functor, pack);
 }
 
 TEST_F(PackagedArguments, invokeFunction)
@@ -210,7 +230,7 @@ TEST_F(PackagedArguments, invokeFunction)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
-    meta::invoke(testFunction3, pack);
+    invokeFunction(testFunction3, pack);
 }
 
 TEST_F(PackagedArguments, invokeFunctionWithLesserArguments)
@@ -218,7 +238,7 @@ TEST_F(PackagedArguments, invokeFunctionWithLesserArguments)
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
-    meta::invoke(testFunction2, pack);
+    invokeFunction(testFunction2, pack);
 }
 
 TEST_F(PackagedArguments, invokeMethod)
@@ -227,7 +247,7 @@ TEST_F(PackagedArguments, invokeMethod)
     auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
-    meta::invoke(&Class::method, pack);
+    invokeFunction(&Class::method, pack);
 }
 
 TEST_F(PackagedArguments, invokeMethodWithLesserArguments)
@@ -236,5 +256,5 @@ TEST_F(PackagedArguments, invokeMethodWithLesserArguments)
     auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
-    meta::invoke(&Class::method2, pack);
+    invokeFunction(&Class::method2, pack);
 }

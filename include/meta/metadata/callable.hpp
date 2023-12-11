@@ -56,17 +56,17 @@ public:
 
     /// Invokes the callable with packaged arguments.
     /// \param arguments The packaged arguments with which to invoke the callable.
-    /// \return The return value of the callable. If the callable is void, returns \e nullopt.
-    std::optional<ArgumentData> apply(const PackagedArguments& arguments)
+    /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
+    ArgumentData apply(const PackagedArguments& arguments)
     {
         return m_descriptor.invokable(arguments);
     }
 
     /// Invokes the callable with an object and packaged arguments.
     /// \param arguments The arguments with which to invoke the callable.
-    /// \return The return value of the callable. If the callable is void, returns \e nullopt.
+    /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
     template <class ClassType>
-    std::optional<ArgumentData> apply(ClassType* object, const PackagedArguments& arguments)
+    ArgumentData apply(ClassType* object, const PackagedArguments& arguments)
     {
         return m_descriptor.invokable(PackagedArguments(object).append(arguments));
     }
@@ -83,7 +83,7 @@ public:
 
 protected:
     DISABLE_COPY(Callable);
-    using Invokable = std::function<std::optional<ArgumentData>(const PackagedArguments&)>;
+    using Invokable = std::function<ArgumentData(const PackagedArguments&)>;
 
     /// The descriptor type of the callable.
     struct META_API CallableDescriptor

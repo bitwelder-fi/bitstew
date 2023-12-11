@@ -139,15 +139,6 @@ private:
     std::vector<ArgumentData> m_pack;
 };
 
-
-/// Invokes a \a function with the given \a arguments.
-/// \tparam Function The function signature.
-/// \param function The function to invoke.
-/// \param arguments The packaged arguments with which to invoke the function.
-/// \return The return value of the function. If the function is void type, returns an undefined value.
-template <typename Function>
-auto invoke(Function function, const PackagedArguments& arguments);
-
 } // namespace meta
 
 #include <meta/arguments/argument_type_impl.hpp>

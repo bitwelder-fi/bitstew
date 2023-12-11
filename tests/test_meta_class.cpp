@@ -368,5 +368,5 @@ TEST_F(MetaDomainTest, invokeMetaObject_getName)
 
     auto result = meta::invoke(object, "getName", meta::PackagedArguments());
     ASSERT_NE(std::nullopt, result);
-    EXPECT_EQ(std::string_view("object"), *result);
+    EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(*result));
 }

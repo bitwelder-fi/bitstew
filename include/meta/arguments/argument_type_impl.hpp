@@ -91,26 +91,4 @@ auto PackagedArguments::toTuple(typename traits::function_traits<FunctionSignatu
                 detail::PackToTuple<FunctionSignature>::template convert<N>(*this));
 }
 
-
-template <typename Function>
-auto invoke(Function function, const PackagedArguments& arguments)
-{
-    if constexpr (std::is_member_function_pointer_v<Function>)
-    {
-        using ClassType = typename traits::function_traits<Function>::object;
-        auto object = static_cast<ClassType*>(arguments.get(0u));
-        const auto args = PackagedArguments(arguments.begin() + 1, arguments.end());
-
-        constexpr std::size_t N = traits::function_traits<Function>::arity;
-        auto pack = std::tuple_cat(std::make_tuple(object), detail::PackToTuple<Function>::template convert<N>(args));
-        return std::apply(function, pack);
-    }
-    else
-    {
-        constexpr std::size_t N = traits::function_traits<Function>::arity;
-        auto pack = detail::PackToTuple<Function>::template convert<N>(arguments);
-        return std::apply(function, pack);
-    }
-}
-
 }

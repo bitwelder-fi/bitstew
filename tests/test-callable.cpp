@@ -81,7 +81,7 @@ struct Class
         return 42;
     }
 
-    void ref(int* i)
+    void ptr(int* i)
     {
         ++(*i);
     }
@@ -172,10 +172,10 @@ TEST_F(Callable, methodIntWithArguments)
     EXPECT_EQ(42, static_cast<int>(result));
 }
 
-TEST_F(Callable, methodWithRefArgument)
+TEST_F(Callable, methodWithPointerArgument)
 {
     Class object;
-    meta::Callable callable("Class.ref", &Class::ref);
+    meta::Callable callable("Class.ptr", &Class::ptr);
     int i = 41;
     auto arguments = meta::PackagedArguments(&object, &i);
     callable.apply(arguments);

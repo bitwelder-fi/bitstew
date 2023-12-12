@@ -118,20 +118,13 @@ struct META_API PackagedArguments
     template <typename T>
     T get(std::size_t index) const;
 
-    /// Converts the argument package into a tuple, using the signature of a method.
-    /// \tparam FunctionSignature The method signature to use when converting the arguments.
-    /// \param object The object to add as first element of the tuple.
-    /// \return The tuple prepared with the arguments ready to invoke the callable.
-    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
-    ///         of the argument value stored in the package.
-    template <class FunctionSignature>
-    auto toTuple(typename traits::function_traits<FunctionSignature>::object* object) const;
-
-    /// Converts the argument package into a tuple, using the signature of a function.
+    /// Converts the argument package into a tuple, using the signature of a function. If the function
+    /// is a member function, the first packaged argument must be the object to which the function
+    /// member belongs.
     /// \tparam FunctionSignature The function signature to use when converting the arguments.
     /// \return The tuple prepared with the arguments ready to invoke a callable.
-    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
-    ///         of the argument value stored in the package.
+    /// \throws std::bad_any_cast when the argument types of the signature and the packaged arguments
+    ///         mismatch.
     template <class FunctionSignature>
     auto toTuple() const;
 

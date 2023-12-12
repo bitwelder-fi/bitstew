@@ -29,7 +29,7 @@ namespace detail
 template <typename Function>
 struct PackToTuple
 {
-    template <int Index>
+    template <int Index, int PackIndex>
     static auto convert(const PackagedArguments& arguments)
     {
         if constexpr (Index == 0)
@@ -39,7 +39,7 @@ struct PackToTuple
         else
         {
             using ArgType = typename traits::function_traits<Function>::template argument<Index - 1>::type;
-            return std::tuple_cat(convert<Index - 1>(arguments), std::make_tuple(arguments.get<ArgType>(Index - 1)));
+            return std::tuple_cat(convert<Index - 1, PackIndex - 1>(arguments), std::make_tuple(arguments.get<ArgType>(PackIndex - 1)));
         }
     }
 };
@@ -79,16 +79,18 @@ template <class FunctionSignature>
 auto PackagedArguments::toTuple() const
 {
     constexpr std::size_t N = traits::function_traits<FunctionSignature>::arity;
-    return detail::PackToTuple<FunctionSignature>::template convert<N>(*this);
-}
 
-template <class FunctionSignature>
-auto PackagedArguments::toTuple(typename traits::function_traits<FunctionSignature>::object* object) const
-{
-    using ClassType = typename traits::function_traits<FunctionSignature>::object;
-    constexpr std::size_t N = traits::function_traits<FunctionSignature>::arity;
-    return std::tuple_cat(std::make_tuple(static_cast<ClassType*>(object)),
-                detail::PackToTuple<FunctionSignature>::template convert<N>(*this));
+    if constexpr (std::is_member_function_pointer_v<FunctionSignature>)
+    {
+        using ClassType = typename traits::function_traits<FunctionSignature>::object;
+        auto object = static_cast<ClassType*>(m_pack.front());
+        return std::tuple_cat(std::make_tuple(static_cast<ClassType*>(object)),
+                              detail::PackToTuple<FunctionSignature>::template convert<N, N + 1>(*this));
+    }
+    else
+    {
+        return detail::PackToTuple<FunctionSignature>::template convert<N, N>(*this);
+    }
 }
 
 }

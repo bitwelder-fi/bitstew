@@ -19,45 +19,21 @@
 namespace meta
 {
 
-namespace detail
-{
-
-template <typename Function>
-auto invokeFunction(Function function, const PackagedArguments& arguments)
-{
-    if constexpr (std::is_member_function_pointer_v<Function>)
-    {
-        using ClassType = typename traits::function_traits<Function>::object;
-        auto object = static_cast<ClassType*>(arguments.get(0u));
-        const auto args = PackagedArguments(arguments.begin() + 1, arguments.end());
-
-        auto pack = args.toTuple<Function>(object);
-        return std::apply(function, pack);
-    }
-    else
-    {
-        constexpr std::size_t N = traits::function_traits<Function>::arity;
-        auto pack = detail::PackToTuple<Function>::template convert<N>(arguments);
-        return std::apply(function, pack);
-    }
-}
-
-}
-
 template<class Function>
 Callable::Callable(std::string_view name, Function function)
 {
     auto invokable = [function](const PackagedArguments& arguments) -> ArgumentData
     {
+        auto pack = arguments.toTuple<Function>();
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
-            detail::invokeFunction(function, arguments);
+            std::apply(function, pack);
             return ArgumentData();
         }
         else
         {
-            auto ret = detail::invokeFunction(function, arguments);
-            return ArgumentData(ret);
+            auto result = std::apply(function, pack);
+            return ArgumentData(result);
         }
     };
     m_descriptor.invokable = std::move(invokable);

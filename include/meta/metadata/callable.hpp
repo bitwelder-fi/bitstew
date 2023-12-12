@@ -24,7 +24,6 @@
 
 #include <functional>
 #include <string_view>
-#include <optional>
 #include <utils/function_traits.hpp>
 
 namespace meta

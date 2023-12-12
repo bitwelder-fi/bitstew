@@ -24,13 +24,13 @@
 #include <meta/metadata/callable.hpp>
 
 #include <memory>
+#include <optional>
 
 namespace meta
 {
 
 class MetaObject;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
-
 
 
 /// The base class of any object that defines a meta class.

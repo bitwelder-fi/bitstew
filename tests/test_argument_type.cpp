@@ -29,17 +29,12 @@ auto invokeFunction(Function function, const meta::PackagedArguments& arguments)
 {
     if constexpr (std::is_member_function_pointer_v<Function>)
     {
-        using ClassType = typename traits::function_traits<Function>::object;
-        auto object = static_cast<ClassType*>(arguments.get(0u));
-        const auto args = meta::PackagedArguments(arguments.begin() + 1, arguments.end());
-
-        auto pack = args.toTuple<Function>(object);
+        auto pack = arguments.toTuple<Function>();
         return std::apply(function, pack);
     }
     else
     {
-        constexpr std::size_t N = traits::function_traits<Function>::arity;
-        auto pack = meta::detail::PackToTuple<Function>::template convert<N>(arguments);
+        auto pack = arguments.toTuple<Function>();
         return std::apply(function, pack);
     }
 }
@@ -173,8 +168,8 @@ TEST_F(PackagedArguments, unpackUsingFunctionWithLesserArguments)
 TEST_F(PackagedArguments, unpackUsingMethodSignature)
 {
     auto object = Class();
-    auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
-    auto tuplePack = pack.toTuple<decltype(&Class::method)>(&object);
+    auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
+    auto tuplePack = pack.toTuple<decltype(&Class::method)>();
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2, 3.3"));
     std::apply(&Class::method, tuplePack);
@@ -183,8 +178,8 @@ TEST_F(PackagedArguments, unpackUsingMethodSignature)
 TEST_F(PackagedArguments, unpackUsingMethodSignatureWithLesserArguments)
 {
     auto object = Class();
-    auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
-    auto tuplePack = pack.toTuple<decltype(&Class::method2)>(&object);
+    auto pack = meta::PackagedArguments(&object, std::string("one"), 2, 3.3f);
+    auto tuplePack = pack.toTuple<decltype(&Class::method2)>();
 
     EXPECT_CALL(*m_mockPrinter, log("one, 2"));
     std::apply(&Class::method2, tuplePack);

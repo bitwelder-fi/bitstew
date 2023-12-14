@@ -32,7 +32,7 @@ struct META_API LibraryArguments
     /// The task scheduler arguments.
     struct META_API TaskScheduler
     {
-        size_t threadCount = Thread::hardware_concurrency();
+        std::size_t threadCount = Thread::hardware_concurrency();
         bool createThreadPool = true;
     } taskScheduler;
 

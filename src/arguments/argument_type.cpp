@@ -38,12 +38,34 @@ void PackagedArguments::swap(PackagedArguments& other)
     m_pack.swap(other.m_pack);
 }
 
-ArgumentData PackagedArguments::get(size_t index) const
+PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
+    m_pack(begin, end)
+{
+}
+
+PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
+{
+    return append(rhs);
+}
+
+PackagedArguments& PackagedArguments::operator+=(ArgumentData rhs)
+{
+    m_pack.push_back(std::move(rhs));
+    return *this;
+}
+
+PackagedArguments& PackagedArguments::append(const PackagedArguments& package)
+{
+    m_pack.insert(m_pack.end(), package.m_pack.begin(), package.m_pack.end());
+    return *this;
+}
+
+ArgumentData PackagedArguments::get(std::size_t index) const
 {
     return m_pack.at(index);
 }
 
-size_t PackagedArguments::getSize() const
+std::size_t PackagedArguments::getSize() const
 {
     return m_pack.size();
 }

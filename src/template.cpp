@@ -90,7 +90,7 @@ void Domain::initialize(const LibraryArguments& arguments)
 #endif
 
     d->objectFactory = std::make_unique<ObjectFactory>();
-    d->objectFactory->registerMetaClass("meta.MetaObject", MetaObject::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(MetaObject::getStaticMetaClass());
 }
 
 void Domain::uninitialize()

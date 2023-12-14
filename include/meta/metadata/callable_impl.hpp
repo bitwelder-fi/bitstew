@@ -22,37 +22,18 @@ namespace meta
 template<class Function>
 Callable::Callable(std::string_view name, Function function)
 {
-    auto invokable = [function](const PackagedArguments& arguments) -> std::optional<ArgumentData>
+    auto invokable = [function](const PackagedArguments& arguments) -> ArgumentData
     {
+        auto pack = arguments.toTuple<Function>();
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
-            meta::invoke(function, arguments);
-            return {};
+            std::apply(function, pack);
+            return ArgumentData();
         }
         else
         {
-            auto retval = meta::invoke(function, arguments);
-            return ArgumentData(retval);
-        }
-    };
-    m_descriptor.invokable = std::move(invokable);
-    m_descriptor.name = name;
-}
-
-template<class TClass, class TRet, class... TArgs>
-Callable::Callable(std::string_view name, TRet(TClass::*method)(TArgs...), TClass* object)
-{
-    auto invokable = [method, object](const PackagedArguments& arguments) -> std::optional<ArgumentData>
-    {
-        if constexpr (std::is_void_v<TRet>)
-        {
-            meta::invoke(method, object, arguments);
-            return {};
-        }
-        else
-        {
-            auto ret = meta::invoke(method, object, arguments);
-            return ArgumentData(ret);
+            auto result = std::apply(function, pack);
+            return ArgumentData(result);
         }
     };
     m_descriptor.invokable = std::move(invokable);

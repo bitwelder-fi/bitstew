@@ -64,7 +64,7 @@ private:
     DISABLE_COPY(mutex_type);
     DISABLE_MOVE(mutex_type);
 
-    size_t m_lockCount = 0u;
+    std::size_t m_lockCount = 0u;
 };
 
 #endif

@@ -81,7 +81,7 @@ struct Class
         return 42;
     }
 
-    void ref(int* i)
+    void ptr(int* i)
     {
         ++(*i);
     }
@@ -102,7 +102,7 @@ TEST_F(Callable, callableWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto arguments = meta::PackagedArguments();
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(Callable, callableIntWithNoArguments)
@@ -111,7 +111,7 @@ TEST_F(Callable, callableIntWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto arguments = meta::PackagedArguments();
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(result));
 }
 
 TEST_F(Callable, callableWithArguments)
@@ -120,7 +120,7 @@ TEST_F(Callable, callableWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(Callable, callableIntWithArguments)
@@ -129,55 +129,55 @@ TEST_F(Callable, callableIntWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(result));
 }
 
 TEST_F(Callable, methodWithNoArguments)
 {
     Class object;
-    meta::Callable callable("voidNoArgs", &Class::voidNoArgs, &object);
+    meta::Callable callable("voidNoArgs", &Class::voidNoArgs);
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
-    auto arguments = meta::PackagedArguments();
+    auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(Callable, methodIntWithNoArguments)
 {
     Class object;
-    meta::Callable callable("intNoArgs", &Class::intNoArgs, &object);
+    meta::Callable callable("intNoArgs", &Class::intNoArgs);
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
-    auto arguments = meta::PackagedArguments();
+    auto arguments = meta::PackagedArguments(&object);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(result));
 }
 
 TEST_F(Callable, methodWithArguments)
 {
     Class object;
-    meta::Callable callable("voidStringInt", &Class::voidStringInt, &object);
+    meta::Callable callable("voidStringInt", &Class::voidStringInt);
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
-    auto arguments = meta::PackagedArguments(std::string("one"), 2);
+    auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_TRUE(result == std::nullopt);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(Callable, methodIntWithArguments)
 {
     Class object;
-    meta::Callable callable("intStringInt", &Class::intStringInt, &object);
+    meta::Callable callable("intStringInt", &Class::intStringInt);
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
-    auto arguments = meta::PackagedArguments(std::string("one"), 2);
+    auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable.apply(arguments);
-    EXPECT_EQ(42, *result);
+    EXPECT_EQ(42, static_cast<int>(result));
 }
 
-TEST_F(Callable, methodWithRefArgument)
+TEST_F(Callable, methodWithPointerArgument)
 {
     Class object;
-    meta::Callable callable("Class.ref", &Class::ref, &object);
+    meta::Callable callable("Class.ptr", &Class::ptr);
     int i = 41;
-    auto arguments = meta::PackagedArguments(&i);
+    auto arguments = meta::PackagedArguments(&object, &i);
     callable.apply(arguments);
     EXPECT_EQ(42, i);
 }

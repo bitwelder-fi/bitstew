@@ -16,21 +16,92 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_METACLASS_IMPL_HPP
-#define META_METACLASS_IMPL_HPP
-
-#include <meta/metadata/metaclass.hpp>
+#include <array>
 
 namespace meta
 {
 
-// template <class DeclaredMetaClass, class... SuperClasses>
-// StaticMetaClass<DeclaredMetaClass, SuperClasses...>::StaticMetaClass(std::string_view name) :
-//     MetaClass(name)
-// {
+namespace detail
+{
 
-// }
+template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
+class META_TEMPLATE_API MetaClassImpl : public MetaClass
+{
+    static constexpr auto arity = sizeof... (SuperClasses);
+
+    struct META_API Descriptor : DescriptorInterface
+    {
+        MetaObjectPtr create(std::string_view name) const override
+        {
+            if constexpr (std::is_abstract_v<DeclaredClass>)
+            {
+                return {};
+            }
+            else
+            {
+                return DeclaredClass::create(name);
+            }
+        }
+
+        const MetaClass* getBaseClass(std::size_t index) const final
+        {
+            if constexpr (arity)
+            {
+                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
+                return superMetas[index];
+            }
+            else
+            {
+                return {};
+            }
+        }
+        std::size_t getBaseClassCount() const final
+        {
+            if constexpr (arity)
+            {
+                return arity;
+            }
+            else
+            {
+                return 0u;
+            }
+        }
+        bool hasSuperClass(const MetaClass& metaClass) const final
+        {
+            if constexpr (arity)
+            {
+                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
+                for (auto& meta : superMetas)
+                {
+                    if (meta->isDerivedFrom(metaClass))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        bool isAbstract() const final
+        {
+            return std::is_abstract_v<DeclaredClass>;
+        }
+
+        bool isMetaClassOf(const MetaObject& object) const final
+        {
+            auto address = dynamic_cast<const DeclaredClass*>(&object);
+            return address != nullptr;
+        }
+    };
+
+public:
+    explicit MetaClassImpl() :
+        MetaClass(MetaClassName, std::make_unique<Descriptor>())
+    {
+    }
+};
 
 }
 
-#endif
+}

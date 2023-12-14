@@ -31,4 +31,18 @@ MetaObjectPtr MetaObject::create(std::string_view name)
     return MetaObjectPtr(new MetaObject(name));
 }
 
+
+std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments)
+{
+    abortIfFail(object && !invokableName.empty());
+
+    auto metaClass = object->getStaticMetaClass();
+    auto metaMethod = metaClass->findMethod(invokableName);
+    if (!metaMethod)
+    {
+        return std::nullopt;
+    }
+    return metaMethod->apply(object.get(), arguments);
+}
+
 }

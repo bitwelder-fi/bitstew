@@ -52,28 +52,6 @@ public:
     operator T() const;
 };
 
-template <typename T>
-bool operator==(const T& lhs, const ArgumentData& rhs)
-{
-    return lhs == static_cast<const T&>(rhs);
-}
-template <typename T>
-bool operator!=(const T& lhs, const ArgumentData& rhs)
-{
-    return lhs != static_cast<const T&>(rhs);
-}
-
-template <typename T>
-bool operator==(const ArgumentData& lhs, const T& rhs)
-{
-    return static_cast<const T&>(lhs) == rhs;
-}
-template <typename T>
-bool operator!=(const ArgumentData& lhs, const T& rhs)
-{
-    return static_cast<const T&>(lhs) != rhs;
-}
-
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {
@@ -97,15 +75,33 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    PackagedArguments(Arguments&&... arguments);
+    explicit PackagedArguments(Arguments&&... arguments);
+
+    /// Creates packaged arguments from a subset of an other packaged arguments.
+    explicit PackagedArguments(Iterator begin, Iterator end);
+
+    /// Catenates two packaged arguments.
+    /// \rhs The argument package to append.
+    /// \return The argument package.
+    PackagedArguments& operator+=(const PackagedArguments& rhs);
+
+    /// Adds an argument to a packaged arguments.
+    /// \rhs The argument to add.
+    /// \return The argument package.
+    PackagedArguments& operator+=(ArgumentData rhs);
+
+    /// Appends \a package arguments to this.
+    /// \param package The packaged arguiments to append to this package.
+    /// \return Returns this packaged arguments object.
+    PackagedArguments& append(const PackagedArguments& package);
 
     /// Returns the argument data at index.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
-    ArgumentData get(size_t index) const;
+    ArgumentData get(std::size_t index) const;
 
     /// Returns the size of the pack.
-    size_t getSize() const;
+    std::size_t getSize() const;
 
     /// Returns whether the pack is empty.
     bool isEmpty() const;
@@ -127,48 +123,21 @@ struct META_API PackagedArguments
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
     template <typename T>
-    T get(size_t index) const;
+    T get(std::size_t index) const;
 
-    /// Converts the argument package into a tuple, using the signature of a function.
+    /// Converts the argument package into a tuple, using the signature of a function. If the function
+    /// is a member function, the first packaged argument must be the object to which the function
+    /// member belongs.
     /// \tparam FunctionSignature The function signature to use when converting the arguments.
     /// \return The tuple prepared with the arguments ready to invoke a callable.
-    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
-    ///         of the argument value stored in the package.
+    /// \throws std::bad_any_cast when the argument types of the signature and the packaged arguments
+    ///         mismatch.
     template <class FunctionSignature>
-    auto toTuple(FunctionSignature) const;
-
-    /// Converts the argument package into a tuple, using the signature of a method.
-    /// \tparam MethodSignature The method signature to use when converting the arguments.
-    /// \param instance The instance of the class with the method to add as first element of the tuple.
-    /// \return The tuple prepared with the arguments ready to invoke a callable.
-    /// \throws std::bad_any_cast when the argument types of the signature do not match the type
-    ///         of the argument value stored in the package.
-    template <class TClass, class TRet, class... TArgs>
-    auto toTuple(TRet (TClass::*signature)(TArgs...)) const;
+    auto toTuple() const;
 
 private:
     std::vector<ArgumentData> m_pack;
 };
-
-
-/// Invokes a \a method of an \a object with the given \a arguments.
-/// \tparam TClass The class type of the method.
-/// \tparam TRet The return type of the methoid.
-/// \tparam TArgs... The argument types of the method.
-/// \param method The method to invoke.
-/// \param object The object for which to invoke the method.
-/// \param arguments The packaged arguments with which to invoke the method.
-/// \return The return value of the method. If the method is void type, returns an undefined value.
-template <class TClass, class TRet, class... TArgs>
-auto invoke(TRet(TClass::*method)(TArgs...), TClass* object, const PackagedArguments& arguments);
-
-/// Invokes a \a function with the given \a arguments.
-/// \tparam Function The function signature.
-/// \param function The function to invoke.
-/// \param arguments The packaged arguments with which to invoke the function.
-/// \return The return value of the function. If the function is void type, returns an undefined value.
-template <typename Function>
-auto invoke(Function function, const PackagedArguments& arguments);
 
 } // namespace meta
 

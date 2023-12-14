@@ -16,22 +16,78 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/metaclass_impl.hpp>
+#include <meta/metadata/callable.hpp>
+#include <meta/metadata/metaclass.hpp>
 
 namespace meta
 {
 
-MetaClass::~MetaClass()
+MetaObjectPtr MetaClass::create(std::string_view name) const
 {
+    abortIfFail(m_descriptor);
+    return m_descriptor->create(name);
+}
+
+std::string_view MetaClass::getName() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->name;
+}
+
+const MetaClass* MetaClass::getBaseClass(std::size_t index) const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->getBaseClass(index);
+}
+
+std::size_t MetaClass::getBaseClassCount() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->getBaseClassCount();
+}
+
+bool MetaClass::isAbstract() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->isAbstract();
+}
+
+bool MetaClass::isMetaClassOf(const MetaObject& object) const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->isMetaClassOf(object);
 }
 
 bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
 {
+    abortIfFail(m_descriptor);
     if (&metaClass == this)
     {
         return true;
     }
-    return hasSuperClass(metaClass);
+    return m_descriptor->hasSuperClass(metaClass);
+}
+
+bool MetaClass::addMethod(Callable& callable)
+{
+    abortIfFail(m_descriptor && !m_descriptor->sealed);
+    auto result = m_descriptor->callables.insert({std::string(callable.getName()), &callable});
+    if (!result.second)
+    {
+        META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
+    }
+    return result.second;
+}
+
+Callable* MetaClass::findMethod(std::string_view name) const
+{
+    abortIfFail(m_descriptor);
+    auto it = m_descriptor->callables.find(std::string(name));
+    if (it == m_descriptor->callables.end())
+    {
+        return {};
+    }
+    return it->second;
 }
 
 }

@@ -24,7 +24,6 @@
 
 #include <functional>
 #include <string_view>
-#include <optional>
 #include <utils/function_traits.hpp>
 
 namespace meta
@@ -39,15 +38,7 @@ public:
     /// The default constructor.
     explicit Callable() = default;
 
-    /// Creates a callable object for a method.
-    /// \tparam Method The function type.
-    /// \param name The name of the function.
-    /// \param method The method of the callable.
-    /// \param object The object of the callable.
-    template<class TClass, class TRet, class... TArgs>
-    explicit Callable(std::string_view name, TRet(TClass::*method)(TArgs...), TClass* object);
-
-    /// Creates a callable object for a function, a functor or a lambda.
+    /// Creates a callable object for a function, a functor, a lambda or a method.
     /// \tparam Function The function type.
     /// \param name The name of the function.
     /// \param function The function of the callable.
@@ -62,12 +53,21 @@ public:
     /// \param other The callable with which to swap this callable.
     void swap(Callable& other);
 
-    /// Invokes the callable with the passed arguments.
-    /// \param arguments The arguments with which to invoke the callable.
-    /// \return The return value of the callable. If the callable is void, returns \e nullopt.
-    std::optional<ArgumentData> apply(const PackagedArguments& arguments)
+    /// Invokes the callable with packaged arguments.
+    /// \param arguments The packaged arguments with which to invoke the callable.
+    /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
+    ArgumentData apply(const PackagedArguments& arguments)
     {
         return m_descriptor.invokable(arguments);
+    }
+
+    /// Invokes the callable with an object and packaged arguments.
+    /// \param arguments The arguments with which to invoke the callable.
+    /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
+    template <class ClassType>
+    ArgumentData apply(ClassType* object, const PackagedArguments& arguments)
+    {
+        return m_descriptor.invokable(PackagedArguments(object).append(arguments));
     }
 
     /// Returns the name of the callable.
@@ -82,7 +82,7 @@ public:
 
 protected:
     DISABLE_COPY(Callable);
-    using Invokable = std::function<std::optional<ArgumentData>(const PackagedArguments&)>;
+    using Invokable = std::function<ArgumentData(const PackagedArguments&)>;
 
     /// The descriptor type of the callable.
     struct META_API CallableDescriptor

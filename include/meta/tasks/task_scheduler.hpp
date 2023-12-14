@@ -61,7 +61,7 @@ class META_API TaskScheduler
 public:
     /// Constructor. Creates a task scheduler with a number of threads. The argument is ignored in
     /// single-threaded environment.
-    explicit TaskScheduler(size_t threadCount);
+    explicit TaskScheduler(std::size_t threadCount);
     /// Destructor. Aborts the application if the task scheduler is still running.
     ~TaskScheduler();
 
@@ -97,14 +97,14 @@ public:
 
     /// Returns the number of running threads of a task scheduler.
     /// \return The number of threads running. If the task scheduler is stopped, returns 0u.
-    size_t getThreadCount() const
+    std::size_t getThreadCount() const
     {
         return m_isRunning ? m_threadCount : 0u;
     }
 
     /// Returns the number of idle threads of the task scheduler.
     /// \return The number of idle threads.
-    size_t getIdleCount() const
+    std::size_t getIdleCount() const
     {
         return m_idleThreadCount;
     }
@@ -123,7 +123,7 @@ public:
 
     /// Returns the queued task count.
     /// \return The queued task count.
-    size_t getTaskCount() const;
+    std::size_t getTaskCount() const;
 
     /// Schedules the tasks queued. On single multi-threaded environment, the function yields the
     /// current thread. On single-threaded environment, executes the queued tasks.
@@ -139,9 +139,9 @@ private:
     class TaskSchedulerPrivate;
 
     // The amount of threads to create.
-    const size_t m_threadCount = 0u;
+    const std::size_t m_threadCount = 0u;
     // The number of idling threads.
-    Atomic<size_t> m_idleThreadCount = 0u;
+    Atomic<std::size_t> m_idleThreadCount = 0u;
     // Locks the task queue.
     Mutex m_queueLock;
     // Threads wait on new tasks.

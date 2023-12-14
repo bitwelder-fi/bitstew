@@ -21,8 +21,10 @@
 
 #include <meta/meta_api.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/metadata/callable.hpp>
 
 #include <memory>
+#include <optional>
 
 namespace meta
 {
@@ -30,14 +32,12 @@ namespace meta
 class MetaObject;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
+
 /// The base class of any object that defines a meta class.
 class META_API MetaObject
 {
 public:
-    /// The metadata of a meta object.
-    BaseMetaData(MetaObject)
-    {
-    };
+    /// Creates a meta-object.
     static MetaObjectPtr create(std::string_view name);
 
     /// Destructor.
@@ -50,6 +50,12 @@ public:
         return m_name;
     }
 
+    /// The metadata of a meta object.
+    META_CLASS("meta.MetaObject", MetaObject)
+    {
+        META_METHOD(MetaObject, getName);
+    };
+
 protected:
     /// Constructor.
     explicit MetaObject(std::string_view name);
@@ -57,6 +63,16 @@ protected:
 private:
     const std::string m_name;
 };
+
+/// Invokes an invokable of a metaobject. The invokable is called from the metaclass of the metaobject.
+/// \param object The metaobject whose metamethod to call.
+/// \param invokableName The invokable name to call.
+/// \param arguments The arguments with which to invoke the metamethod.
+/// \return returns one of the following:
+///         - If the invokable is found, and has a return value, the return value of the invokable.
+///         - If the invokable is found, and has no return value, returns an invalid ArgumentData.
+///         - If the invokable is not found, returns nullopt.
+META_API std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments);
 
 }
 

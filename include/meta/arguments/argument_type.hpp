@@ -75,13 +75,20 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    PackagedArguments(Arguments&&... arguments);
+    explicit PackagedArguments(Arguments&&... arguments);
 
     /// Creates packaged arguments from a subset of an other packaged arguments.
-    PackagedArguments(Iterator begin, Iterator end);
+    explicit PackagedArguments(Iterator begin, Iterator end);
 
     /// Catenates two packaged arguments.
+    /// \rhs The argument package to append.
+    /// \return The argument package.
     PackagedArguments& operator+=(const PackagedArguments& rhs);
+
+    /// Adds an argument to a packaged arguments.
+    /// \rhs The argument to add.
+    /// \return The argument package.
+    PackagedArguments& operator+=(ArgumentData rhs);
 
     /// Appends \a package arguments to this.
     /// \param package The packaged arguiments to append to this package.

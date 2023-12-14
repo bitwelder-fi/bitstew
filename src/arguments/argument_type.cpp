@@ -48,6 +48,12 @@ PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
     return append(rhs);
 }
 
+PackagedArguments& PackagedArguments::operator+=(ArgumentData rhs)
+{
+    m_pack.push_back(std::move(rhs));
+    return *this;
+}
+
 PackagedArguments& PackagedArguments::append(const PackagedArguments& package)
 {
     m_pack.insert(m_pack.end(), package.m_pack.begin(), package.m_pack.end());

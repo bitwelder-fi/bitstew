@@ -100,6 +100,16 @@ TEST(ArgumentData, testArgumentData)
     EXPECT_EQ(std::string("one"), static_cast<std::string>(argument));
 }
 
+TEST_F(PackagedArguments, buildArgumentData)
+{
+    auto arguments = meta::PackagedArguments();
+    EXPECT_EQ(0u, arguments.getSize());
+    arguments += std::string("one");
+    EXPECT_EQ(1u, arguments.getSize());
+    arguments += 2;
+    EXPECT_EQ(2u, arguments.getSize());
+}
+
 TEST_F(PackagedArguments, testPackArguments)
 {
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);

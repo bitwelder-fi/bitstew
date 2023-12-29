@@ -22,6 +22,7 @@
 #include <meta/meta_api.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/metadata/callable.hpp>
+#include <meta/signal/signal.hpp>
 
 #include <memory>
 #include <optional>
@@ -37,11 +38,16 @@ using MetaObjectPtr = std::shared_ptr<MetaObject>;
 class META_API MetaObject
 {
 public:
+    /// \name Signals
+    /// \{
+    SignalType<void()> deleted;
+    /// \}
+
     /// Creates a meta-object.
     static MetaObjectPtr create(std::string_view name);
 
     /// Destructor.
-    virtual ~MetaObject() = default;
+    virtual ~MetaObject();
 
     /// Returns the name of the object.
     /// \return The name of the object.
@@ -72,7 +78,7 @@ private:
 ///         - If the invokable is found, and has a return value, the return value of the invokable.
 ///         - If the invokable is found, and has no return value, returns an invalid ArgumentData.
 ///         - If the invokable is not found, returns nullopt.
-META_API std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments);
+META_API std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments = PackagedArguments());
 
 }
 

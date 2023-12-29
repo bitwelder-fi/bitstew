@@ -16,38 +16,21 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/metaobject.hpp>
+#ifndef META_SIGNAL_PRIVATE_HPP
+#define META_SIGNAL_PRIVATE_HPP
+
+#include <meta/signal/signal.hpp>
+#include <meta/signal/slot.hpp>
 
 namespace meta
 {
 
-MetaObject::MetaObject(std::string_view name) :
-    m_name(name)
+struct SlotPrivate
 {
-}
-
-MetaObject::~MetaObject()
-{
-    deleted();
-}
-
-MetaObjectPtr MetaObject::create(std::string_view name)
-{
-    return MetaObjectPtr(new MetaObject(name));
-}
-
-
-std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments)
-{
-    abortIfFail(object && !invokableName.empty());
-
-    auto metaClass = object->getStaticMetaClass();
-    auto metaMethod = metaClass->findMethod(invokableName);
-    if (!metaMethod)
-    {
-        return std::nullopt;
-    }
-    return metaMethod->apply(object.get(), arguments);
-}
+    static void attachToSignal(Slot& self, Signal& signal);
+    static void detachFromSignal(Slot& self);
+};
 
 }
+
+#endif

@@ -31,6 +31,7 @@
 namespace meta
 {
 
+class Signal;
 class MetaObject;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
@@ -53,6 +54,29 @@ public:
             metaClass.addMethod(*this);
         }
     };
+    /// The callable container type.
+    using CallableContainer = std::unordered_map<std::string, Callable*>;
+
+    /// The metasignal of a metaclass.
+    struct META_API MetaSignal
+    {
+        /// Constructor.
+        explicit MetaSignal(MetaClass& metaClass, std::string_view name, Signal& signal);
+
+        /// Returns the name of the metasignal.
+        std::string_view getName() const
+        {
+            return m_name;
+        }
+
+        int apply(const PackagedArguments& arguments);
+
+    private:
+        Signal& m_signal;
+        std::string m_name;
+    };
+    /// The signal container type.
+    using MetaSignalContainer = std::unordered_map<std::string, MetaSignal*>;
 
     /// Destructor.
     virtual ~MetaClass() = default;
@@ -119,17 +143,19 @@ public:
     /// \see Callable
     Callable* findMethod(std::string_view name) const;
 
+    bool addSignal(MetaSignal& signal);
+    MetaSignal* findSignal(std::string_view name) const;
+
 protected:
     /// The descriptor of the metaclass.
     struct META_API DescriptorInterface
     {
-        /// The callable container type.
-        using CallableContainer = std::unordered_map<std::string, Callable*>;
-
         /// The name of the meta class.
         std::string name;
         /// The callable container of the meta class.
         CallableContainer callables;
+        /// The container of the signals.
+        MetaSignalContainer signals;
         /// Whether the metaclass is sealed.
         bool sealed = false;
 
@@ -166,7 +192,6 @@ protected:
     DescriptorPtr m_descriptor;
 };
 
-
 } // namespace meta
 
 #include <meta/metadata/metaclass_impl.hpp>
@@ -190,5 +215,9 @@ struct META_API MetaClassType : MetaClassTypeBase
 /// Defines a metamethod to a method of a class for a metaclass.
 #define META_METHOD(Class, Method) \
 MetaMethod _##Method{*this, #Method, &Class::Method}
+
+/// Defines a metasignal to a signal of a class for a metaclass.
+#define META_SIGNAL(Class, SignalType) \
+MetaSignal _##SignalType{*this, #SignalType, this->SignalType}
 
 #endif // META_METACLASS_HPP

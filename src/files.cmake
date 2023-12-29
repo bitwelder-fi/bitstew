@@ -6,10 +6,13 @@ metadata/callable.cpp
 metadata/factory.cpp
 metadata/metaclass.cpp
 metadata/metaobject.cpp
+signal/signal.cpp
+signal/slot.cpp
 tasks/task.cpp
 tasks/task_scheduler.cpp
 template.cpp
 threading.cpp
+signal/signal_private.h
 tasks/task_scheduler_private.h
 ../include/assert.hpp
 ../include/meta/arguments/argument_type.hpp
@@ -25,6 +28,8 @@ tasks/task_scheduler_private.h
 ../include/meta/metadata/metaclass.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/metadata/metaobject.hpp
+../include/meta/signal/signal.hpp
+../include/meta/signal/slot.hpp
 ../include/meta/tasks/task.hpp
 ../include/meta/tasks/task_scheduler.hpp
 ../include/meta/threading.hpp

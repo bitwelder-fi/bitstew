@@ -18,9 +18,22 @@
 
 #include <meta/metadata/callable.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/signal/signal.hpp>
 
 namespace meta
 {
+
+MetaClass::MetaSignal::MetaSignal(MetaClass& metaClass, std::string_view name, Signal& signal) :
+    m_signal(signal),
+    m_name(name)
+{
+    metaClass.addSignal(*this);
+}
+
+int MetaClass::MetaSignal::apply(const PackagedArguments& arguments)
+{
+    return m_signal.emit(arguments);
+}
 
 MetaObjectPtr MetaClass::create(std::string_view name) const
 {
@@ -84,6 +97,29 @@ Callable* MetaClass::findMethod(std::string_view name) const
     abortIfFail(m_descriptor);
     auto it = m_descriptor->callables.find(std::string(name));
     if (it == m_descriptor->callables.end())
+    {
+        return {};
+    }
+    return it->second;
+}
+
+bool MetaClass::addSignal(MetaSignal& signal)
+{
+    abortIfFail(m_descriptor && !m_descriptor->sealed);
+
+    auto result = m_descriptor->signals.insert({std::string(signal.getName()), &signal});
+    if (!result.second)
+    {
+        META_LOG_ERROR("SignalType " << signal.getName() <<" is already registered to metaclass.");
+    }
+    return result.second;
+}
+
+MetaClass::MetaSignal* MetaClass::findSignal(std::string_view name) const
+{
+    abortIfFail(m_descriptor);
+    auto it = m_descriptor->signals.find(std::string(name));
+    if (it == m_descriptor->signals.end())
     {
         return {};
     }

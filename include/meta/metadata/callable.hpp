@@ -56,7 +56,7 @@ public:
     /// Invokes the callable with packaged arguments.
     /// \param arguments The packaged arguments with which to invoke the callable.
     /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
-    ArgumentData apply(const PackagedArguments& arguments)
+    ArgumentData apply(const PackagedArguments& arguments) const
     {
         return m_descriptor.invokable(arguments);
     }
@@ -65,7 +65,7 @@ public:
     /// \param arguments The arguments with which to invoke the callable.
     /// \return The return value of the callable. If the callable is void, returns an invalid ArgumentData.
     template <class ClassType>
-    ArgumentData apply(ClassType* object, const PackagedArguments& arguments)
+    ArgumentData apply(ClassType* object, const PackagedArguments& arguments) const
     {
         return m_descriptor.invokable(PackagedArguments(object).append(arguments));
     }

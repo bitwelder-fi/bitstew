@@ -21,6 +21,7 @@
 
 #include <tuple>
 #include <type_traits>
+#include <functional>
 
 namespace traits
 {
@@ -48,6 +49,7 @@ struct function_traits<TRet(TObject::*)(Args...)>
     {
         static_assert(N < arity, "error: invalid parameter index.");
         using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+
     };
 
     template <typename... TestArgs>

@@ -56,8 +56,8 @@ public:
     /// \return The tracer of the library.
     Tracer* tracer() const;
 
-    /// Returns the object factory of the.
-    /// \return The object factory of the.
+    /// Returns the object factory of the library.
+    /// \return The object factory of the library.
     ObjectFactory* objectFactory() const;
 
 private:

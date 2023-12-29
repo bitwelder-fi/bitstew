@@ -162,7 +162,7 @@ void TaskScheduler::stop()
 {
     abortIfFail(m_isRunning);
 
-    // Signal stop call.
+    // SignalType stop call.
     m_stopSignalled = true;
 
     // Wait till all the tasks queued get scheduled.

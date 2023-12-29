@@ -52,6 +52,7 @@ ArgumentData::operator T() const
     return std::any_cast<T>(*this);
 }
 
+
 template <typename... Arguments>
 PackagedArguments::PackagedArguments(Arguments&&... arguments)
 {

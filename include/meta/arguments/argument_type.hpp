@@ -122,6 +122,7 @@ struct META_API PackagedArguments
     ///           type of the stored value.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
+    /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
     template <typename T>
     T get(std::size_t index) const;
 

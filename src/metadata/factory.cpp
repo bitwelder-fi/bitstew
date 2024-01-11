@@ -62,15 +62,10 @@ struct ObjectFactoryPrivate
     }
 };
 
-bool testMetaName(std::string_view name)
-{
-    return name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
-}
-
 bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
 {
     abortIfFail(metaClass);
-    if (!testMetaName(metaClass->getName()))
+    if (!isValidMetaName(metaClass->getName()))
     {
         META_LOG_ERROR("Invalid meta class name: " << metaClass->getName());
         return false;
@@ -83,7 +78,7 @@ bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
 bool ObjectFactory::overrideMetaClass(const MetaClass* metaClass)
 {
     abortIfFail(metaClass);
-    if (!testMetaName(metaClass->getName()))
+    if (!isValidMetaName(metaClass->getName()))
     {
         META_LOG_ERROR("Invalid meta class name: " << metaClass->getName());
         return false;
@@ -101,7 +96,7 @@ bool ObjectFactory::overrideMetaClass(const MetaClass* metaClass)
 
 const MetaClass* ObjectFactory::findMetaClass(std::string_view className) const
 {
-    if (!testMetaName(className))
+    if (!isValidMetaName(className))
     {
         META_LOG_ERROR("Invalid meta class name: " << className);
         return {};

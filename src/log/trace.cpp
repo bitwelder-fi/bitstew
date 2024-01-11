@@ -120,7 +120,7 @@ LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const cha
 }
 
 LogLine::LogLine(LogLevel level, const char* function, const char* file, unsigned line) :
-    LogLine(meta::Domain::instance().tracer(), level, function, file, line)
+    LogLine(meta::Library::instance().tracer(), level, function, file, line)
 {
 }
 

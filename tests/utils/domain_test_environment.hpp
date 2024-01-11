@@ -33,19 +33,19 @@ protected:
     {
         auto arguments = meta::LibraryArguments();
         arguments.taskScheduler.createThreadPool = multiThreaded;
-        meta::Domain::instance().initialize(arguments);
+        meta::Library::instance().initialize(arguments);
 
         if (mockTracePrinter)
         {
-            meta::Domain::instance().tracer()->clearTracePrinters();
+            meta::Library::instance().tracer()->clearTracePrinters();
             m_mockPrinter = std::make_shared<MockPrinter>();
-            meta::Domain::instance().tracer()->addTracePrinter(m_mockPrinter);
+            meta::Library::instance().tracer()->addTracePrinter(m_mockPrinter);
         }
     }
 
     void TearDown() override
     {
-        meta::Domain::instance().uninitialize();
+        meta::Library::instance().uninitialize();
     }
 };
 

@@ -27,6 +27,8 @@
 
 #include <meta/metadata/callable.hpp>
 
+#include "utils/domain_test_environment.hpp"
+
 namespace
 {
 
@@ -116,18 +118,14 @@ protected:
     }
 };
 
-class ObjectFactoryTest : public ::testing::Test
+class ObjectFactoryTest : public DomainTestEnvironment
 {
 protected:
-    std::unique_ptr<meta::ObjectFactory> m_factory;
+    meta::ObjectFactory* m_factory = nullptr;
     void SetUp() override
     {
-        m_factory = std::make_unique<meta::ObjectFactory>();
-    }
-
-    void TearDown() override
-    {
-        m_factory.reset();
+        initializeDomain(false, true);
+        m_factory = meta::Library::instance().objectFactory();
     }
 };
 
@@ -163,15 +161,6 @@ protected:
 
     void SetUp() override
     {
-        auto config = meta::LibraryArguments();
-        config.taskScheduler.createThreadPool = false;
-        meta::Domain::instance().initialize(config);
-
-        // mock the logging
-        auto logger = std::make_shared<MockPrinter>();
-        meta::Domain::instance().tracer()->clearTracePrinters();
-        meta::Domain::instance().tracer()->addTracePrinter(logger);
-
         ObjectFactoryTest::SetUp();
 
         auto args = GetParam();
@@ -181,23 +170,19 @@ protected:
         if (!isValid)
         {
             auto argument = "Invalid meta class name: " + metaClassName;
-            EXPECT_CALL(*logger, log(argument));
+            EXPECT_CALL(*this->m_mockPrinter, log(argument));
         }
 
         TestClass::_staticMetaClass.setMetaName(metaClassName);
     }
 };
 
-class MetaDomainTest : public ::testing::Test
+class MetaLibraryTest : public DomainTestEnvironment
 {
 protected:
     void SetUp() override
     {
-        meta::Domain::instance().initialize(meta::LibraryArguments());
-    }
-    void TearDown() override
-    {
-        meta::Domain::instance().uninitialize();
+        DomainTestEnvironment::initializeDomain(true, true);
     }
 };
 
@@ -348,19 +333,19 @@ TEST_F(ObjectFactoryTest, testMetaClassCastedCreate)
     EXPECT_NE(nullptr, castedObject);
 }
 
-TEST_F(MetaDomainTest, testDomainHasObjectFactory)
+TEST_F(MetaLibraryTest, testDomainHasObjectFactory)
 {
-    EXPECT_NE(nullptr, meta::Domain::instance().objectFactory());
+    EXPECT_NE(nullptr, meta::Library::instance().objectFactory());
 }
 
-TEST_F(MetaDomainTest, testDomainObjectFactoryRegistryContent)
+TEST_F(MetaLibraryTest, testDomainObjectFactoryRegistryContent)
 {
-    ASSERT_NE(nullptr, meta::Domain::instance().objectFactory());
-    EXPECT_NE(nullptr, meta::Domain::instance().objectFactory()->findMetaClass("meta.MetaObject"));
+    ASSERT_NE(nullptr, meta::Library::instance().objectFactory());
+    EXPECT_NE(nullptr, meta::Library::instance().objectFactory()->findMetaClass("meta.MetaObject"));
 }
 
 
-TEST_F(MetaDomainTest, invokeMetaObject_getName)
+TEST_F(MetaLibraryTest, invokeMetaObject_getName)
 {
     auto metaClass = meta::MetaObject::getStaticMetaClass();
     auto object = metaClass->create("object");

@@ -108,8 +108,8 @@ protected:
 
     void SetUp() override
     {
-        meta::Domain::instance().initialize(meta::LibraryArguments());
-        m_tracer = meta::Domain::instance().tracer();
+        meta::Library::instance().initialize(meta::LibraryArguments());
+        m_tracer = meta::Library::instance().tracer();
         m_tracer->clearTracePrinters();
 
         meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
@@ -128,7 +128,7 @@ protected:
     void TearDown() override
     {
         m_tracer->clearTracePrinters();
-        meta::Domain::instance().uninitialize();
+        meta::Library::instance().uninitialize();
     }
 };
 

@@ -41,7 +41,7 @@ namespace meta
 class MetaLibraryPrivate
 {
 public:
-    DECLARE_PUBLIC_PTR(Domain, MetaLibraryPrivate)
+    DECLARE_PUBLIC_PTR(Library, MetaLibraryPrivate)
 
     explicit MetaLibraryPrivate()
     {
@@ -52,23 +52,23 @@ public:
     std::unique_ptr<ObjectFactory> objectFactory;
 };
 
-Domain& Domain::instance()
+Library& Library::instance()
 {
-    static Domain meta;
+    static Library meta;
     return meta;
 }
 
-Domain::Domain() :
+Library::Library() :
     d_ptr(pimpl::make_d_ptr<MetaLibraryPrivate>())
 {
 }
 
-Domain::~Domain()
+Library::~Library()
 {
     uninitialize();
 }
 
-void Domain::initialize(const LibraryArguments& arguments)
+void Library::initialize(const LibraryArguments& arguments)
 {
     D();
     if (arguments.taskScheduler.createThreadPool)
@@ -93,7 +93,7 @@ void Domain::initialize(const LibraryArguments& arguments)
     d->objectFactory->registerMetaClass(MetaObject::getStaticMetaClass());
 }
 
-void Domain::uninitialize()
+void Library::uninitialize()
 {
     D();
     if (d->taskScheduler)
@@ -107,22 +107,28 @@ void Domain::uninitialize()
     d->tracer.reset();
 }
 
-TaskScheduler* Domain::taskScheduler() const
+TaskScheduler* Library::taskScheduler() const
 {
     D();
     return d->taskScheduler.get();
 }
 
-Tracer* Domain::tracer() const
+Tracer* Library::tracer() const
 {
     D();
     return d->tracer.get();
 }
 
-ObjectFactory* Domain::objectFactory() const
+ObjectFactory* Library::objectFactory() const
 {
     D();
     return d->objectFactory.get();
+}
+
+
+bool isValidMetaName(std::string_view name)
+{
+    return name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
 }
 
 }

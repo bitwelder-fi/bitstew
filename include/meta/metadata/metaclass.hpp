@@ -167,12 +167,6 @@ protected:
 };
 
 
-/// Tests the string passed as argument against metaname correctness. A metaname can contain numeric
-/// and alphanumeric characters, dots, columns, dashes and underscores.
-/// \param text The text to check.
-/// \return If teh text is a valid metaname, returns \e true, otherwise \e false.
-META_API bool testMetaName(std::string_view text);
-
 } // namespace meta
 
 #include <meta/metadata/metaclass_impl.hpp>

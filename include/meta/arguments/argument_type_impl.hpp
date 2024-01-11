@@ -49,15 +49,7 @@ struct PackToTuple
 template <typename T>
 ArgumentData::operator T() const
 {
-    try
-    {
-        return std::any_cast<T>(*this);
-    }
-    catch (std::bad_any_cast& e)
-    {
-        META_LOG_ERROR("Bad cast of argument data. Expected " << this->type().name());
-        return {};
-    }
+    return std::any_cast<T>(*this);
 }
 
 template <typename... Arguments>

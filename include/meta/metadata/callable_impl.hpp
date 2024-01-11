@@ -22,6 +22,11 @@ namespace meta
 template<class Function>
 Callable::Callable(std::string_view name, Function function)
 {
+    if (!isValidMetaName(name))
+    {
+        META_LOG_ERROR("Invalid metaname for a callable: " << name);
+        return;
+    }
     auto invokable = [function](const PackagedArguments& arguments) -> ArgumentData
     {
         auto pack = arguments.toTuple<Function>();

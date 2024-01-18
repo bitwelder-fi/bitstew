@@ -22,20 +22,20 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
-#include <meta/metadata/metaobject.hpp>
+#include <meta/object.hpp>
 #include <meta/library_config.hpp>
 
-#include <meta/metadata/callable.hpp>
+#include <meta/metadata/invokable.hpp>
 
 #include "utils/domain_test_environment.hpp"
 
 namespace
 {
 
-class AbstractClass : public meta::MetaObject
+class AbstractClass : public meta::Object
 {
 public:
-    META_CLASS("AbstractClass", AbstractClass, meta::MetaObject)
+    META_CLASS("AbstractClass", AbstractClass, meta::Object)
     {
     };
 
@@ -43,7 +43,7 @@ public:
 
 protected:
     explicit AbstractClass(std::string_view name) :
-        meta::MetaObject(name)
+        meta::Object(name)
     {
     }
 };
@@ -59,10 +59,10 @@ public:
     };
 };
 
-class OverrideClass : public meta::MetaObject, public Interface
+class OverrideClass : public meta::Object, public Interface
 {
 public:
-    META_CLASS("AbstractClass", OverrideClass, meta::MetaObject, Interface)
+    META_CLASS("AbstractClass", OverrideClass, meta::Object, Interface)
     {
     };
 
@@ -70,7 +70,7 @@ public:
 
 protected:
     explicit OverrideClass(std::string_view name) :
-        meta::MetaObject(name)
+        meta::Object(name)
     {
     }
 };
@@ -102,8 +102,6 @@ public:
 
     META_CLASS("Object", Object, PreObject, Interface)
     {
-        meta::Callable func{"Object.func", &Object::func};
-        META_METHOD(Object, func);
     };
 
     static std::shared_ptr<Object> create(std::string_view name)
@@ -129,51 +127,18 @@ protected:
     }
 };
 
-using MetaClassNameParam = std::tuple<std::string, bool>;
-class MetaClassNameValidityTest : public ObjectFactoryTest, public ::testing::WithParamInterface<MetaClassNameParam>
+using MetaNameParam = std::tuple<std::string, bool>;
+class MetaNameValidityTest : public ::testing::Test, public ::testing::WithParamInterface<MetaNameParam>
 {
 protected:
     std::string metaClassName;
     bool isValid;
 
-    class TestClass
-    {
-    public:
-        static inline constexpr char __MetaName[]{"TestClass"};
-        struct TestMetaClass : meta::detail::MetaClassImpl<__MetaName, TestClass>
-        {
-            void setMetaName(std::string_view name)
-            {
-                m_descriptor->name = std::string(name);
-            }
-        };
-        static inline TestMetaClass _staticMetaClass;
-        static const meta::MetaClass* getStaticMetaClass()
-        {
-            return &_staticMetaClass;
-        }
-
-        static meta::MetaObjectPtr create(std::string_view)
-        {
-            return {};
-        }
-    };
-
     void SetUp() override
     {
-        ObjectFactoryTest::SetUp();
-
         auto args = GetParam();
         metaClassName = std::get<std::string>(args);
         isValid = std::get<bool>(args);
-
-        if (!isValid)
-        {
-            auto argument = "Invalid meta class name: " + metaClassName;
-            EXPECT_CALL(*this->m_mockPrinter, log(argument));
-        }
-
-        TestClass::_staticMetaClass.setMetaName(metaClassName);
     }
 };
 
@@ -190,9 +155,9 @@ protected:
 
 TEST(MetaClassTests, testMetaObject)
 {
-    ASSERT_NE(nullptr, meta::MetaObject::getStaticMetaClass());
-    EXPECT_FALSE(meta::MetaObject::getStaticMetaClass()->isAbstract());
-    EXPECT_EQ(0u, meta::MetaObject::getStaticMetaClass()->getBaseClassCount());
+    ASSERT_NE(nullptr, meta::Object::getStaticMetaClass());
+    EXPECT_FALSE(meta::Object::getStaticMetaClass()->isAbstract());
+    EXPECT_EQ(0u, meta::Object::getStaticMetaClass()->getBaseClassCount());
 }
 
 TEST(MetaClassTests, testAbstractMetaClass)
@@ -200,9 +165,9 @@ TEST(MetaClassTests, testAbstractMetaClass)
     ASSERT_NE(nullptr, AbstractClass::getStaticMetaClass());
     EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isAbstract());
     ASSERT_EQ(1u, AbstractClass::getStaticMetaClass()->getBaseClassCount());
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFromClass<meta::MetaObject>());
+    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFromClass<meta::Object>());
     EXPECT_FALSE(AbstractClass::getStaticMetaClass()->isDerivedFromClass<AbstractClass>());
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFrom(*meta::MetaObject::getStaticMetaClass()));
+    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFrom(*meta::Object::getStaticMetaClass()));
     EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFrom(*AbstractClass::getStaticMetaClass()));
 }
 
@@ -218,54 +183,54 @@ TEST(MetaClassTests, testObject)
     ASSERT_NE(nullptr, Object::getStaticMetaClass());
     EXPECT_FALSE(Object::getStaticMetaClass()->isAbstract());
     ASSERT_EQ(2u, Object::getStaticMetaClass()->getBaseClassCount());
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<meta::MetaObject>());
+    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<meta::Object>());
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<AbstractClass>());
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<Interface>());
 
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*meta::MetaObject::getStaticMetaClass()));
+    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*meta::Object::getStaticMetaClass()));
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*AbstractClass::getStaticMetaClass()));
     EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*Interface::getStaticMetaClass()));
 }
 
-INSTANTIATE_TEST_SUITE_P(NameValidity, MetaClassNameValidityTest,
+INSTANTIATE_TEST_SUITE_P(NameValidity, MetaNameValidityTest,
                          ::testing::Values(
-                            MetaClassNameParam("meta.Object", true),
-                            MetaClassNameParam("meta:Object", true),
-                            MetaClassNameParam("meta-Object", true),
-                            MetaClassNameParam("meta_Object", true),
-                            MetaClassNameParam("meta~Object", false),
-                            MetaClassNameParam("meta`Object", false),
-                            MetaClassNameParam("meta!Object", false),
-                            MetaClassNameParam("meta@Object", false),
-                            MetaClassNameParam("meta#Object", false),
-                            MetaClassNameParam("meta$Object", false),
-                            MetaClassNameParam("meta$Object", false),
-                            MetaClassNameParam("meta%Object", false),
-                            MetaClassNameParam("meta^Object", false),
-                            MetaClassNameParam("meta&Object", false),
-                            MetaClassNameParam("meta*Object", false),
-                            MetaClassNameParam("meta(Object", false),
-                            MetaClassNameParam("meta)Object", false),
-                            MetaClassNameParam("meta+Object", false),
-                            MetaClassNameParam("meta=Object", false),
-                            MetaClassNameParam("meta{Object", false),
-                            MetaClassNameParam("meta[Object", false),
-                            MetaClassNameParam("meta}Object", false),
-                            MetaClassNameParam("meta]Object", false),
-                            MetaClassNameParam("meta|Object", false),
-                            MetaClassNameParam("meta\\Object", false),
-                            MetaClassNameParam("meta;Object", false),
-                            MetaClassNameParam("meta\"Object", false),
-                            MetaClassNameParam("meta'Object", false),
-                            MetaClassNameParam("meta<Object", false),
-                            MetaClassNameParam("meta,Object", false),
-                            MetaClassNameParam("meta>Object", false),
-                            MetaClassNameParam("meta?Object", false),
-                            MetaClassNameParam("meta/Object", false),
-                            MetaClassNameParam("meta Object", false)));
-TEST_P(MetaClassNameValidityTest, testMetaClassName)
+                            MetaNameParam("meta.Object", true),
+                            MetaNameParam("meta:Object", true),
+                            MetaNameParam("meta-Object", true),
+                            MetaNameParam("meta_Object", true),
+                            MetaNameParam("meta~Object", false),
+                            MetaNameParam("meta`Object", false),
+                            MetaNameParam("meta!Object", false),
+                            MetaNameParam("meta@Object", false),
+                            MetaNameParam("meta#Object", false),
+                            MetaNameParam("meta$Object", false),
+                            MetaNameParam("meta$Object", false),
+                            MetaNameParam("meta%Object", false),
+                            MetaNameParam("meta^Object", false),
+                            MetaNameParam("meta&Object", false),
+                            MetaNameParam("meta*Object", false),
+                            MetaNameParam("meta(Object", false),
+                            MetaNameParam("meta)Object", false),
+                            MetaNameParam("meta+Object", false),
+                            MetaNameParam("meta=Object", false),
+                            MetaNameParam("meta{Object", false),
+                            MetaNameParam("meta[Object", false),
+                            MetaNameParam("meta}Object", false),
+                            MetaNameParam("meta]Object", false),
+                            MetaNameParam("meta|Object", false),
+                            MetaNameParam("meta\\Object", false),
+                            MetaNameParam("meta;Object", false),
+                            MetaNameParam("meta\"Object", false),
+                            MetaNameParam("meta'Object", false),
+                            MetaNameParam("meta<Object", false),
+                            MetaNameParam("meta,Object", false),
+                            MetaNameParam("meta>Object", false),
+                            MetaNameParam("meta?Object", false),
+                            MetaNameParam("meta/Object", false),
+                            MetaNameParam("meta Object", false)));
+TEST_P(MetaNameValidityTest, testMetaClassName)
 {
-    EXPECT_EQ(isValid, m_factory->registerMetaClass(TestClass::getStaticMetaClass()));
+    EXPECT_EQ(isValid, meta::isValidMetaName(this->metaClassName));
 }
 
 TEST_F(ObjectFactoryTest, testRegister)
@@ -282,7 +247,7 @@ TEST_F(ObjectFactoryTest, deepRegister)
     EXPECT_NE(nullptr, m_factory->findMetaClass("PreObject"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 }
 
 TEST_F(ObjectFactoryTest, testOverride)
@@ -296,12 +261,12 @@ TEST_F(ObjectFactoryTest, deepOverride)
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
     EXPECT_EQ(2u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 
     EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
     EXPECT_EQ(3u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
 }
 
@@ -341,13 +306,13 @@ TEST_F(MetaLibraryTest, testDomainHasObjectFactory)
 TEST_F(MetaLibraryTest, testDomainObjectFactoryRegistryContent)
 {
     ASSERT_NE(nullptr, meta::Library::instance().objectFactory());
-    EXPECT_NE(nullptr, meta::Library::instance().objectFactory()->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, meta::Library::instance().objectFactory()->findMetaClass("meta.Object"));
 }
 
 
 TEST_F(MetaLibraryTest, invokeMetaObject_getName)
 {
-    auto metaClass = meta::MetaObject::getStaticMetaClass();
+    auto metaClass = meta::Object::getStaticMetaClass();
     auto object = metaClass->create("object");
     ASSERT_NE(nullptr, object);
 

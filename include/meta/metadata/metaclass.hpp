@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@
 #define META_METACLASS_HPP
 
 #include <meta/meta_api.hpp>
-#include <meta/metadata/callable.hpp>
+#include <meta/metadata/invokable.hpp>
 #include <assert.hpp>
 
 #include <memory>
@@ -31,35 +31,23 @@
 namespace meta
 {
 
-class MetaObject;
-using MetaObjectPtr = std::shared_ptr<MetaObject>;
+class Object;
+using ObjectPtr = std::shared_ptr<Object>;
 
 
 /// Defines the metaclass of an associated class.
 class META_API MetaClass
 {
     DISABLE_COPY(MetaClass);
+    DISABLE_MOVE(MetaClass);
 
 public:
-    /// The metamethod of a metaclass.
-    class META_API MetaMethod : public Callable
-    {
-    public:
-        /// Constructor.
-        template<class Function>
-        explicit MetaMethod(MetaClass& metaClass, std::string_view name, Function function) :
-            Callable(name, function)
-        {
-            metaClass.addMethod(*this);
-        }
-    };
-
     /// Destructor.
     virtual ~MetaClass() = default;
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    MetaObjectPtr create(std::string_view name) const;
+    ObjectPtr create(std::string_view name) const;
 
     /// Cast the created meta object to the given class type.
     template <class ClassType>
@@ -89,7 +77,7 @@ public:
     /// \param The meta object to check.
     /// \return If this meta class is the meta class of the meta object, returns \e true, otherwise
     ///         \e false.
-    bool isMetaClassOf(const MetaObject& object) const;
+    bool isMetaClassOf(const Object& object) const;
 
     /// Returns whether this MetaClass is or is derived from the \a metaClass.
     /// \param metaClass The metaClass instance to check.
@@ -104,37 +92,56 @@ public:
         return m_descriptor->hasSuperClass(*TDerivedClass::getStaticMetaClass());
     }
 
-    /// Adds a callable to the meta class. The callable is either a method of the class, or an attached
-    /// function, or a lambda. The method fails if the meta class already has a callable with the same
-    /// name.
-    /// \param callable The callable object to add.
-    /// \return If the method is added with success, returns \e true, otherwise \e false. On failure,
-    ///         and tracing is enabled, an error log is printed.
-    /// \see Callable
-    bool addMethod(Callable& callable);
+    /// Meta-invokable, a wrapper around an invokable object.
+    struct MetaInvokable : public Invokable
+    {
+        /// Constructor. Registers the invokable to the metaclass.
+        template <class Function>
+        explicit MetaInvokable(MetaClass& metaClass, std::string_view name, Function callable) :
+            Invokable(name, callable)
+        {
+            metaClass.addInvokable(*this);
+        }
+    };
 
-    /// Tries to find a callable with the given name.
-    /// \param name The name of the callable to find.
-    /// \return The callable with the name, or \e nullptr if no callable with the name is found.
-    /// \see Callable
-    Callable* findMethod(std::string_view name) const;
+    /// Adds an invokable to a meta class. The invokable is either a method of the class, or an attached
+    /// function, or a lambda. The method fails if
+    /// - the meta class already has an invokable with the same name.
+    /// - the meta class is sealed.
+    /// \param invokable The invokable object to add.
+    /// \return If the invokable is added with success, returns \e true, otherwise \e false. On failure,
+    ///         and tracing is enabled, an error log is printed.
+    /// \see Invokable
+    bool addInvokable(MetaInvokable& invokable);
+
+    /// Tries to find an invokable with the given name.
+    /// \param name The name of the invokable to find.
+    /// \return The invokable, or \e nullptr if no invokable with the name is found.
+    /// \see Invokable
+    Invokable* findInvokable(std::string_view name) const;
+
+    /// Removes the invokable from a metaclass. The method fails if:
+    /// - the invokable is not registered to the metaclass.
+    /// - the metaclass is sealed.
+    /// \param invokable The invokable to remove.
+    void removeInvokable(MetaInvokable& invokable);
 
 protected:
     /// The descriptor of the metaclass.
     struct META_API DescriptorInterface
     {
         /// The callable container type.
-        using CallableContainer = std::unordered_map<std::string, Callable*>;
+        using InvokableContainer = std::unordered_map<std::string, MetaInvokable*>;
 
         /// The name of the meta class.
         std::string name;
         /// The callable container of the meta class.
-        CallableContainer callables;
+        InvokableContainer callables;
         /// Whether the metaclass is sealed.
         bool sealed = false;
 
         virtual ~DescriptorInterface() = default;
-        virtual MetaObjectPtr create(std::string_view /*name*/) const
+        virtual ObjectPtr create(std::string_view /*name*/) const
         {
             return {};
         }
@@ -151,7 +158,7 @@ protected:
             return false;
         }
         virtual bool isAbstract() const = 0;
-        virtual bool isMetaClassOf(const MetaObject& object) const = 0;
+        virtual bool isMetaClassOf(const Object& object) const = 0;
     };
     using DescriptorPtr = std::unique_ptr<DescriptorInterface>;
 
@@ -186,9 +193,5 @@ static const meta::MetaClass* getStaticMetaClass()                              
 static inline constexpr char __MetaName[]{ClassName};                           \
 using MetaClassTypeBase = meta::detail::MetaClassImpl<__MetaName, __VA_ARGS__>; \
 struct META_API MetaClassType : MetaClassTypeBase
-
-/// Defines a metamethod to a method of a class for a metaclass.
-#define META_METHOD(Class, Method) \
-MetaMethod _##Method{*this, #Method, &Class::Method}
 
 #endif // META_METACLASS_HPP

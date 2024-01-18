@@ -31,7 +31,7 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
 
     struct META_API Descriptor : DescriptorInterface
     {
-        MetaObjectPtr create(std::string_view name) const override
+        ObjectPtr create(std::string_view name) const override
         {
             if constexpr (std::is_abstract_v<DeclaredClass>)
             {
@@ -88,7 +88,7 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
             return std::is_abstract_v<DeclaredClass>;
         }
 
-        bool isMetaClassOf(const MetaObject& object) const final
+        bool isMetaClassOf(const Object& object) const final
         {
             auto address = dynamic_cast<const DeclaredClass*>(&object);
             return address != nullptr;

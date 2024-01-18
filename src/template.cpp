@@ -28,7 +28,7 @@
 #include <meta/library_config.hpp>
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaobject.hpp>
+#include <meta/object.hpp>
 #include <meta/tasks/task_scheduler.hpp>
 
 #include <meta/log/trace.hpp>
@@ -90,7 +90,7 @@ void Library::initialize(const LibraryArguments& arguments)
 #endif
 
     d->objectFactory = std::make_unique<ObjectFactory>();
-    d->objectFactory->registerMetaClass(MetaObject::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(Object::getStaticMetaClass());
 }
 
 void Library::uninitialize()

@@ -16,13 +16,13 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/callable.hpp>
+#include <meta/metadata/invokable.hpp>
 #include <meta/metadata/metaclass.hpp>
 
 namespace meta
 {
 
-MetaObjectPtr MetaClass::create(std::string_view name) const
+ObjectPtr MetaClass::create(std::string_view name) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->create(name);
@@ -52,7 +52,7 @@ bool MetaClass::isAbstract() const
     return m_descriptor->isAbstract();
 }
 
-bool MetaClass::isMetaClassOf(const MetaObject& object) const
+bool MetaClass::isMetaClassOf(const Object& object) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->isMetaClassOf(object);
@@ -68,18 +68,18 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
     return m_descriptor->hasSuperClass(metaClass);
 }
 
-bool MetaClass::addMethod(Callable& callable)
+bool MetaClass::addInvokable(MetaInvokable& invokable)
 {
     abortIfFail(m_descriptor && !m_descriptor->sealed);
-    auto result = m_descriptor->callables.insert({std::string(callable.getName()), &callable});
+    auto result = m_descriptor->callables.insert({std::string(invokable.getName()), &invokable});
     if (!result.second)
     {
-        META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
+        META_LOG_ERROR("Invokable " << invokable.getName() <<" is already registered to metaclass.");
     }
     return result.second;
 }
 
-Callable* MetaClass::findMethod(std::string_view name) const
+Invokable* MetaClass::findInvokable(std::string_view name) const
 {
     abortIfFail(m_descriptor);
     auto it = m_descriptor->callables.find(std::string(name));
@@ -88,6 +88,20 @@ Callable* MetaClass::findMethod(std::string_view name) const
         return {};
     }
     return it->second;
+}
+
+void MetaClass::removeInvokable(MetaInvokable& invokable)
+{
+    abortIfFail(m_descriptor);
+    auto it = m_descriptor->callables.find(std::string(invokable.getName()));
+    if (it == m_descriptor->callables.end())
+    {
+        META_LOG_ERROR("Invokable " << invokable.getName() <<" is not registered to metaclass.");
+    }
+    else
+    {
+        m_descriptor->callables.erase(it);
+    }
 }
 
 }

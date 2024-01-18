@@ -16,30 +16,30 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/callable.hpp>
+#include <meta/metadata/invokable.hpp>
 
 namespace meta
 {
 
-Callable::Callable(Callable&& other)
+Invokable::Invokable(Invokable&& other)
 {
     swap(other);
 }
 
-Callable& Callable::operator=(Callable&& other)
+Invokable& Invokable::operator=(Invokable&& other)
 {
-    Callable tmp(std::forward<Callable>(other));
+    Invokable tmp(std::forward<Invokable>(other));
     swap(tmp);
     return *this;
 }
 
-void Callable::swap(Callable& other)
+void Invokable::swap(Invokable& other)
 {
     std::swap(other.m_descriptor.name, m_descriptor.name);
     std::swap(other.m_descriptor.invokable, m_descriptor.invokable);
 }
 
-bool Callable::isValid() const
+bool Invokable::isValid() const
 {
     return static_cast<bool>(m_descriptor.invokable);
 }

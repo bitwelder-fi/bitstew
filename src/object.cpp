@@ -16,28 +16,27 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/metaobject.hpp>
+#include <meta/object.hpp>
 
 namespace meta
 {
 
-MetaObject::MetaObject(std::string_view name) :
+Object::Object(std::string_view name) :
     m_name(name)
 {
 }
 
-MetaObjectPtr MetaObject::create(std::string_view name)
+ObjectPtr Object::create(std::string_view name)
 {
-    return MetaObjectPtr(new MetaObject(name));
+    return ObjectPtr(new Object(name));
 }
 
-
-std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments)
+std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments)
 {
     abortIfFail(object && !invokableName.empty());
 
     auto metaClass = object->getStaticMetaClass();
-    auto metaMethod = metaClass->findMethod(invokableName);
+    auto metaMethod = metaClass->findInvokable(invokableName);
     if (!metaMethod)
     {
         return std::nullopt;

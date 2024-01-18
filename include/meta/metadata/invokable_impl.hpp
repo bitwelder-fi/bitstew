@@ -20,7 +20,7 @@ namespace meta
 {
 
 template<class Function>
-Callable::Callable(std::string_view name, Function function)
+Invokable::Invokable(std::string_view name, Function function)
 {
     if (!isValidMetaName(name))
     {

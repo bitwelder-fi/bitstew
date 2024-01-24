@@ -19,6 +19,7 @@
 #include <meta/arguments/argument_type.hpp>
 
 #include <cstdlib>
+#include <cstring>
 #include <cxxabi.h>
 
 namespace meta

@@ -25,33 +25,20 @@ namespace meta
 namespace detail
 {
 
-template <typename Function, typename ArgType, std::size_t N>
-class enableRepack
+template <typename Function>
+struct enableRepack
 {
-    template <typename> static std::false_type test(...);
-    template <typename U> static auto test(int)
-    {
-        if constexpr (traits::function_traits<U>::arity > 0u)
-        {
-            return std::is_same_v<typename traits::function_traits<U>::template argument<N>::type, ArgType>;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-public:
     static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
-    static constexpr bool packSelf = std::is_same<decltype(test<Function>(0)), std::true_type>::value;
+    static constexpr bool packSelf = traits::is_same_arg<Function, Invokable*, 0u>::value;
     static constexpr bool value = packObject || packSelf;
 };
 
 }
 
 template <class Function>
-Invokable::InvokableDescriptor<Function>::InvokableDescriptor(std::string_view name, Function function) :
-    ObjectExtension::Descriptor(name, detail::enableRepack<Function, Invokable*, 0u>::value),
+Invokable::InvokableDescriptor<Function>::InvokableDescriptor(Invokable& invokable, std::string_view name, Function function) :
+    ObjectExtension::Descriptor(name, detail::enableRepack<Function>::value),
+    invokable(&invokable),
     function(function)
 {
 }
@@ -61,7 +48,7 @@ PackagedArguments Invokable::InvokableDescriptor<Function>::repackArguments(cons
 {
     auto result = PackagedArguments();
 
-    if constexpr (detail::enableRepack<Function, Invokable*, 0u>::packObject)
+    if constexpr (detail::enableRepack<Function>::packObject)
     {
         using ClassType = typename traits::function_traits<Function>::object;
         if constexpr (std::is_base_of_v<Object, ClassType>)
@@ -73,9 +60,9 @@ PackagedArguments Invokable::InvokableDescriptor<Function>::repackArguments(cons
             }
         }
     }
-    if constexpr (detail::enableRepack<Function, Invokable*, 0u>::packSelf)
+    if constexpr (detail::enableRepack<Function>::packSelf)
     {
-        result += ArgumentData(this);
+        result += ArgumentData(invokable);
     }
 
     result += arguments;

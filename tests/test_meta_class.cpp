@@ -315,12 +315,7 @@ TEST_F(MetaLibraryTest, invokeMetaObject_getName)
     auto object = metaClass->create("object");
     ASSERT_NE(nullptr, object);
 
-    auto metaGetName = std::make_shared<meta::Invokable>("getName", &meta::Object::getName);
-
-    // auto args = meta::PackagedArguments(static_cast<const meta::Object*>(object.get()));
-    // auto result = metaGetName->apply(args);
-    // EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(result));
-
+    auto metaGetName = meta::Invokable::create("getName", &meta::Object::getName);
     object->addExtension(metaGetName);
     auto result = meta::invoke(object, "getName");
     ASSERT_NE(std::nullopt, result);

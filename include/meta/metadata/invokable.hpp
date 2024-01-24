@@ -50,22 +50,31 @@ public:
     /// \param name The name of the function.
     /// \param function The function of the invokable.
     template<class Function>
-    explicit Invokable(std::string_view name, Function function) :
-        ObjectExtension(pimpl::make_d_ptr<InvokableDescriptor<Function>>(name, function))
+    static InvokablePtr create(std::string_view name, Function function)
     {
+        return std::shared_ptr<Invokable>(new Invokable(name, function));
     }
 
 protected:
     DISABLE_COPY(Invokable);
 
+    template<class Function>
+    explicit Invokable(std::string_view name, Function function) :
+        ObjectExtension(pimpl::make_d_ptr<InvokableDescriptor<Function>>(*this, name, function))
+    {
+    }
+
     /// The descriptor type of the invokable.
     template <class Function>
     struct META_API InvokableDescriptor : ObjectExtension::Descriptor
     {
+        /// The invokable which owns the descriptor.
+        Invokable* invokable = nullptr;
+        /// The invokable function.
         Function function;
 
         /// Constructor, creates a descriptor for a function.
-        explicit InvokableDescriptor(std::string_view name, Function function);
+        explicit InvokableDescriptor(Invokable& invokable, std::string_view name, Function function);
 
         /// Overrides ObjectExtension::repackArguments().
         PackagedArguments repackArguments(const PackagedArguments& arguments) override;

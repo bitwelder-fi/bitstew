@@ -23,6 +23,7 @@
 #include <utils/function_traits.hpp>
 
 #include <any>
+#include <memory>
 #include <string>
 #include <vector>
 

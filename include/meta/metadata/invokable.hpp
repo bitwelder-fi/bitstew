@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,82 +19,59 @@
 #ifndef META_INVOKABLE_HPP
 #define META_INVOKABLE_HPP
 
-#include <meta/meta_api.hpp>
 #include <meta/arguments/argument_type.hpp>
+#include <meta/forwards.hpp>
+#include <meta/meta_api.hpp>
+#include <meta/object_extension.hpp>
 
-#include <functional>
 #include <string_view>
-#include <utils/function_traits.hpp>
 
 namespace meta
 {
 
-/// Represents an invokable object. An invokable can be a function, a lambda, a functor or a method.
+/// %Invokable represents an invokable extension of an Object, which can be applied on an instance
+/// at runtime. To add an invokable to an instance of an Object, call Object::addExtension(). You can
+/// invoke invokable extensions by calling the meta::invoke() function.
+///
+/// When an invokable extension gets added to an instance of an Object, the instance takes the ownership
+/// over the invokable. An invokable may only be attached to a single Object instance at a time. You
+/// can move an invokable from an Object instance to an other by removing the invokable from the source
+/// instance before adding it to the next instance.
 ///
 /// The invokable arguments can hold any type, except reference types.
-class META_API Invokable
+class META_API Invokable : public ObjectExtension
 {
 public:
-    /// The default constructor.
-    explicit Invokable() = default;
 
-    /// Creates an invokable object for a function, a functor, a lambda or a method.
+    /// Creates an invokable object for a function, a functor, a lambda or a method. These invokables
+    /// may get any types of arguments. When invoked, Meta checks whether the first argument type is
+    /// Invokable type, and passes the invokable instance as argument.
     /// \tparam Function The function type.
     /// \param name The name of the function.
     /// \param function The function of the invokable.
     template<class Function>
-    explicit Invokable(std::string_view name, Function function);
-
-    /// Move constructor.
-    Invokable(Invokable&& other);
-    /// Move operator.
-    Invokable& operator=(Invokable&& other);
-    /// Swaps this invokable with \a other.
-    /// \param other The invokable with which to swap this invokable.
-    void swap(Invokable& other);
-
-    /// Invokes the invokable with packaged arguments.
-    /// \param arguments The packaged arguments with which to invoke the invokable.
-    /// \return The return value of the invokable. If the invokable is void, returns an invalid ArgumentData.
-    ArgumentData apply(const PackagedArguments& arguments)
+    explicit Invokable(std::string_view name, Function function) :
+        ObjectExtension(pimpl::make_d_ptr<InvokableDescriptor<Function>>(name, function))
     {
-        return m_descriptor.invokable(arguments);
     }
-
-    /// Invokes the invokable with an object and packaged arguments.
-    /// \param arguments The arguments with which to invoke the invokable.
-    /// \return The return value of the invokable. If the invokable is void, returns an invalid ArgumentData.
-    template <class ClassType>
-    ArgumentData apply(ClassType* object, const PackagedArguments& arguments)
-    {
-        return m_descriptor.invokable(PackagedArguments(object).append(arguments));
-    }
-
-    /// Returns the name of the invokable.
-    /// \return The name of the invokable.
-    std::string_view getName() const
-    {
-        return m_descriptor.name;
-    }
-
-    /// Returns whether the invokable is valid.
-    bool isValid() const;
 
 protected:
     DISABLE_COPY(Invokable);
-    using InvokableFunction = std::function<ArgumentData(const PackagedArguments&)>;
 
     /// The descriptor type of the invokable.
-    struct META_API Descriptor
+    template <class Function>
+    struct META_API InvokableDescriptor : ObjectExtension::Descriptor
     {
-        /// The invokable function of the invokable object.
-        InvokableFunction invokable;
-        /// The name of the invokable object.
-        std::string name;
-    };
+        Function function;
 
-    /// The descriptor of the invokable.
-    Descriptor m_descriptor;
+        /// Constructor, creates a descriptor for a function.
+        explicit InvokableDescriptor(std::string_view name, Function function);
+
+        /// Overrides ObjectExtension::repackArguments().
+        PackagedArguments repackArguments(const PackagedArguments& arguments) override;
+
+        ArgumentData execute(const PackagedArguments& arguments) override;
+    };
 };
 
 }

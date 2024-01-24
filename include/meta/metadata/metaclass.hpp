@@ -19,21 +19,16 @@
 #ifndef META_METACLASS_HPP
 #define META_METACLASS_HPP
 
-#include <meta/meta_api.hpp>
-#include <meta/metadata/invokable.hpp>
 #include <assert.hpp>
+#include <meta/forwards.hpp>
+#include <meta/meta_api.hpp>
 
 #include <memory>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 
 namespace meta
 {
-
-class Object;
-using ObjectPtr = std::shared_ptr<Object>;
-
 
 /// Defines the metaclass of an associated class.
 class META_API MetaClass
@@ -92,51 +87,12 @@ public:
         return m_descriptor->hasSuperClass(*TDerivedClass::getStaticMetaClass());
     }
 
-    /// Meta-invokable, a wrapper around an invokable object.
-    struct MetaInvokable : public Invokable
-    {
-        /// Constructor. Registers the invokable to the metaclass.
-        template <class Function>
-        explicit MetaInvokable(MetaClass& metaClass, std::string_view name, Function callable) :
-            Invokable(name, callable)
-        {
-            metaClass.addInvokable(*this);
-        }
-    };
-
-    /// Adds an invokable to a meta class. The invokable is either a method of the class, or an attached
-    /// function, or a lambda. The method fails if
-    /// - the meta class already has an invokable with the same name.
-    /// - the meta class is sealed.
-    /// \param invokable The invokable object to add.
-    /// \return If the invokable is added with success, returns \e true, otherwise \e false. On failure,
-    ///         and tracing is enabled, an error log is printed.
-    /// \see Invokable
-    bool addInvokable(MetaInvokable& invokable);
-
-    /// Tries to find an invokable with the given name.
-    /// \param name The name of the invokable to find.
-    /// \return The invokable, or \e nullptr if no invokable with the name is found.
-    /// \see Invokable
-    Invokable* findInvokable(std::string_view name) const;
-
-    /// Removes the invokable from a metaclass. The method fails if:
-    /// - the invokable is not registered to the metaclass.
-    /// - the metaclass is sealed.
-    /// \param invokable The invokable to remove.
-    void removeInvokable(MetaInvokable& invokable);
-
 protected:
     /// The descriptor of the metaclass.
     struct META_API DescriptorInterface
     {
-        /// The callable container type.
-        using InvokableContainer = std::unordered_map<std::string, MetaInvokable*>;
-
         /// The name of the meta class.
         std::string name;
-        /// The callable container of the meta class.
-        InvokableContainer callables;
         /// Whether the metaclass is sealed.
         bool sealed = false;
 

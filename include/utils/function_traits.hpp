@@ -58,7 +58,7 @@ struct function_traits<TRet(TObject::*)(Args...)>
 template <class TObject, typename TRet, typename... Args>
 struct function_traits<TRet(TObject::*)(Args...) const>
 {
-    using object = TObject;
+    using object = TObject const;
     using return_type = TRet;
     using arg_types = std::tuple<Args...>;
     typedef TRet(TObject::*function_type)(Args...) const;
@@ -100,9 +100,23 @@ struct function_traits<TRet(*)(Args...)>
 };
 
 template <typename Function, typename ArgType, std::size_t N>
-struct is_same_arg
+class is_same_arg
 {
-    static constexpr bool value = std::is_same_v<typename function_traits<Function>::template argument<N>::type, ArgType>;
+    template <typename> static std::false_type test(...);
+    template <typename U> static auto test(int)
+    {
+        if constexpr (function_traits<U>::arity > 0u)
+        {
+            return std::is_same_v<typename function_traits<U>::template argument<N>::type, ArgType>;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+public:
+    static constexpr bool value = std::is_same<decltype(test<Function>(0)), std::true_type>::value;
 };
 
 } // namespace traits

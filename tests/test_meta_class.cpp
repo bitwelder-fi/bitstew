@@ -17,7 +17,6 @@
  */
 
 #include <gtest/gtest.h>
-#include "utils/trace_printer_mock.hpp"
 
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
@@ -316,7 +315,14 @@ TEST_F(MetaLibraryTest, invokeMetaObject_getName)
     auto object = metaClass->create("object");
     ASSERT_NE(nullptr, object);
 
-    auto result = meta::invoke(object, "getName", meta::PackagedArguments());
+    auto metaGetName = std::make_shared<meta::Invokable>("getName", &meta::Object::getName);
+
+    // auto args = meta::PackagedArguments(static_cast<const meta::Object*>(object.get()));
+    // auto result = metaGetName->apply(args);
+    // EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(result));
+
+    object->addExtension(metaGetName);
+    auto result = meta::invoke(object, "getName");
     ASSERT_NE(std::nullopt, result);
     EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(*result));
 }

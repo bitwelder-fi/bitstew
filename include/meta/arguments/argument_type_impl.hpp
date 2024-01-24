@@ -49,7 +49,14 @@ struct PackToTuple
 template <typename T>
 ArgumentData::operator T() const
 {
-    return std::any_cast<T>(*this);
+    try
+    {
+        return m_isConst ? std::any_cast<const T>(*this) : std::any_cast<T>(*this);
+    }
+    catch (std::bad_any_cast&)
+    {
+        throw BadArgument(type(), m_isConst ? typeid(const T) : typeid(T));
+    }
 }
 
 template <typename... Arguments>
@@ -76,7 +83,7 @@ auto PackagedArguments::toTuple() const
     {
         using ClassType = typename traits::function_traits<FunctionSignature>::object;
         auto object = static_cast<ClassType*>(m_pack.front());
-        return std::tuple_cat(std::make_tuple(static_cast<ClassType*>(object)),
+        return std::tuple_cat(std::make_tuple(object),
                               detail::PackToTuple<FunctionSignature>::template convert<N, N + 1>(*this));
     }
     else

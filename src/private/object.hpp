@@ -16,32 +16,34 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/invokable.hpp>
+#ifndef META_OBJECT_P_HPP
+#define META_OBJECT_P_HPP
+
+#include <meta/object.hpp>
+
+#include <unordered_map>
 
 namespace meta
 {
 
-Invokable::Invokable(Invokable&& other)
+class ObjectDescriptor
 {
-    swap(other);
-}
+public:
+    DECLARE_PUBLIC(Object, ObjectDescriptor)
 
-Invokable& Invokable::operator=(Invokable&& other)
-{
-    Invokable tmp(std::forward<Invokable>(other));
-    swap(tmp);
-    return *this;
-}
+    Object* p_ptr = nullptr;
 
-void Invokable::swap(Invokable& other)
-{
-    std::swap(other.m_descriptor.name, m_descriptor.name);
-    std::swap(other.m_descriptor.invokable, m_descriptor.invokable);
-}
+    explicit ObjectDescriptor(Object& owner);
 
-bool Invokable::isValid() const
-{
-    return static_cast<bool>(m_descriptor.invokable);
-}
+    bool addExtention(ObjectExtensionPtr extension);
+    bool removeInvokable(ObjectExtension& extension);
+
+    using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
+
+    ExtensionsMap extensions;
+    std::atomic_bool sealed = false;
+};
 
 }
+
+#endif

@@ -68,40 +68,4 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
     return m_descriptor->hasSuperClass(metaClass);
 }
 
-bool MetaClass::addInvokable(MetaInvokable& invokable)
-{
-    abortIfFail(m_descriptor && !m_descriptor->sealed);
-    auto result = m_descriptor->callables.insert({std::string(invokable.getName()), &invokable});
-    if (!result.second)
-    {
-        META_LOG_ERROR("Invokable " << invokable.getName() <<" is already registered to metaclass.");
-    }
-    return result.second;
-}
-
-Invokable* MetaClass::findInvokable(std::string_view name) const
-{
-    abortIfFail(m_descriptor);
-    auto it = m_descriptor->callables.find(std::string(name));
-    if (it == m_descriptor->callables.end())
-    {
-        return {};
-    }
-    return it->second;
-}
-
-void MetaClass::removeInvokable(MetaInvokable& invokable)
-{
-    abortIfFail(m_descriptor);
-    auto it = m_descriptor->callables.find(std::string(invokable.getName()));
-    if (it == m_descriptor->callables.end())
-    {
-        META_LOG_ERROR("Invokable " << invokable.getName() <<" is not registered to metaclass.");
-    }
-    else
-    {
-        m_descriptor->callables.erase(it);
-    }
-}
-
 }

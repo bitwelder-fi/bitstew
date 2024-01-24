@@ -40,6 +40,17 @@ auto pimplGetPtrHelper(Ptr& ptr) -> decltype(ptr.operator->())
     return ptr.operator->();
 }
 
+#define DECLARE_DESCRIPTOR(DescriptorClass, descriptor)                             \
+    inline DescriptorClass* d_func()                                                \
+    {                                                                               \
+        return static_cast<DescriptorClass*>(pimplGetPtrHelper(descriptor));        \
+    }                                                                               \
+    inline const DescriptorClass* d_func() const                                    \
+    {                                                                               \
+        return static_cast<const DescriptorClass*>(pimplGetPtrHelper(descriptor));  \
+    }                                                                               \
+
+
 #define DECLARE_GETTERS(Class, PrivateClass)        \
     static PrivateClass* get(Class& p)              \
     {                                               \

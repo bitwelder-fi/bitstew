@@ -23,10 +23,23 @@
 #include <utils/function_traits.hpp>
 
 #include <any>
+#include <string>
 #include <vector>
 
 namespace meta
 {
+
+class META_API BadArgument : public std::exception
+{
+public:
+    BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept;
+    BadArgument(const BadArgument&) noexcept;
+    ~BadArgument() noexcept = default;
+    const char* what() const noexcept override;
+
+private:
+    std::unique_ptr<char, void(*)(void*)> message;
+};
 
 /// ArgumentData stores an argument passed on slot invocation.
 class META_API ArgumentData : public std::any
@@ -39,10 +52,14 @@ public:
     /// \tparam T The type of the value passed as argument.
     /// \param value The value to store.
     template <class T>
-    ArgumentData(T value)
-        : std::any(value)
+    ArgumentData(T value) :
+        std::any(value),
+        m_typeName(getTypeName()),
+        m_isConst(std::is_const_v<T>)
     {
     }
+
+    std::string getTypeName() const;
 
     /// Cast operator, returns the data stored by an ArgumentData instance.
     /// \tparam T The type of the casted value.
@@ -50,6 +67,10 @@ public:
     /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
     template <class T>
     operator T() const;
+
+private:
+    std::string m_typeName;
+    bool m_isConst = false;
 };
 
 /// PackagedArguments packages arguments for meta method or meta signal invocation.

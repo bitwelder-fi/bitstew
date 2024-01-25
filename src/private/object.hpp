@@ -21,8 +21,6 @@
 
 #include <meta/object.hpp>
 
-#include <unordered_map>
-
 namespace meta
 {
 

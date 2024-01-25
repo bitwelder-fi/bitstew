@@ -27,6 +27,7 @@
 
 #include <memory>
 #include <optional>
+#include <unordered_map>
 
 namespace meta
 {

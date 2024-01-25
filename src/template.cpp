@@ -29,6 +29,7 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/object.hpp>
+#include <meta/object_extension.hpp>
 #include <meta/tasks/task_scheduler.hpp>
 
 #include <meta/log/trace.hpp>
@@ -91,6 +92,7 @@ void Library::initialize(const LibraryArguments& arguments)
 
     d->objectFactory = std::make_unique<ObjectFactory>();
     d->objectFactory->registerMetaClass(Object::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(ObjectExtension::getStaticMetaClass());
 }
 
 void Library::uninitialize()

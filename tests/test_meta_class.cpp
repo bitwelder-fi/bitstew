@@ -119,10 +119,13 @@ class ObjectFactoryTest : public DomainTestEnvironment
 {
 protected:
     meta::ObjectFactory* m_factory = nullptr;
+    std::size_t m_registrySize = 0u;
+
     void SetUp() override
     {
         initializeDomain(false, true);
         m_factory = meta::Library::instance().objectFactory();
+        m_registrySize = std::distance(m_factory->begin(), m_factory->end());
     }
 };
 
@@ -241,7 +244,7 @@ TEST_F(ObjectFactoryTest, testRegister)
 TEST_F(ObjectFactoryTest, deepRegister)
 {
     m_factory->registerMetaClass(Object::getStaticMetaClass());
-    EXPECT_EQ(5u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_EQ(m_registrySize + 4u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Object"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("PreObject"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
@@ -258,12 +261,12 @@ TEST_F(ObjectFactoryTest, testOverride)
 TEST_F(ObjectFactoryTest, deepOverride)
 {
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
-    EXPECT_EQ(2u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 
     EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
-    EXPECT_EQ(3u, std::distance(m_factory->begin(), m_factory->end()));
+    EXPECT_EQ(m_registrySize + 2u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
@@ -306,18 +309,4 @@ TEST_F(MetaLibraryTest, testDomainObjectFactoryRegistryContent)
 {
     ASSERT_NE(nullptr, meta::Library::instance().objectFactory());
     EXPECT_NE(nullptr, meta::Library::instance().objectFactory()->findMetaClass("meta.Object"));
-}
-
-
-TEST_F(MetaLibraryTest, invokeMetaObject_getName)
-{
-    auto metaClass = meta::Object::getStaticMetaClass();
-    auto object = metaClass->create("object");
-    ASSERT_NE(nullptr, object);
-
-    auto metaGetName = meta::Invokable::create("getName", &meta::Object::getName);
-    object->addExtension(metaGetName);
-    auto result = meta::invoke(object, "getName");
-    ASSERT_NE(std::nullopt, result);
-    EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(*result));
 }

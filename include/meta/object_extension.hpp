@@ -50,9 +50,14 @@ public:
     ArgumentData execute(const PackagedArguments& arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
-    // META_CLASS("meta.ObjectExtension", ObjectExtension)
-    // {
-    // };
+    META_CLASS("meta.ObjectExtension", ObjectExtension)
+    {
+    };
+
+    static ObjectExtensionPtr create(std::string_view)
+    {
+        return {};
+    }
 
 protected:
     /// The descriptor of an object extension.
@@ -92,8 +97,6 @@ protected:
     virtual void onDetached()
     {
     }
-
-    DECLARE_DESCRIPTOR(Descriptor, m_descriptor)
 
 private:
     DISABLE_COPY(ObjectExtension);

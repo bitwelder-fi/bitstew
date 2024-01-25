@@ -37,7 +37,7 @@ MetaObject::~MetaObject()
 //     return m_name;
 // }
 
-ObjectPtr MetaClass::create(std::string_view name) const
+MetaObjectPtr MetaClass::create(std::string_view name) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->create(name);
@@ -67,7 +67,7 @@ bool MetaClass::isAbstract() const
     return m_descriptor->isAbstract();
 }
 
-bool MetaClass::isMetaClassOf(const Object& object) const
+bool MetaClass::isMetaClassOf(const MetaObject& object) const
 {
     abortIfFail(m_descriptor);
     return m_descriptor->isMetaClassOf(object);

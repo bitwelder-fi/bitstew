@@ -52,6 +52,7 @@ private:
     /// The metaname of the metaobject.
     std::string m_name;
 };
+using MetaObjectPtr = std::shared_ptr<MetaObject>;
 
 /// Defines the metaclass of an associated class.
 class META_API MetaClass
@@ -65,7 +66,7 @@ public:
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    ObjectPtr create(std::string_view name) const;
+    MetaObjectPtr create(std::string_view name) const;
 
     /// Cast the created meta object to the given class type.
     template <class ClassType>
@@ -95,7 +96,7 @@ public:
     /// \param The meta object to check.
     /// \return If this meta class is the meta class of the meta object, returns \e true, otherwise
     ///         \e false.
-    bool isMetaClassOf(const Object& object) const;
+    bool isMetaClassOf(const MetaObject& object) const;
 
     /// Returns whether this MetaClass is or is derived from the \a metaClass.
     /// \param metaClass The metaClass instance to check.
@@ -120,7 +121,7 @@ protected:
         bool sealed = false;
 
         virtual ~DescriptorInterface() = default;
-        virtual ObjectPtr create(std::string_view /*name*/) const
+        virtual MetaObjectPtr create(std::string_view /*name*/) const
         {
             return {};
         }
@@ -137,7 +138,7 @@ protected:
             return false;
         }
         virtual bool isAbstract() const = 0;
-        virtual bool isMetaClassOf(const Object& object) const = 0;
+        virtual bool isMetaClassOf(const MetaObject& object) const = 0;
     };
     using DescriptorPtr = std::unique_ptr<DescriptorInterface>;
 

@@ -39,10 +39,9 @@ namespace meta
 /// instance before adding it to the next instance.
 ///
 /// The invokable arguments can hold any type, except reference types.
-class META_API Invokable : public ObjectExtension
+class META_API Invokable final : public ObjectExtension
 {
 public:
-
     /// Creates an invokable object for a function, a functor, a lambda or a method. These invokables
     /// may get any types of arguments. When invoked, Meta checks whether the first argument type is
     /// Invokable type, and passes the invokable instance as argument.
@@ -66,7 +65,7 @@ protected:
 
     /// The descriptor type of the invokable.
     template <class Function>
-    struct META_API InvokableDescriptor : ObjectExtension::Descriptor
+    struct META_API InvokableDescriptor final : ObjectExtension::Descriptor
     {
         /// The invokable which owns the descriptor.
         Invokable* invokable = nullptr;
@@ -77,10 +76,10 @@ protected:
         explicit InvokableDescriptor(Invokable& invokable, Function function);
 
         /// Overrides ObjectExtension::Descriptor::execute().
-        ArgumentData execute(const PackagedArguments& arguments) override;
+        ArgumentData execute(const PackagedArguments& arguments);
 
         /// Overrides ObjectExtension::Descriptor::execute().
-        PackagedArguments repackageArguments(const PackagedArguments& arguments) override;
+        PackagedArguments repackageArguments(const PackagedArguments& arguments);
     };
 };
 

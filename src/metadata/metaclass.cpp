@@ -16,11 +16,26 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/invokable.hpp>
+#include <meta/meta.hpp>
 #include <meta/metadata/metaclass.hpp>
 
 namespace meta
 {
+
+MetaObject::MetaObject(std::string_view metaName) :
+    m_name(metaName)
+{
+    abortIfFail(isValidMetaName(m_name));
+}
+
+MetaObject::~MetaObject()
+{
+}
+
+// std::string_view MetaObject::getName() const
+// {
+//     return m_name;
+// }
 
 ObjectPtr MetaClass::create(std::string_view name) const
 {

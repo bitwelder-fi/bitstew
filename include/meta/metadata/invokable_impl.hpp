@@ -36,37 +36,36 @@ struct enableRepack
 }
 
 template <class Function>
-Invokable::InvokableDescriptor<Function>::InvokableDescriptor(Invokable& invokable, std::string_view name, Function function) :
-    ObjectExtension::Descriptor(name, detail::enableRepack<Function>::value),
+Invokable::InvokableDescriptor<Function>::InvokableDescriptor(Invokable& invokable, Function function) :
+    Descriptor(detail::enableRepack<Function>::value),
     invokable(&invokable),
     function(function)
 {
 }
 
 template <class Function>
-PackagedArguments Invokable::InvokableDescriptor<Function>::repackArguments(const PackagedArguments& arguments)
+PackagedArguments Invokable::InvokableDescriptor<Function>::repackageArguments(const PackagedArguments& arguments)
 {
     auto result = PackagedArguments();
-
     if constexpr (detail::enableRepack<Function>::packObject)
     {
         using ClassType = typename traits::function_traits<Function>::object;
-        if constexpr (std::is_base_of_v<Object, ClassType>)
+        if constexpr (std::is_base_of_v<MetaObject, ClassType>)
         {
-            auto object = this->owner.lock();
+            auto object = owner.lock();
             if (object)
             {
                 result += ArgumentData(dynamic_cast<ClassType*>(object.get()));
             }
         }
     }
+
     if constexpr (detail::enableRepack<Function>::packSelf)
     {
         result += ArgumentData(invokable);
     }
 
     result += arguments;
-
     return result;
 }
 
@@ -75,7 +74,7 @@ ArgumentData Invokable::InvokableDescriptor<Function>::execute(const PackagedArg
 {
     try
     {
-        auto pack = arguments.toTuple<Function>();
+        auto pack = arguments.template toTuple<Function>();
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
             std::apply(function, pack);

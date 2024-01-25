@@ -26,22 +26,11 @@
 namespace meta
 {
 
-class ObjectDescriptor
+struct ObjectDescriptor
 {
 public:
-    DECLARE_PUBLIC(Object, ObjectDescriptor)
-
-    Object* p_ptr = nullptr;
-
-    explicit ObjectDescriptor(Object& owner);
-
-    bool addExtention(ObjectExtensionPtr extension);
-    bool removeInvokable(ObjectExtension& extension);
-
-    using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
-
-    ExtensionsMap extensions;
-    std::atomic_bool sealed = false;
+    static bool addExtention(Object& self, ObjectExtensionPtr extension);
+    static bool removeInvokable(Object& self, ObjectExtension& extension);
 };
 
 }

@@ -63,6 +63,26 @@ int intStringInt(std::string a1, int a2)
     return 42;
 }
 
+struct InvokableWrapper
+{
+    template<typename Function>
+    explicit InvokableWrapper(std::string_view name, Function function) :
+        m_invokable(meta::Invokable::create(name, function))
+    {
+    }
+
+    meta::InvokablePtr operator->()
+    {
+        return m_invokable;
+    }
+    const meta::InvokablePtr operator->() const
+    {
+        return m_invokable;
+    }
+private:
+    meta::InvokablePtr m_invokable;
+};
+
 struct Class
 {
     void voidNoArgs()
@@ -91,6 +111,8 @@ struct Class
     {
         ++(*i);
     }
+
+    InvokableWrapper lambda{"lambda", [](meta::Invokable* self) { META_LOG_INFO("invokable wrapper: " << self->getName()); }};
 };
 
 class TestObject : public meta::Object
@@ -231,4 +253,11 @@ TEST_F(InvokableTests, methodWithPointerArgument)
     auto arguments = meta::PackagedArguments(&object, &i);
     callable->execute(arguments);
     EXPECT_EQ(42, i);
+}
+
+TEST_F(InvokableTests, invokeStaticInvokable)
+{
+    Class object;
+    EXPECT_CALL(*m_mockPrinter, log("invokable wrapper: lambda"));
+    object.lambda->execute();
 }

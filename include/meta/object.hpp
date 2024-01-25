@@ -31,10 +31,10 @@
 namespace meta
 {
 
-class ObjectDescriptor;
+struct ObjectDescriptor;
 
 /// The base class of any object that defines a meta class.
-class META_API Object : public std::enable_shared_from_this<Object>
+class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
 {
 public:
     /// Creates a meta-object.
@@ -42,13 +42,6 @@ public:
 
     /// Destructor.
     virtual ~Object();
-
-    /// Returns the name of the object.
-    /// \return The name of the object.
-    std::string_view getName() const
-    {
-        return m_name;
-    }
 
     /// The metadata of a meta object.
     META_CLASS("meta.Object", Object)
@@ -75,13 +68,13 @@ public:
 protected:
     /// Constructor.
     explicit Object(std::string_view name);
-    /// Constructor, creates an object with a name and a given object descriptor.
-    explicit Object(std::string_view name, pimpl::d_ptr_type<ObjectDescriptor> d);
 
 private:
-    DECLARE_PRIVATE(ObjectDescriptor);
-    pimpl::d_ptr_type<ObjectDescriptor> d_ptr;
-    const std::string m_name;
+    using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
+
+    ExtensionsMap m_extensions;
+    std::atomic_bool m_sealed = false;
+    friend struct ObjectDescriptor;
 };
 
 /// Invokes an extension of a object.

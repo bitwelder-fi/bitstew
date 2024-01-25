@@ -60,7 +60,7 @@ protected:
 
     template<class Function>
     explicit Invokable(std::string_view name, Function function) :
-        ObjectExtension(pimpl::make_d_ptr<InvokableDescriptor<Function>>(*this, name, function))
+        ObjectExtension(name, pimpl::make_d_ptr<InvokableDescriptor<Function>>(*this, function))
     {
     }
 
@@ -74,12 +74,13 @@ protected:
         Function function;
 
         /// Constructor, creates a descriptor for a function.
-        explicit InvokableDescriptor(Invokable& invokable, std::string_view name, Function function);
+        explicit InvokableDescriptor(Invokable& invokable, Function function);
 
-        /// Overrides ObjectExtension::repackArguments().
-        PackagedArguments repackArguments(const PackagedArguments& arguments) override;
-
+        /// Overrides ObjectExtension::Descriptor::execute().
         ArgumentData execute(const PackagedArguments& arguments) override;
+
+        /// Overrides ObjectExtension::Descriptor::execute().
+        PackagedArguments repackageArguments(const PackagedArguments& arguments) override;
     };
 };
 

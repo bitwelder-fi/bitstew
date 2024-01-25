@@ -23,15 +23,8 @@
 namespace meta
 {
 
-ObjectExtension::Descriptor::Descriptor(std::string_view name, bool repackArguments) :
-    name(name),
-    repack(repackArguments)
-{
-    abortIfFail(isValidMetaName(name));
-}
-
-
-ObjectExtension::ObjectExtension(pimpl::d_ptr_type<Descriptor> descriptor) :
+ObjectExtension::ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor) :
+    MetaObject(name),
     m_descriptor(std::move(descriptor))
 {
 }
@@ -42,7 +35,7 @@ ObjectPtr ObjectExtension::getOwner() const
     return m_descriptor->owner.lock();
 }
 
-PackagedArguments ObjectExtension::Descriptor::repackArguments(const PackagedArguments& arguments)
+PackagedArguments ObjectExtension::Descriptor::repackageArguments(const PackagedArguments& arguments)
 {
     return PackagedArguments(arguments.begin(), arguments.end());
 }
@@ -53,8 +46,8 @@ ArgumentData ObjectExtension::execute(const PackagedArguments& arguments)
 
     if (m_descriptor->repack)
     {
-        const auto repack = m_descriptor->repackArguments(arguments);
-        return m_descriptor->execute(repack);
+        const auto repackedArguments = m_descriptor->repackageArguments(arguments);
+        return m_descriptor->execute(repackedArguments);
     }
 
     return m_descriptor->execute(arguments);

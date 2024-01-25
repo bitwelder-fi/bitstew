@@ -23,19 +23,14 @@
 namespace meta
 {
 
-ObjectDescriptor::ObjectDescriptor(Object& object) :
-    p_ptr(&object)
-{
-}
-
-bool ObjectDescriptor::addExtention(ObjectExtensionPtr extension)
+bool ObjectDescriptor::addExtention(Object& self, ObjectExtensionPtr extension)
 {
     abortIfFail(!extension->getOwner());
 
-    auto it = extensions.insert(std::make_pair(extension->getName(), extension));
+    auto it = self.m_extensions.insert(std::make_pair(extension->getName(), extension));
     if (it.second)
     {
-        it.first->second->m_descriptor->owner = p_ptr->shared_from_this();
+        it.first->second->m_descriptor->owner = self.shared_from_this();
         extension->onAttached();
     }
     else
@@ -45,16 +40,16 @@ bool ObjectDescriptor::addExtention(ObjectExtensionPtr extension)
     return it.second;
 }
 
-bool ObjectDescriptor::removeInvokable(ObjectExtension& extension)
+bool ObjectDescriptor::removeInvokable(Object& self, ObjectExtension& extension)
 {
-    abortIfFail(extension.getOwner().get() == p_ptr);
+    abortIfFail(extension.getOwner().get() == &self);
 
-    auto it = extensions.find(extension.getName());
-    if (it != extensions.end())
+    auto it = self.m_extensions.find(extension.getName());
+    if (it != self.m_extensions.end())
     {
         extension.onDetached();
         extension.m_descriptor->owner.reset();
-        extensions.erase(it);
+        self.m_extensions.erase(it);
         return true;
     }
     META_LOG_ERROR("Extension " << extension.getName() <<" does not extend the object.");
@@ -63,13 +58,7 @@ bool ObjectDescriptor::removeInvokable(ObjectExtension& extension)
 
 
 Object::Object(std::string_view name) :
-    Object(name, pimpl::make_d_ptr<ObjectDescriptor>(*this))
-{
-}
-
-Object::Object(std::string_view name, pimpl::d_ptr_type<ObjectDescriptor> d) :
-    d_ptr(std::move(d)),
-    m_name(name)
+    MetaObject(name)
 {
 }
 
@@ -84,28 +73,28 @@ ObjectPtr Object::create(std::string_view name)
 
 bool Object::addExtension(ObjectExtensionPtr invokable)
 {
-    if (d_ptr->sealed)
+    if (m_sealed)
     {
         META_LOG_ERROR("The object " << getName() <<" is sealed.");
         return false;
     }
-    return d_ptr->addExtention(std::move(invokable));
+    return ObjectDescriptor::addExtention(*this, std::move(invokable));
 }
 
 bool Object::removeExtension(ObjectExtension& invokable)
 {
-    if (d_ptr->sealed)
+    if (m_sealed)
     {
         META_LOG_ERROR("The object " << getName() <<" is sealed.");
         return false;
     }
-    return d_ptr->removeInvokable(invokable);
+    return ObjectDescriptor::removeInvokable(*this, invokable);
 }
 
 ObjectExtensionPtr Object::findExtension(std::string_view name) const
 {
-    auto it = d_ptr->extensions.find(name);
-    return (it != d_ptr->extensions.end()) ? it->second : ObjectExtensionPtr();
+    auto it = m_extensions.find(name);
+    return (it != m_extensions.end()) ? it->second : ObjectExtensionPtr();
 }
 
 std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)

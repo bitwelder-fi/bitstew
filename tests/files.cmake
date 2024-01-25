@@ -1,6 +1,6 @@
 set(SOURCES
-test-callable.cpp
 test_argument_type.cpp
+test_invokable.cpp
 test_log.cpp
 test_main.cpp
 test_meta_class.cpp

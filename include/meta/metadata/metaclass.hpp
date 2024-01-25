@@ -30,6 +30,29 @@
 namespace meta
 {
 
+/// The base class of objects whith metadata.
+class META_API MetaObject
+{
+public:
+    /// Destructor.
+    virtual ~MetaObject();
+
+    /// Returns the name of the metaobject.
+    /// \return The name of the metaobject.
+    std::string_view getName() const
+    {
+        return m_name;
+    }
+
+protected:
+    /// Constructor. Fails if the metaname passed as argument is invalid.
+    explicit MetaObject(std::string_view metaName);
+
+private:
+    /// The metaname of the metaobject.
+    std::string m_name;
+};
+
 /// Defines the metaclass of an associated class.
 class META_API MetaClass
 {

@@ -33,19 +33,11 @@ namespace meta
 /// added functionality.
 /// You can define object extensions on a metaclass. When defined on those, the metaclass factory will
 /// add all the extensions to the instance it creates.
-class META_API ObjectExtension : public std::enable_shared_from_this<ObjectExtension>
+class META_API ObjectExtension : public MetaObject, public std::enable_shared_from_this<ObjectExtension>
 {
 public:
     /// Destructor.
     virtual ~ObjectExtension() = default;
-
-    /// Returns the name of the object extension.
-    /// \return The name of the object extension.
-    inline std::string_view getName() const
-    {
-        abortIfFail(m_descriptor);
-        return m_descriptor->name;
-    }
 
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
@@ -67,13 +59,13 @@ protected:
     struct META_API Descriptor
     {
         ObjectWeakPtr owner;
-        std::string name;
         bool repack = false;
 
-        explicit Descriptor() = default;
+        explicit Descriptor(bool repack) :
+            repack(repack)
+        {
+        }
         virtual ~Descriptor() = default;
-
-        explicit Descriptor(std::string_view name, bool repackArguments = false);
 
         /// Override this to provide extension specific executor.
         /// \param arguments The arguments with which the extension gets executed.
@@ -84,11 +76,11 @@ protected:
         /// Override this if your object extension requires arguments repackaging.
         /// \param arguments The arguments to repackage.
         /// \return The repackaged arguments.
-        virtual PackagedArguments repackArguments(const PackagedArguments& arguments);
+        virtual PackagedArguments repackageArguments(const PackagedArguments& arguments);
     };
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
-    explicit ObjectExtension(pimpl::d_ptr_type<Descriptor> descriptor);
+    explicit ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor);
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -108,7 +100,7 @@ private:
     DISABLE_MOVE(ObjectExtension);
 
     pimpl::d_ptr_type<Descriptor> m_descriptor;
-    friend class ObjectDescriptor;
+    friend struct ObjectDescriptor;
 };
 
 }

@@ -29,7 +29,7 @@
 namespace meta
 {
 
-/// %Invokable represents an invokable extension of an Object, which can be applied on an instance
+/// %InvokableType represents an invokable extension of an Object, which can be applied on an instance
 /// at runtime. To add an invokable to an instance of an Object, call Object::addExtension(). You can
 /// invoke invokable extensions by calling the meta::invoke() function.
 ///
@@ -39,48 +39,29 @@ namespace meta
 /// instance before adding it to the next instance.
 ///
 /// The invokable arguments can hold any type, except reference types.
-class META_API Invokable final : public ObjectExtension
+template <class Function>
+class InvokableType final : public ObjectExtension
 {
-public:
-    /// Creates an invokable object for a function, a functor, a lambda or a method. These invokables
-    /// may get any types of arguments. When invoked, Meta checks whether the first argument type is
-    /// Invokable type, and passes the invokable instance as argument.
-    /// \tparam Function The function type.
-    /// \param name The name of the function.
-    /// \param function The function of the invokable.
-    template<class Function>
-    static InvokablePtr create(std::string_view name, Function function)
-    {
-        return std::shared_ptr<Invokable>(new Invokable(name, function));
-    }
+    using SelfType = InvokableType<Function>;
+
+    Function m_function;
 
 protected:
-    DISABLE_COPY(Invokable);
+    PackagedArguments repackageArguments(const PackagedArguments& arguments);
+    /// Overrides ObjectExtension::Descriptor::execute().
+    ArgumentData executeOverride(const PackagedArguments& arguments);
 
-    template<class Function>
-    explicit Invokable(std::string_view name, Function function) :
-        ObjectExtension(name, pimpl::make_d_ptr<InvokableDescriptor<Function>>(*this, function))
+    explicit InvokableType(std::string_view name, Function function) :
+        ObjectExtension(name),
+        m_function(function)
     {
     }
 
-    /// The descriptor type of the invokable.
-    template <class Function>
-    struct META_API InvokableDescriptor final : ObjectExtension::Descriptor
+public:
+    static auto create(std::string_view name, Function function)
     {
-        /// The invokable which owns the descriptor.
-        Invokable* invokable = nullptr;
-        /// The invokable function.
-        Function function;
-
-        /// Constructor, creates a descriptor for a function.
-        explicit InvokableDescriptor(Invokable& invokable, Function function);
-
-        /// Overrides ObjectExtension::Descriptor::execute().
-        ArgumentData execute(const PackagedArguments& arguments);
-
-        /// Overrides ObjectExtension::Descriptor::execute().
-        PackagedArguments repackageArguments(const PackagedArguments& arguments);
-    };
+        return std::shared_ptr<SelfType>(new SelfType(name, function));
+    }
 };
 
 }

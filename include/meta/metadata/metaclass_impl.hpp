@@ -31,7 +31,7 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
 
     struct META_API Descriptor : DescriptorInterface
     {
-        MetaObjectPtr create(std::string_view name) const override
+        MetaObjectPtr create(std::string_view name, const PackagedArguments& arguments) const override
         {
             if constexpr (std::is_abstract_v<DeclaredClass>)
             {
@@ -39,7 +39,7 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
             }
             else
             {
-                return DeclaredClass::create(name);
+                return DeclaredClass::create(name, arguments);
             }
         }
 

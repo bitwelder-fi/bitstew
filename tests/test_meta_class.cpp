@@ -103,7 +103,7 @@ public:
     {
     };
 
-    static std::shared_ptr<Object> create(std::string_view name)
+    static std::shared_ptr<Object> create(std::string_view name, const meta::PackagedArguments&)
     {
         return std::shared_ptr<Object>(new Object(name));
     }

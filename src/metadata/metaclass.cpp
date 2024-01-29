@@ -37,12 +37,6 @@ MetaObject::~MetaObject()
 //     return m_name;
 // }
 
-MetaObjectPtr MetaClass::create(std::string_view name) const
-{
-    abortIfFail(m_descriptor);
-    return m_descriptor->create(name);
-}
-
 std::string_view MetaClass::getName() const
 {
     abortIfFail(m_descriptor);

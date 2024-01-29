@@ -20,6 +20,7 @@
 #define META_METACLASS_HPP
 
 #include <assert.hpp>
+#include <meta/arguments/argument_type.hpp>
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 
@@ -66,13 +67,12 @@ public:
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    MetaObjectPtr create(std::string_view name) const;
-
-    /// Cast the created meta object to the given class type.
-    template <class ClassType>
-    std::shared_ptr<ClassType> create(std::string_view name) const
+    /// \param arguments The arguments with which to create the object.
+    template <class ClassType = MetaObject>
+    std::shared_ptr<ClassType> create(std::string_view name, const PackagedArguments& arguments = PackagedArguments()) const
     {
-        return std::dynamic_pointer_cast<ClassType>(create(name));
+        abortIfFail(m_descriptor);
+        return std::dynamic_pointer_cast<ClassType>(m_descriptor->create(name, arguments));
     }
 
     /// Returns the name of the metaclass.
@@ -121,7 +121,7 @@ protected:
         bool sealed = false;
 
         virtual ~DescriptorInterface() = default;
-        virtual MetaObjectPtr create(std::string_view /*name*/) const
+        virtual MetaObjectPtr create(std::string_view /*name*/, const PackagedArguments& /*arguments*/) const
         {
             return {};
         }

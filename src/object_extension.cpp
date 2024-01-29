@@ -35,22 +35,11 @@ ObjectPtr ObjectExtension::getOwner() const
     return m_descriptor->owner.lock();
 }
 
-PackagedArguments ObjectExtension::Descriptor::repackageArguments(const PackagedArguments& arguments)
-{
-    return PackagedArguments(arguments.begin(), arguments.end());
-}
-
 ArgumentData ObjectExtension::execute(const PackagedArguments& arguments)
 {
     abortIfFail(m_descriptor);
 
-    if (m_descriptor->repack)
-    {
-        const auto repackedArguments = m_descriptor->repackageArguments(arguments);
-        return m_descriptor->execute(repackedArguments);
-    }
-
-    return m_descriptor->execute(arguments);
+    return executeOverride(arguments);
 }
 
 }

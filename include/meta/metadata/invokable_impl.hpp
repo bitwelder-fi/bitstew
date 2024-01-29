@@ -29,22 +29,14 @@ template <typename Function>
 struct enableRepack
 {
     static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
-    static constexpr bool packSelf = traits::is_same_arg<Function, Invokable*, 0u>::value;
+    static constexpr bool packSelf = traits::is_same_arg<Function, ObjectExtension*, 0u>::value;
     static constexpr bool value = packObject || packSelf;
 };
 
 }
 
 template <class Function>
-Invokable::InvokableDescriptor<Function>::InvokableDescriptor(Invokable& invokable, Function function) :
-    Descriptor(detail::enableRepack<Function>::value),
-    invokable(&invokable),
-    function(function)
-{
-}
-
-template <class Function>
-PackagedArguments Invokable::InvokableDescriptor<Function>::repackageArguments(const PackagedArguments& arguments)
+PackagedArguments InvokableType<Function>::repackageArguments(const PackagedArguments& arguments)
 {
     auto result = PackagedArguments();
     if constexpr (detail::enableRepack<Function>::packObject)
@@ -52,7 +44,7 @@ PackagedArguments Invokable::InvokableDescriptor<Function>::repackageArguments(c
         using ClassType = typename traits::function_traits<Function>::object;
         if constexpr (std::is_base_of_v<MetaObject, ClassType>)
         {
-            auto object = owner.lock();
+            auto object = getOwner();
             if (object)
             {
                 result += ArgumentData(dynamic_cast<ClassType*>(object.get()));
@@ -62,7 +54,7 @@ PackagedArguments Invokable::InvokableDescriptor<Function>::repackageArguments(c
 
     if constexpr (detail::enableRepack<Function>::packSelf)
     {
-        result += ArgumentData(invokable);
+        result += ArgumentData(static_cast<ObjectExtension*>(this));
     }
 
     result += arguments;
@@ -70,19 +62,20 @@ PackagedArguments Invokable::InvokableDescriptor<Function>::repackageArguments(c
 }
 
 template <class Function>
-ArgumentData Invokable::InvokableDescriptor<Function>::execute(const PackagedArguments& arguments)
+ArgumentData InvokableType<Function>::executeOverride(const PackagedArguments& arguments)
 {
     try
     {
-        auto pack = arguments.template toTuple<Function>();
+        auto args = repackageArguments(arguments);
+        auto pack = args.template toTuple<Function>();
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
-            std::apply(function, pack);
+            std::apply(m_function, pack);
             return ArgumentData();
         }
         else
         {
-            auto result = std::apply(function, pack);
+            auto result = std::apply(m_function, pack);
             return ArgumentData(result);
         }
     }
@@ -92,5 +85,4 @@ ArgumentData Invokable::InvokableDescriptor<Function>::execute(const PackagedArg
         return ArgumentData();
     }
 }
-
 }

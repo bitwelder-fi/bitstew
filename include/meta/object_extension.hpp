@@ -54,7 +54,7 @@ public:
     {
     };
 
-    static ObjectExtensionPtr create(std::string_view)
+    static ObjectExtensionPtr create(std::string_view, const PackagedArguments&)
     {
         return {};
     }
@@ -64,28 +64,19 @@ protected:
     struct META_API Descriptor
     {
         ObjectWeakPtr owner;
-        bool repack = false;
 
-        explicit Descriptor(bool repack) :
-            repack(repack)
-        {
-        }
+        explicit Descriptor() = default;
         virtual ~Descriptor() = default;
-
-        /// Override this to provide extension specific executor.
-        /// \param arguments The arguments with which the extension gets executed.
-        /// \return The return value of the extension execution. Extensions which do not return any value
-        ///         return a void ArgumentData.
-        virtual ArgumentData execute(const PackagedArguments& arguments) = 0;
-
-        /// Override this if your object extension requires arguments repackaging.
-        /// \param arguments The arguments to repackage.
-        /// \return The repackaged arguments.
-        virtual PackagedArguments repackageArguments(const PackagedArguments& arguments);
     };
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
-    explicit ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor);
+    explicit ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor = pimpl::make_d_ptr<Descriptor>());
+
+    /// Override this to provide extension specific executor.
+    /// \param arguments The arguments with which the extension gets executed.
+    /// \return The return value of the extension execution. Extensions which do not return any value
+    ///         return a void ArgumentData.
+    virtual ArgumentData executeOverride(const PackagedArguments& arguments) = 0;
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()

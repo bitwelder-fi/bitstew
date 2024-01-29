@@ -39,7 +39,7 @@ class META_API Object : public MetaObject, public std::enable_shared_from_this<O
 {
 public:
     /// Creates a meta-object.
-    static ObjectPtr create(std::string_view name);
+    static ObjectPtr create(std::string_view name, const PackagedArguments&);
 
     /// Destructor.
     virtual ~Object();

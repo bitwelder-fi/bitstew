@@ -36,6 +36,13 @@ struct enableRepack
 }
 
 template <class Function>
+InvokableType<Function>::InvokableType(std::string_view name, Function function) :
+    ObjectExtension(name),
+    m_function(function)
+{
+}
+
+template <class Function>
 PackagedArguments InvokableType<Function>::repackageArguments(const PackagedArguments& arguments)
 {
     auto result = PackagedArguments();

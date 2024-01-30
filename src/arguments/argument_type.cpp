@@ -25,29 +25,11 @@
 namespace meta
 {
 
-namespace
-{
-
-std::string demangleType(const char* typeName)
-{
-    int status = std::numeric_limits<int>::infinity();
-
-    std::unique_ptr<char, void(*)(void*)> res
-        {
-            abi::__cxa_demangle(typeName, NULL, NULL, &status),
-            std::free
-        };
-
-    return (status == 0) ? res.get() : typeName;
-}
-
-}
-
 BadArgument::BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept :
     message(nullptr, std::free)
 {
-    auto actual = demangleType(actualType.name());
-    auto expected = demangleType(expectedType.name());
+    auto actual = ArgumentType(actualType).getName();
+    auto expected = ArgumentType(expectedType).getName();
     auto msg = "Bad argument: actual type: " + actual + ", expected: " + expected;
     message.reset(static_cast<char*>(std::calloc(msg.length(), sizeof(char))));
     memcpy(message.get(), msg.c_str(), msg.length());
@@ -71,10 +53,22 @@ const char* BadArgument::what() const noexcept
     return message.get();
 }
 
-
-std::string ArgumentData::getTypeName() const
+std::string ArgumentType::getName() const
 {
-    return demangleType(type().name());
+    int status = std::numeric_limits<int>::infinity();
+
+    std::unique_ptr<char, void(*)(void*)> res
+        {
+            abi::__cxa_demangle(type.name(), NULL, NULL, &status),
+            std::free
+        };
+
+    return (status == 0) ? res.get() : type.name();
+}
+
+ArgumentType ArgumentData::getType() const
+{
+    return ArgumentType(type());
 }
 
 

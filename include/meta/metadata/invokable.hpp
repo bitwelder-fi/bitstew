@@ -45,17 +45,14 @@ class InvokableType final : public ObjectExtension
     using SelfType = InvokableType<Function>;
 
     Function m_function;
+    PackagedArguments m_prefix;
 
 protected:
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::execute().
     ArgumentData executeOverride(const PackagedArguments& arguments);
 
-    explicit InvokableType(std::string_view name, Function function) :
-        ObjectExtension(name),
-        m_function(function)
-    {
-    }
+    explicit InvokableType(std::string_view name, Function function);
 
 public:
     static auto create(std::string_view name, Function function)

@@ -38,7 +38,7 @@ struct PackToTuple
         }
         else
         {
-            using ArgType = typename traits::function_traits<Function>::template argument<Index - 1>::type;
+            using ArgType = typename traits::function_traits<Function>::signature::template get<Index - 1>::type;
             return std::tuple_cat(convert<Index - 1, PackIndex - 1>(arguments), std::make_tuple(arguments.get<ArgType>(PackIndex - 1)));
         }
     }
@@ -77,19 +77,8 @@ T PackagedArguments::get(std::size_t index) const
 template <class FunctionSignature>
 auto PackagedArguments::toTuple() const
 {
-    constexpr std::size_t N = traits::function_traits<FunctionSignature>::arity;
-
-    if constexpr (std::is_member_function_pointer_v<FunctionSignature>)
-    {
-        using ClassType = typename traits::function_traits<FunctionSignature>::object;
-        auto object = static_cast<ClassType*>(m_pack.front());
-        return std::tuple_cat(std::make_tuple(object),
-                              detail::PackToTuple<FunctionSignature>::template convert<N, N + 1>(*this));
-    }
-    else
-    {
-        return detail::PackToTuple<FunctionSignature>::template convert<N, N>(*this);
-    }
+    constexpr auto N = traits::function_traits<FunctionSignature>::signature::arity;
+    return detail::PackToTuple<FunctionSignature>::template convert<N, N>(*this);
 }
 
 }

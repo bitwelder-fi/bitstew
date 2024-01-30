@@ -25,9 +25,84 @@
 namespace traits
 {
 
+enum class FunctionType
+{
+    Functor,
+    Method,
+    Function
+};
+
+namespace detail
+{
+
+template <typename Functor>
+struct functor_traits : public functor_traits<decltype(&Functor::operator())>
+{
+};
+
+/// Method traits.
+template <class TObject, typename TRet, typename... Args>
+struct functor_traits<TRet(TObject::*)(Args...)>
+{
+    using object = void;
+    using return_type = TRet;
+    typedef TRet(TObject::*function_type)(Args...);
+
+    static constexpr bool is_const = false;
+    static constexpr FunctionType type = FunctionType::Functor;
+
+    struct arg
+    {
+        using types = std::tuple<Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
+    };
+
+    struct signature : arg
+    {
+    };
+};
+
+/// Const method traits.
+template <class TObject, typename TRet, typename... Args>
+struct functor_traits<TRet(TObject::*)(Args...) const>
+{
+    using object = void;
+    using return_type = TRet;
+    typedef TRet(TObject::*function_type)(Args...) const;
+
+    static constexpr bool is_const = true;
+    static constexpr FunctionType type = FunctionType::Functor;
+
+    struct arg
+    {
+        using types = std::tuple<Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
+    };
+
+    struct signature : arg
+    {
+    };
+};
+
+}
+
 /// Traits for functors and function objects.
 template <typename Function>
-struct function_traits : public function_traits<decltype(&Function::operator())>
+struct function_traits : public detail::functor_traits<decltype(&Function::operator())>
 {
 };
 
@@ -37,21 +112,36 @@ struct function_traits<TRet(TObject::*)(Args...)>
 {
     using object = TObject;
     using return_type = TRet;
-    using arg_types = std::tuple<Args...>;
     typedef TRet(TObject::*function_type)(Args...);
 
-    static constexpr std::size_t arity = sizeof... (Args);
     static constexpr bool is_const = false;
+    static constexpr FunctionType type = FunctionType::Method;
 
-    template <std::size_t N>
-    struct argument
+    struct arg
     {
-        static_assert(N < arity, "error: invalid parameter index.");
-        using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+        using types = std::tuple<Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
     };
 
-    template <typename... TestArgs>
-    static constexpr bool is_same_args = std::is_same_v<std::tuple<Args...>, std::tuple<TestArgs...>>;
+    struct signature
+    {
+        using types = std::tuple<object*, Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
+    };
 };
 
 /// Const method traits.
@@ -60,21 +150,36 @@ struct function_traits<TRet(TObject::*)(Args...) const>
 {
     using object = TObject const;
     using return_type = TRet;
-    using arg_types = std::tuple<Args...>;
     typedef TRet(TObject::*function_type)(Args...) const;
 
-    static constexpr std::size_t arity = sizeof... (Args);
     static constexpr bool is_const = true;
+    static constexpr FunctionType type = FunctionType::Method;
 
-    template <std::size_t N>
-    struct argument
+    struct arg
     {
-        static_assert(N < arity, "error: invalid parameter index.");
-        using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+        using types = std::tuple<Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
     };
 
-    template <typename... TestArgs>
-    static constexpr bool is_same_args = std::is_same_v<std::tuple<Args...>, std::tuple<TestArgs...>>;
+    struct signature
+    {
+        using types = std::tuple<object*, Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
+    };
 };
 
 /// Function and static member function traits.
@@ -82,21 +187,27 @@ template <typename TRet, typename... Args>
 struct function_traits<TRet(*)(Args...)>
 {
     using return_type = TRet;
-    using arg_types = std::tuple<Args...>;
     typedef TRet(*function_type)(Args...);
 
-    static constexpr std::size_t arity = sizeof... (Args);
     static constexpr bool is_const = false;
+    static constexpr FunctionType type = FunctionType::Function;
 
-    template <std::size_t N>
-    struct argument
+    struct arg
     {
-        static_assert(N < arity, "error: invalid parameter index.");
-        using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+        using types = std::tuple<Args...>;
+        static constexpr std::size_t arity = std::tuple_size_v<types>;
+
+        template <std::size_t N>
+        struct get
+        {
+            static_assert(N < arity, "error: invalid parameter index.");
+            using type = typename std::tuple_element<N, types>::type;
+        };
     };
 
-    template <typename... TestArgs>
-    static constexpr bool is_same_args = std::is_same_v<std::tuple<Args...>, std::tuple<TestArgs...>>;
+    struct signature : arg
+    {
+    };
 };
 
 template <typename Function, typename ArgType, std::size_t N>
@@ -105,9 +216,9 @@ class is_same_arg
     template <typename> static std::false_type test(...);
     static constexpr auto test()
     {
-        if constexpr (function_traits<Function>::arity > 0u)
+        if constexpr (function_traits<Function>::arg::arity > 0u)
         {
-            return std::is_same_v<typename function_traits<Function>::template argument<N>::type, ArgType>;
+            return std::is_same_v<typename function_traits<Function>::arg::template get<N>::type, ArgType>;
         }
         else
         {

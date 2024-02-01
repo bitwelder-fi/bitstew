@@ -63,11 +63,12 @@ int intStringInt(std::string a1, int a2)
     return 42;
 }
 
+
 struct InvokableWrapper
 {
     template<typename Function>
     explicit InvokableWrapper(std::string_view name, Function function) :
-        m_invokable(meta::InvokableType<Function>::create(name, function))
+        m_invokable(meta::InvokableType<Function, function>::create(name))
     {
     }
 
@@ -134,8 +135,8 @@ public:
 TEST_F(InvokableTests, lambdaWithNoArgs)
 {
     auto lambda = []() { META_LOG_INFO("lambdaWithNoArgs"); };
-    using Invokable = meta::InvokableType<decltype(lambda)>;
-    auto callable = Invokable::create("lambda", lambda);
+    using Invokable = meta::InvokableType<decltype(lambda), lambda>;
+    auto callable = Invokable::create("lambda");
     EXPECT_CALL(*m_mockPrinter, log("lambdaWithNoArgs"));
     auto result = callable->execute();
     EXPECT_FALSE(result.has_value());
@@ -147,8 +148,8 @@ TEST_F(InvokableTests, lambdaWithSelf)
     {
         META_LOG_INFO("lambdaWithSelf " << self->getName());
     };
-    using Invokable = meta::InvokableType<decltype(lambda)>;
-    auto callable = Invokable::create("lambda", lambda);
+    using Invokable = meta::InvokableType<decltype(lambda), lambda>;
+    auto callable = Invokable::create("lambda");
     EXPECT_CALL(*m_mockPrinter, log("lambdaWithSelf lambda"));
     auto result = callable->execute();
     EXPECT_FALSE(result.has_value());
@@ -156,8 +157,8 @@ TEST_F(InvokableTests, lambdaWithSelf)
 
 TEST_F(InvokableTests, callableWithNoArguments)
 {
-    using Invokable = meta::InvokableType<decltype(&voidNoArgs)>;
-    auto callable = Invokable::create("voidNoArgs", voidNoArgs);
+    using Invokable = meta::InvokableType<decltype(&voidNoArgs), voidNoArgs>;
+    auto callable = Invokable::create("voidNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto result = callable->execute();
     EXPECT_FALSE(result.has_value());
@@ -165,8 +166,8 @@ TEST_F(InvokableTests, callableWithNoArguments)
 
 TEST_F(InvokableTests, callableIntWithNoArguments)
 {
-    using Invokable = meta::InvokableType<decltype(&intNoArgs)>;
-    auto callable = Invokable::create("intNoArgs", intNoArgs);
+    using Invokable = meta::InvokableType<decltype(&intNoArgs), intNoArgs>;
+    auto callable = Invokable::create("intNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto result = callable->execute();
     EXPECT_EQ(42, static_cast<int>(result));
@@ -174,8 +175,8 @@ TEST_F(InvokableTests, callableIntWithNoArguments)
 
 TEST_F(InvokableTests, callableWithArguments)
 {
-    using Invokable = meta::InvokableType<decltype(&voidStringInt)>;
-    auto callable = Invokable::create("voidStringInt", voidStringInt);
+    using Invokable = meta::InvokableType<decltype(&voidStringInt), voidStringInt>;
+    auto callable = Invokable::create("voidStringInt");
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->execute(arguments);
@@ -184,8 +185,8 @@ TEST_F(InvokableTests, callableWithArguments)
 
 TEST_F(InvokableTests, callableWithSelfAndArguments)
 {
-    using Invokable = meta::InvokableType<decltype(&voidInvokableStringInt)>;
-    auto callable = Invokable::create("voidInvokableStringInt", voidInvokableStringInt);
+    using Invokable = meta::InvokableType<decltype(&voidInvokableStringInt), voidInvokableStringInt>;
+    auto callable = Invokable::create("voidInvokableStringInt");
     EXPECT_CALL(*m_mockPrinter, log("voidInvokableStringInt(): one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->execute(arguments);
@@ -194,8 +195,8 @@ TEST_F(InvokableTests, callableWithSelfAndArguments)
 
 TEST_F(InvokableTests, callableIntWithArguments)
 {
-    using Invokable = meta::InvokableType<decltype(&intStringInt)>;
-    auto callable = Invokable::create("intStringInt", intStringInt);
+    using Invokable = meta::InvokableType<decltype(&intStringInt), intStringInt>;
+    auto callable = Invokable::create("intStringInt");
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->execute(arguments);
@@ -205,8 +206,8 @@ TEST_F(InvokableTests, callableIntWithArguments)
 TEST_F(InvokableTests, methodWithNoArguments)
 {
     Class object;
-    using Invokable = meta::InvokableType<decltype(&Class::voidNoArgs)>;
-    auto callable = Invokable::create ("voidNoArgs", &Class::voidNoArgs);
+    using Invokable = meta::InvokableType<decltype(&Class::voidNoArgs), &Class::voidNoArgs>;
+    auto callable = Invokable::create ("voidNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable->execute(arguments);
@@ -216,8 +217,8 @@ TEST_F(InvokableTests, methodWithNoArguments)
 TEST_F(InvokableTests, methodIntWithNoArguments)
 {
     Class object;
-    using Invokable = meta::InvokableType<decltype(&Class::intNoArgs)>;
-    auto callable = Invokable::create("intNoArgs", &Class::intNoArgs);
+    using Invokable = meta::InvokableType<decltype(&Class::intNoArgs), &Class::intNoArgs>;
+    auto callable = Invokable::create("intNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable->execute(arguments);
@@ -227,8 +228,8 @@ TEST_F(InvokableTests, methodIntWithNoArguments)
 TEST_F(InvokableTests, methodWithInvokableArgument)
 {
     auto object = std::make_shared<TestObject>();
-    using Invokable = meta::InvokableType<decltype(&TestObject::voidWithInvokable)>;
-    auto callable = Invokable::create("voidWithInvokable", &TestObject::voidWithInvokable);
+    using Invokable = meta::InvokableType<decltype(&TestObject::voidWithInvokable), &TestObject::voidWithInvokable>;
+    auto callable = Invokable::create("voidWithInvokable");
     object->addExtension(callable);
     EXPECT_CALL(*m_mockPrinter, log("voidWithInvokable: voidWithInvokable"));
     auto result = callable->execute(meta::PackagedArguments(std::string("one"), 2));
@@ -238,8 +239,8 @@ TEST_F(InvokableTests, methodWithInvokableArgument)
 TEST_F(InvokableTests, methodWithArguments)
 {
     Class object;
-    using Invokable = meta::InvokableType<decltype(&Class::voidStringInt)>;
-    auto callable = Invokable::create("voidStringInt", &Class::voidStringInt);
+    using Invokable = meta::InvokableType<decltype(&Class::voidStringInt), &Class::voidStringInt>;
+    auto callable = Invokable::create("voidStringInt");
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable->execute(arguments);
@@ -249,8 +250,8 @@ TEST_F(InvokableTests, methodWithArguments)
 TEST_F(InvokableTests, methodIntWithArguments)
 {
     Class object;
-    using Invokable = meta::InvokableType<decltype(&Class::intStringInt)>;
-    auto callable = Invokable::create("intStringInt", &Class::intStringInt);
+    using Invokable = meta::InvokableType<decltype(&Class::intStringInt), &Class::intStringInt>;
+    auto callable = Invokable::create("intStringInt");
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable->execute(arguments);
@@ -260,8 +261,8 @@ TEST_F(InvokableTests, methodIntWithArguments)
 TEST_F(InvokableTests, methodWithPointerArgument)
 {
     Class object;
-    using Invokable = meta::InvokableType<decltype(&Class::ptr)>;
-    auto callable = Invokable::create("Class.ptr", &Class::ptr);
+    using Invokable = meta::InvokableType<decltype(&Class::ptr), &Class::ptr>;
+    auto callable = Invokable::create("Class.ptr");
     int i = 41;
     auto arguments = meta::PackagedArguments(&object, &i);
     callable->execute(arguments);
@@ -275,40 +276,14 @@ TEST_F(InvokableTests, invokeStaticInvokable)
     object.lambda->execute();
 }
 
-
-struct MetaExtension
+TEST_F(InvokableTests, createFunctionInfokableWithLambda)
 {
-    template <class Function>
-    explicit MetaExtension(std::string name, Function function)
+    auto lambda = [](std::string a1, int a2)
     {
-        factory = [name, function]()
-        {
-            return meta::InvokableType<Function>::create(name, function);
-        };
-    }
-
-    meta::ObjectExtensionPtr create()
-    {
-        return factory();
-    }
-    template <class ObjectExtensionType>
-    std::shared_ptr<ObjectExtensionType> create()
-    {
-        return std::dynamic_pointer_cast<ObjectExtensionType>(factory());
-    }
-
-private:
-    std::function<meta::ObjectExtensionPtr()> factory;
-};
-
-TEST_F(InvokableTests, invokableType)
-{
-    MetaExtension metaInvokableFactory("voidStringInt", &Class::voidStringInt);
-    auto metaInvokable = metaInvokableFactory.create();
-
-    Class object;
-    EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
-    auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
-    auto result = metaInvokable->execute(arguments);
-    EXPECT_FALSE(result.has_value());
+        META_LOG_INFO("lambda: " << a1 << ", " << a2);
+    };
+    using Invokable = meta::InvokableType<decltype(&voidStringInt), lambda>;
+    auto callable = Invokable::create("lambda");
+    EXPECT_CALL(*m_mockPrinter, log("lambda: v1, 10"));
+    callable->run(std::string("v1"), 10);
 }

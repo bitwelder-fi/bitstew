@@ -130,7 +130,7 @@ ObjectFactory* Library::objectFactory() const
 
 bool isValidMetaName(std::string_view name)
 {
-    return name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
+    return !name.empty() && name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
 }
 
 }

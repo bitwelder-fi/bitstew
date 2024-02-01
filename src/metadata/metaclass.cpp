@@ -18,6 +18,9 @@
 
 #include <meta/meta.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/object.hpp>
+#include <meta/object_extension.hpp>
+#include <utils/scope_value.hpp>
 
 namespace meta
 {
@@ -32,10 +35,28 @@ MetaObject::~MetaObject()
 {
 }
 
-// std::string_view MetaObject::getName() const
-// {
-//     return m_name;
-// }
+
+MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta, std::string_view name)
+{
+    utils::ScopeValue<bool> unlock(self.m_descriptor->sealed, false);
+    self.addMetaExtension(extensionMeta, name);
+}
+
+
+void MetaClass::initializeInstance(ObjectPtr instance) const
+{
+    for (auto& metaExtension : m_descriptor->extensions)
+    {
+        auto extension = metaExtension.second->create<ObjectExtension>(metaExtension.second->getName());
+        instance->addExtension(extension);
+    }
+}
+
+bool MetaClass::isSealed() const
+{
+    abortIfFail(m_descriptor);
+    return m_descriptor->sealed;
+}
 
 std::string_view MetaClass::getName() const
 {
@@ -75,6 +96,34 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
         return true;
     }
     return m_descriptor->hasSuperClass(metaClass);
+}
+
+void MetaClass::addMetaExtension(const MetaClass& extensionMeta, std::string_view name)
+{
+    abortIfFail(m_descriptor && !m_descriptor->sealed && extensionMeta.m_descriptor && extensionMeta.m_descriptor->isExtension());
+
+    if (name.empty())
+    {
+        // The metaExtension must have a name.
+        abortIfFail(!extensionMeta.getName().empty());
+        auto result = m_descriptor->extensions.insert(std::make_pair(extensionMeta.getName(), &extensionMeta));
+        abortIfFail(result.second);
+    }
+    else
+    {
+        abortIfFail(isValidMetaName(name));
+        auto result = m_descriptor->extensions.insert(std::make_pair(name, &extensionMeta));
+        abortIfFail(result.second);
+        extensionMeta.m_descriptor->name = name;
+    }
+}
+
+const MetaClass* MetaClass::findMetaExtension(std::string_view name) const
+{
+    abortIfFail(isValidMetaName(name) && m_descriptor);
+
+    auto it = m_descriptor->extensions.find(name);
+    return it != m_descriptor->extensions.end() ? it->second : nullptr;
 }
 
 }

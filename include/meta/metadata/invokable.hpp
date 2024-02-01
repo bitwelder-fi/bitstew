@@ -39,25 +39,26 @@ namespace meta
 /// instance before adding it to the next instance.
 ///
 /// The invokable arguments can hold any type, except reference types.
-template <class Function>
+template <class Function, Function function>
 class InvokableType final : public ObjectExtension
 {
-    using SelfType = InvokableType<Function>;
-
-    Function m_function;
-    PackagedArguments m_prefix;
+    using SelfType = InvokableType<Function, function>;
 
 protected:
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::execute().
     ArgumentData executeOverride(const PackagedArguments& arguments);
 
-    explicit InvokableType(std::string_view name, Function function);
+    explicit InvokableType(std::string_view name);
 
 public:
-    static auto create(std::string_view name, Function function)
+    STUB_META_CLASS(SelfType, ObjectExtension)
     {
-        return std::shared_ptr<SelfType>(new SelfType(name, function));
+    };
+
+    static auto create(std::string_view name, const PackagedArguments& = PackagedArguments())
+    {
+        return std::shared_ptr<SelfType>(new SelfType(name));
     }
 };
 

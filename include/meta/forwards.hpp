@@ -25,10 +25,12 @@ namespace meta
 {
 
 class Invokable;
+class MetaObject;
 class Object;
 class ObjectExtension;
 
 using InvokablePtr = std::shared_ptr<Invokable>;
+using MetaObjectPtr = std::shared_ptr<MetaObject>;
 using ObjectPtr = std::shared_ptr<Object>;
 using ObjectWeakPtr = std::weak_ptr<Object>;
 using ObjectExtensionPtr = std::shared_ptr<ObjectExtension>;

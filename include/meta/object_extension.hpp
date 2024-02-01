@@ -22,7 +22,7 @@
 #include <meta/arguments/argument_type.hpp>
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
-#include <meta/metadata/metaclass.hpp>
+#include <meta/metadata/meta_object.hpp>
 
 #include <pimpl.hpp>
 
@@ -49,8 +49,14 @@ public:
     ///         return a void ArgumentData.
     ArgumentData execute(const PackagedArguments& arguments = PackagedArguments());
 
+    template <typename... TArgs>
+    void run(TArgs&&... args)
+    {
+        execute(PackagedArguments(std::forward<TArgs>(args)...));
+    }
+
     /// The metaclass of the object extension.
-    META_CLASS("meta.ObjectExtension", ObjectExtension)
+    META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
     {
     };
 

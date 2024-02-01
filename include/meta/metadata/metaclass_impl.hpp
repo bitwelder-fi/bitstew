@@ -17,6 +17,7 @@
  */
 
 #include <array>
+#include <meta/metadata/metaclass.hpp>
 
 namespace meta
 {
@@ -24,13 +25,20 @@ namespace meta
 namespace detail
 {
 
-template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API MetaClassImpl : public MetaClass
+template <class DeclaredClass, class... SuperClasses>
+class META_TEMPLATE_API StubMetaClass : public MetaClass
 {
+protected:
     static constexpr auto arity = sizeof... (SuperClasses);
 
-    struct META_API Descriptor : DescriptorInterface
+    struct META_API StubDescriptor : DescriptorInterface
     {
+        explicit StubDescriptor(std::string_view name) :
+            DescriptorInterface(name)
+        {
+            sealed = true;
+        }
+
         MetaObjectPtr create(std::string_view name, const PackagedArguments& arguments) const override
         {
             if constexpr (std::is_abstract_v<DeclaredClass>)
@@ -88,6 +96,11 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
             return std::is_abstract_v<DeclaredClass>;
         }
 
+        bool isExtension() const final
+        {
+            return std::is_base_of_v<ObjectExtension, DeclaredClass>;
+        }
+
         bool isMetaClassOf(const MetaObject& object) const final
         {
             auto address = dynamic_cast<const DeclaredClass*>(&object);
@@ -95,13 +108,39 @@ class META_TEMPLATE_API MetaClassImpl : public MetaClass
         }
     };
 
+    explicit StubMetaClass(DescriptorPtr descriptor) :
+        MetaClass(std::move(descriptor))
+    {
+    }
+
+public:
+    explicit StubMetaClass() :
+        StubMetaClass(std::make_unique<StubDescriptor>(""))
+    {        
+    }
+};
+
+template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
+class META_TEMPLATE_API MetaClassImpl : public StubMetaClass<DeclaredClass, SuperClasses...>
+{
+    using BaseMetaClass = StubMetaClass<DeclaredClass, SuperClasses...>;
+
+protected:
+    struct META_API MetaDescriptor : BaseMetaClass::StubDescriptor
+    {
+        explicit MetaDescriptor(std::string_view name) :
+            BaseMetaClass::StubDescriptor(name)
+        {
+        }
+    };
+
 public:
     explicit MetaClassImpl() :
-        MetaClass(MetaClassName, std::make_unique<Descriptor>())
+        BaseMetaClass(std::make_unique<MetaDescriptor>(MetaClassName))
     {
     }
 };
 
-}
+} // detail
 
-}
+} // meta

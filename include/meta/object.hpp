@@ -22,7 +22,7 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/arguments/argument_type.hpp>
-#include <meta/metadata/metaclass.hpp>
+#include <meta/metadata/meta_object.hpp>
 #include <pimpl.hpp>
 
 #include <memory>
@@ -45,8 +45,9 @@ public:
     virtual ~Object();
 
     /// The metadata of a meta object.
-    META_CLASS("meta.Object", Object)
+    META_CLASS("meta.Object", Object, MetaObject)
     {
+        DYNAMIC_META_CLASS();
     };
 
     /// Adds an extension to the object. The object takes ownership over the extension. The method

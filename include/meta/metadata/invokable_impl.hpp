@@ -35,15 +35,15 @@ struct enableRepack
 
 }
 
-template <class Function>
-InvokableType<Function>::InvokableType(std::string_view name, Function function) :
-    ObjectExtension(name),
-    m_function(function)
+
+template <class Function, Function function>
+InvokableType<Function, function>::InvokableType(std::string_view name) :
+    ObjectExtension(name)
 {
 }
 
-template <class Function>
-PackagedArguments InvokableType<Function>::repackageArguments(const PackagedArguments& arguments)
+template <class Function, Function function>
+PackagedArguments InvokableType<Function, function>::repackageArguments(const PackagedArguments& arguments)
 {
     auto result = PackagedArguments();
     if constexpr (detail::enableRepack<Function>::packObject)
@@ -68,8 +68,8 @@ PackagedArguments InvokableType<Function>::repackageArguments(const PackagedArgu
     return result;
 }
 
-template <class Function>
-ArgumentData InvokableType<Function>::executeOverride(const PackagedArguments& arguments)
+template <class Function, Function function>
+ArgumentData InvokableType<Function, function>::executeOverride(const PackagedArguments& arguments)
 {
     try
     {
@@ -77,12 +77,12 @@ ArgumentData InvokableType<Function>::executeOverride(const PackagedArguments& a
         auto pack = args.template toTuple<Function>();
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
-            std::apply(m_function, pack);
+            std::apply(function, pack);
             return ArgumentData();
         }
         else
         {
-            auto result = std::apply(m_function, pack);
+            auto result = std::apply(function, pack);
             return ArgumentData(result);
         }
     }

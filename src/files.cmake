@@ -24,6 +24,7 @@ tasks/task_scheduler_private.h
 ../include/meta/metadata/factory.hpp
 ../include/meta/metadata/invokable.hpp
 ../include/meta/metadata/invokable_impl.hpp
+../include/meta/metadata/meta_object.hpp
 ../include/meta/metadata/metaclass.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp

@@ -49,8 +49,8 @@ TEST_F(ObjectTest, invoke_getName)
     auto object = metaClass->create<meta::Object>("object");
     ASSERT_NE(nullptr, object);
 
-    using Invokable = meta::InvokableType<decltype(&meta::Object::getName)>;
-    auto metaGetName = Invokable::create("getName", &meta::Object::getName);
+    using Invokable = meta::InvokableType<decltype(&meta::Object::getName), &meta::Object::getName>;
+    auto metaGetName = Invokable::create("getName");
     object->addExtension(metaGetName);
     auto result = meta::invoke(object, "getName");
     ASSERT_NE(std::nullopt, result);

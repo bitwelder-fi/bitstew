@@ -29,33 +29,44 @@
 namespace meta
 {
 
-/// %InvokableType represents an invokable extension of an Object, which can be applied on an instance
+/// %Invokable represents an invokable extension of an Object, which can be applied on an instance
 /// at runtime. To add an invokable to an instance of an Object, call Object::addExtension(). You can
-/// invoke invokable extensions by calling the meta::invoke() function.
+/// call invokable extensions by calling the meta::invoke() function.
 ///
-/// When an invokable extension gets added to an instance of an Object, the instance takes the ownership
-/// over the invokable. An invokable may only be attached to a single Object instance at a time. You
-/// can move an invokable from an Object instance to an other by removing the invokable from the source
-/// instance before adding it to the next instance.
+/// In most cases, the invokable needs to access the instance it extends. To do that, the first argument
+/// of the invokable function should be a pionter to ObjectExtension:
+/// \code
+/// auto lambda = [](meta::ObjectExtension* self)
+/// {
+///     // You can access the object through the extension.
+///     auto object = self->getOwner();
+/// };
+/// using LambdaExtension = meta::Invokable<decltype(lambda), lambda>;
+/// object->addExtension(LambdaExtension::create("lambda"));
+/// \endcode
 ///
 /// The invokable arguments can hold any type, except reference types.
 template <class Function, Function function>
-class InvokableType final : public ObjectExtension
+class Invokable final : public ObjectExtension
 {
-    using SelfType = InvokableType<Function, function>;
+    using SelfType = Invokable<Function, function>;
 
 protected:
+    /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::execute().
     ArgumentData executeOverride(const PackagedArguments& arguments);
 
-    explicit InvokableType(std::string_view name);
+    /// Constructor.
+    explicit Invokable(std::string_view name);
 
 public:
     STUB_META_CLASS(SelfType, ObjectExtension)
     {
     };
 
+    /// Creates an instance of the Invokable type.
+    /// \param name The name of the invokable.
     static auto create(std::string_view name, const PackagedArguments& = PackagedArguments())
     {
         return std::shared_ptr<SelfType>(new SelfType(name));

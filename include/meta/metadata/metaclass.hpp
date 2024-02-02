@@ -137,6 +137,13 @@ public:
     ///        a metaname for the stub meta classes.
     void addMetaExtension(const MetaClass& extensionMeta, std::string_view name = std::string_view());
 
+    /// Tries to add the meta class of a registered object extension to this meta class. The meta class
+    /// must be registered to Meta library under the metaname passed as argument.
+    /// \param metaName The metaname of teh meta class to register as extension.
+    /// \return If the meta class of the object extension was registered with success, returns \e true,
+    ///         otherwise \e false.
+    bool tryAddExtension(std::string_view metaName);
+
     /// Finds the object extension meta class registered under a given name.
     /// \param name The metaname of the object extension meta class to find.
     /// \return On success returns the meta class of the object extension, or \e nullptr on failure.

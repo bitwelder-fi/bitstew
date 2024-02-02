@@ -29,7 +29,7 @@ template <typename Function>
 struct enableRepack
 {
     static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
-    static constexpr bool packSelf = traits::is_same_arg<Function, ObjectExtension*, 0u>::value;
+    static constexpr bool packSelf = traits::is_base_arg_of<ObjectExtension*, Function, 0u>::value;
     static constexpr bool value = packObject || packSelf;
 };
 
@@ -37,13 +37,13 @@ struct enableRepack
 
 
 template <class Function, Function function>
-InvokableType<Function, function>::InvokableType(std::string_view name) :
+Invokable<Function, function>::Invokable(std::string_view name) :
     ObjectExtension(name)
 {
 }
 
 template <class Function, Function function>
-PackagedArguments InvokableType<Function, function>::repackageArguments(const PackagedArguments& arguments)
+PackagedArguments Invokable<Function, function>::repackageArguments(const PackagedArguments& arguments)
 {
     auto result = PackagedArguments();
     if constexpr (detail::enableRepack<Function>::packObject)
@@ -61,7 +61,8 @@ PackagedArguments InvokableType<Function, function>::repackageArguments(const Pa
 
     if constexpr (detail::enableRepack<Function>::packSelf)
     {
-        result += ArgumentData(static_cast<ObjectExtension*>(this));
+        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
+        result += ArgumentData(dynamic_cast<ZipType>(this));
     }
 
     result += arguments;
@@ -69,7 +70,7 @@ PackagedArguments InvokableType<Function, function>::repackageArguments(const Pa
 }
 
 template <class Function, Function function>
-ArgumentData InvokableType<Function, function>::executeOverride(const PackagedArguments& arguments)
+ArgumentData Invokable<Function, function>::executeOverride(const PackagedArguments& arguments)
 {
     try
     {

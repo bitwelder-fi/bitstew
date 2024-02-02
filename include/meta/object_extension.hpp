@@ -31,8 +31,14 @@ namespace meta
 
 /// The base class of object extensions. Object extensions dynamically extend an instance of an Object
 /// added functionality.
-/// You can define object extensions on a metaclass. When defined on those, the metaclass factory will
-/// add all the extensions to the instance it creates.
+///
+/// When you add an object extension to an instance of an Object, the instance takes the ownership
+/// over the object extension. An object extension may only be attached to a single Object instance
+/// at a time. You can move an object extension from an Object instance to an other by removing the
+/// object extension from the source instance before adding it to the destination instance.
+///
+/// You can add object extensions to a metaclass. When you instantiate an object through the meta class,
+/// all the extensions added to the meta class will be instantiated and added to the instance.
 class META_API ObjectExtension : public MetaObject, public std::enable_shared_from_this<ObjectExtension>
 {
 public:

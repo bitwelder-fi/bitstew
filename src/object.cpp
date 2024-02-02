@@ -98,16 +98,23 @@ ObjectExtensionPtr Object::findExtension(std::string_view name) const
     return (it != m_extensions.end()) ? it->second : ObjectExtensionPtr();
 }
 
-std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
+std::optional<ArgumentData> Object::invoke(std::string_view name, const PackagedArguments& arguments)
 {
-    abortIfFail(object && !name.empty());
+    abortIfFail(!name.empty());
 
-    auto extension = object->findExtension(name);
+    auto extension = findExtension(name);
     if (!extension)
     {
         return std::nullopt;
     }
     return extension->execute(arguments);
+}
+
+
+std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
+{
+    abortIfFail(object && !name.empty());
+    return object->invoke(name, arguments);
 }
 
 }

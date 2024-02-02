@@ -210,15 +210,18 @@ struct function_traits<TRet(*)(Args...)>
     };
 };
 
-template <typename Function, typename ArgType, std::size_t N>
-class is_same_arg
+/// Checks whether the ArgType is the base type of the argument of a function at a given position.
+/// \tparam BaseType The base type to check
+/// \tparam Function The function signature.
+/// \tparam N The position of the argument within the function signature to check.
+template <typename BaseType, typename Function, std::size_t N>
+class is_base_arg_of
 {
-    template <typename> static std::false_type test(...);
     static constexpr auto test()
     {
         if constexpr (function_traits<Function>::arg::arity > 0u)
         {
-            return std::is_same_v<typename function_traits<Function>::arg::template get<N>::type, ArgType>;
+            return std::is_base_of_v<std::decay<BaseType>, std::decay<typename function_traits<Function>::arg::template get<N>::type>>;
         }
         else
         {

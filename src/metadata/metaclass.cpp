@@ -17,6 +17,7 @@
  */
 
 #include <meta/meta.hpp>
+#include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/object.hpp>
 #include <meta/object_extension.hpp>
@@ -106,16 +107,34 @@ void MetaClass::addMetaExtension(const MetaClass& extensionMeta, std::string_vie
     {
         // The metaExtension must have a name.
         abortIfFail(!extensionMeta.getName().empty());
-        auto result = m_descriptor->extensions.insert(std::make_pair(extensionMeta.getName(), &extensionMeta));
+        auto result = m_descriptor->extensions.insert({extensionMeta.getName(), &extensionMeta});
         abortIfFail(result.second);
     }
     else
     {
         abortIfFail(isValidMetaName(name));
-        auto result = m_descriptor->extensions.insert(std::make_pair(name, &extensionMeta));
+        auto result = m_descriptor->extensions.insert({name, &extensionMeta});
         abortIfFail(result.second);
         extensionMeta.m_descriptor->name = name;
     }
+}
+
+bool MetaClass::tryAddExtension(std::string_view metaName)
+{
+    abortIfFail(m_descriptor && isValidMetaName(metaName));
+
+    auto metaClass = Library::instance().objectFactory()->findMetaClass(metaName);
+    if (!metaClass)
+    {
+        return false;
+    }
+    if (!metaClass->m_descriptor->isExtension())
+    {
+        return false;
+    }
+
+    auto result = m_descriptor->extensions.insert({metaName, metaClass});
+    return result.second;
 }
 
 const MetaClass* MetaClass::findMetaExtension(std::string_view name) const

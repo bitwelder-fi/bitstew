@@ -67,6 +67,15 @@ public:
     ///         name registered.
     ObjectExtensionPtr findExtension(std::string_view name) const;
 
+    /// Invokes an extension of the object.
+    /// \param name The name of the object extension to invoke.
+    /// \param args Optional, the arguments with which to invoke the extension.
+    /// \return returns one of the following:
+    ///         - If the extension is found, and has a return value, the return value of the extension.
+    ///         - If the extension is found, and has no return value, returns an invalid ArgumentData.
+    ///         - If the extension is not found, returns nullopt.
+    std::optional<ArgumentData> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+
 protected:
     /// Constructor.
     explicit Object(std::string_view name);

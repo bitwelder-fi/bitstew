@@ -71,8 +71,8 @@ struct TracerPrivate
 };
 
 
-Tracer::Tracer(ThreadPool* taskScheduler) :
-    m_threadPool(taskScheduler)
+Tracer::Tracer(ThreadPool* threadPool) :
+    m_threadPool(threadPool)
 {
 }
 

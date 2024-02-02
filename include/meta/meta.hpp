@@ -47,10 +47,10 @@ public:
     /// Uninitialize the meta library.
     void uninitialize();
 
-    /// Returns the task scheduler of the library.
-    /// \return The task scheduler of the library, or nullptr, if the library is initialized without
-    ///         a task scheduler.
-    ThreadPool* taskScheduler() const;
+    /// Returns the thread pool of the library.
+    /// \return The thread pool of the library, or nullptr, if the library is initialized without
+    ///         a thread pool.
+    ThreadPool* threadPool() const;
 
     /// Returns the tracer of the library. The method is only available when tracing is eanbled.
     /// \return The tracer of the library.

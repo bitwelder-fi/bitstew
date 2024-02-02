@@ -34,7 +34,7 @@ struct META_API LibraryArguments
     {
         std::size_t threadCount = Thread::hardware_concurrency();
         bool createThreadPool = true;
-    } taskScheduler;
+    } threadPool;
 
     struct META_API Tracer
     {

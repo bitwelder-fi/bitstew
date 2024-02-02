@@ -147,5 +147,5 @@ TEST_P(MetaTraceTest, testMetaTracer)
     META_LOG_INFO("testMetaTracer");
     META_LOG_DEBUG("testMetaTracer");
     // Ensure the log happens.
-    meta::Library::instance().taskScheduler()->schedule(std::chrono::milliseconds(10));
+    meta::Library::instance().threadPool()->schedule(std::chrono::milliseconds(10));
 }

@@ -32,7 +32,7 @@ protected:
     void initializeDomain(bool multiThreaded, bool mockTracePrinter)
     {
         auto arguments = meta::LibraryArguments();
-        arguments.taskScheduler.createThreadPool = multiThreaded;
+        arguments.threadPool.createThreadPool = multiThreaded;
         meta::Library::instance().initialize(arguments);
 
         if (mockTracePrinter)

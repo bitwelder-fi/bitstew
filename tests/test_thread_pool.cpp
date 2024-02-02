@@ -189,15 +189,15 @@ protected:
 class TaskSchedulerTest : public ::testing::Test
 {
 protected:
-    std::unique_ptr<meta::ThreadPool> taskScheduler;
+    std::unique_ptr<meta::ThreadPool> threadPool;
     OutputPtr m_output;
 
     void SetUp() override
     {
-        taskScheduler = std::make_unique<meta::ThreadPool>(meta::Thread::hardware_concurrency());
-        if (!taskScheduler->isRunning())
+        threadPool = std::make_unique<meta::ThreadPool>(meta::Thread::hardware_concurrency());
+        if (!threadPool->isRunning())
         {
-            taskScheduler->start();
+            threadPool->start();
         }
 
         m_output = std::make_shared<Output>();
@@ -205,11 +205,11 @@ protected:
 
     void TearDown() override
     {
-        if (taskScheduler)
+        if (threadPool)
         {
-            taskScheduler->stop();
+            threadPool->stop();
         }
-        taskScheduler.reset();
+        threadPool.reset();
         m_output.reset();
     }
 
@@ -240,8 +240,8 @@ protected:
                 this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
                 this->futures.push_back(this->jobs.back()->getFuture());
             }
-            test.taskScheduler->pushMultipleJobs(this->jobs);
-            test.taskScheduler->schedule(std::chrono::milliseconds(1));
+            test.threadPool->pushMultipleJobs(this->jobs);
+            test.threadPool->schedule(std::chrono::milliseconds(1));
         }
 
     };
@@ -257,7 +257,7 @@ protected:
             this->jobs.reserve(taskCount);
             while (taskCount-- != 0u)
             {
-                this->jobs.push_back(std::make_shared<JobType>(test.taskScheduler.get(), test.m_output));
+                this->jobs.push_back(std::make_shared<JobType>(test.threadPool.get(), test.m_output));
             }
         }
     };
@@ -278,7 +278,7 @@ TEST_F(TaskSchedulerTest, testAddJobs)
         future.wait();
     }    
     EXPECT_EQ(jobCount, maxJobs);
-    EXPECT_FALSE(taskScheduler->isBusy());
+    EXPECT_FALSE(threadPool->isBusy());
 }
 
 TEST_F(TaskSchedulerTest, testAddQueuedJobs)
@@ -290,21 +290,21 @@ TEST_F(TaskSchedulerTest, testAddQueuedJobs)
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Second test string");
     std::static_pointer_cast<QueuedJob>(scenario.jobs.back())->push("Third test string");
-    taskScheduler->schedule(std::chrono::milliseconds(10));
-    EXPECT_EQ(taskScheduler->getThreadCount() - 1u, taskScheduler->getIdleCount());
-    EXPECT_TRUE(taskScheduler->isBusy());
+    threadPool->schedule(std::chrono::milliseconds(10));
+    EXPECT_EQ(threadPool->getThreadCount() - 1u, threadPool->getIdleCount());
+    EXPECT_TRUE(threadPool->isBusy());
     EXPECT_EQ(m_output->getBuffer().size(), 3u);
 }
 
 TEST_F(TaskSchedulerTest, stressTestExclusiveJobs)
 {
     SKIP_IF_NOT_MULTI_THREADED;
-    QueuedTaskScenario<QueuedJob> scenario(*this, taskScheduler->getThreadCount());
-    EXPECT_EQ(scenario.jobCount, taskScheduler->getThreadCount());
+    QueuedTaskScenario<QueuedJob> scenario(*this, threadPool->getThreadCount());
+    EXPECT_EQ(scenario.jobCount, threadPool->getThreadCount());
 
-    // taskScheduler->schedule(std::chrono::milliseconds(100));
-    EXPECT_EQ(0u, taskScheduler->getIdleCount());
-    EXPECT_TRUE(taskScheduler->isBusy());
+    // threadPool->schedule(std::chrono::milliseconds(100));
+    EXPECT_EQ(0u, threadPool->getIdleCount());
+    EXPECT_TRUE(threadPool->isBusy());
 
 }
 
@@ -315,7 +315,7 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
     scenario[0]->push("2nd string");
     scenario[0]->push("3rd string");
     scenario[0]->push("4th string");
-    taskScheduler->schedule();
+    threadPool->schedule();
     scenario[0]->getFuture().wait();
 
     EXPECT_EQ(4u, m_output->getBuffer().size());

@@ -48,7 +48,7 @@ public:
     {
     }
 
-    std::unique_ptr<ThreadPool> taskScheduler;
+    std::unique_ptr<ThreadPool> threadPool;
     std::shared_ptr<Tracer> tracer;
     std::unique_ptr<ObjectFactory> objectFactory;
 };
@@ -72,14 +72,14 @@ Library::~Library()
 void Library::initialize(const LibraryArguments& arguments)
 {
     D();
-    if (arguments.taskScheduler.createThreadPool)
+    if (arguments.threadPool.createThreadPool)
     {
-        d->taskScheduler = std::make_unique<ThreadPool>(arguments.taskScheduler.threadCount);
-        d->taskScheduler->start();
+        d->threadPool = std::make_unique<ThreadPool>(arguments.threadPool.threadCount);
+        d->threadPool->start();
     }
 
 #ifdef CONFIG_ENABLE_LOGS
-    d->tracer = std::make_unique<Tracer>(d->taskScheduler.get());
+    d->tracer = std::make_unique<Tracer>(d->threadPool.get());
     d->tracer->setLogLevel(arguments.tracer.logLevel);
 
     TracePrinterPtr printer = std::make_shared<ConsoleOut>();
@@ -99,21 +99,21 @@ void Library::uninitialize()
 {
     D();
     d->objectFactory.reset();
-    if (d->taskScheduler)
+    if (d->threadPool)
     {
-        if (d->taskScheduler->isRunning())
+        if (d->threadPool->isRunning())
         {
-            d->taskScheduler->stop();
+            d->threadPool->stop();
         }
-        d->taskScheduler.reset();
+        d->threadPool.reset();
     }
     d->tracer.reset();
 }
 
-ThreadPool* Library::taskScheduler() const
+ThreadPool* Library::threadPool() const
 {
     D();
-    return d->taskScheduler.get();
+    return d->threadPool.get();
 }
 
 Tracer* Library::tracer() const

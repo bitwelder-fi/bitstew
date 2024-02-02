@@ -102,7 +102,7 @@ class META_API Tracer : public Job
 {
 public:
     /// Constructor.
-    explicit Tracer(ThreadPool* taskScheduler);
+    explicit Tracer(ThreadPool* threadPool);
     /// Destructor.
     ~Tracer();
 

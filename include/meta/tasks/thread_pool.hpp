@@ -33,7 +33,8 @@ namespace meta
 class Job;
 class ThreadPool;
 
-using TaskPtr = std::shared_ptr<Job>;
+using JobPtr = std::shared_ptr<Job>;
+
 
 /// The thread pool is responsible to dispatch worker jobs to threads in an efficien way. Though the
 /// system allows you to have several thread pools per application, for efficiency, it is recommended
@@ -89,13 +90,6 @@ public:
         return m_stopSignalled;
     }
 
-    /// Returns whether the thread pool stopped its threads.
-    /// \return If the thread pool stopped its threads, returns \e true, otherwise \e false.
-    bool isScheduleStopped() const
-    {
-        return m_stopThread;
-    }
-
     /// Returns the number of running threads of a thread pool.
     /// \return The number of threads running. If the thread pool is stopped, returns 0u.
     std::size_t getThreadCount() const
@@ -112,15 +106,13 @@ public:
 
     /// Queues a job to for execution.
     /// \param job The job to queue for execution.
-    /// \returns The future object of the task. If the thread pool is stopped, returns an invalid
-    ///          task future.
-    TaskCompletionWatchObject pushJob(TaskPtr job);
+    /// \returns If the job was queued with success. returns \e true, otherwise \e false.
+    bool pushJob(JobPtr job);
 
     /// Queue multiple jobs for execution.
     /// \param jobs The jobs to queue for execution.
-    /// \returns The futures objects of the queued tasks. If the thread pool is stopped, returns
-    ///          invalid task futures.
-    std::vector<TaskCompletionWatchObject> pushMultipleJobs(std::vector<TaskPtr> jobs);
+    /// \returns The number of jobs pushed with success.
+    std::size_t pushMultipleJobs(std::vector<JobPtr> jobs);
 
     /// Returns the queued job count.
     /// \return The queued job count.
@@ -130,8 +122,8 @@ public:
     /// current thread. On single-threaded environment, executes the queued jobs.
     void schedule();
 
-    /// Schedules the jobs queued after a delay. On single multi-threaded environment, the function
-    /// yields the current thread after a given delay. On single-threaded environment, executes the
+    /// Schedules the jobs queued with a delay. On single multi-threaded environment, the function
+    /// yields the current thread with a given delay. On single-threaded environment, executes the
     /// queued tasks.
     /// \param delay The delay after which to schedule the jobs.
     void schedule(const std::chrono::nanoseconds& delay);
@@ -147,16 +139,14 @@ private:
     Mutex m_queueLock;
     // Threads wait on new tasks.
     ConditionVariable m_lockCondition;
-    // The scheduled tasks.
-    std::deque<TaskPtr> m_tasks;
-    // The running tasks.
-    std::vector<TaskPtr> m_runningTasks;
+    // The scheduled jobs.
+    std::deque<JobPtr> m_jobs;
+    // The running jobs.
+    std::deque<JobPtr> m_scheduledJobs;
     // The executor threads of the pool.
     std::vector<Thread> m_threads;
     // Tells the thread pool to stop executing.
     AtomicBool m_stopSignalled = false;
-    // Tells the thread pool to stop executing.
-    AtomicBool m_stopThread = false;
     // Whether the pool is running.
     bool m_isRunning = false;
 };

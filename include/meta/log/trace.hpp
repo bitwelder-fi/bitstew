@@ -152,7 +152,7 @@ public:
     }
 
 protected:
-    void runOverride() override;
+    void run() override;
     void stopOverride() override;
 
     TracePrinterPtr getTracePrinterAt(std::size_t index)

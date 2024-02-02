@@ -22,6 +22,8 @@
 #include <meta/tasks/thread_pool.hpp>
 #include <meta/threading.hpp>
 
+#include "../private/thread_pool.hpp"
+
 namespace meta
 {
 
@@ -45,15 +47,17 @@ struct TracerPrivate
             const auto status = self.getStatus();
             if (status == Job::Status::Deferred || status == Job::Status::Stopped)
             {
+                abortIfFail(self.m_threadPool);
                 self.m_threadPool->pushJob(self.shared_from_this());
             }
-            // self.m_threadPool->schedule();
-            return;
         }
-
-        // The thread pool is not active, run the task.
-        self.setStatus(Job::Status::Scheduled);
-        self.run();
+        else
+        {
+            // The thread pool is not active, run the task.
+            self.reset();
+            self.setStatus(Job::Status::Scheduled);
+            detail::JobPrivate::runJob(self);
+        }
     }
 
     static void print(Tracer& self, const TraceRecord& trace)
@@ -77,7 +81,7 @@ Tracer::~Tracer()
 }
 
 // Consume the buffer when scheduled.
-void Tracer::runOverride()
+void Tracer::run()
 {
     UniqueLock lock(m_mutex);
     auto condition = [this]()

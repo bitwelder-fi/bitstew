@@ -48,10 +48,10 @@ public:
 using OutputPtr = std::shared_ptr<Output>;
 
 
-class Job : public meta::Job
+class TestJob : public meta::Job
 {
 public:
-    explicit Job(OutputPtr, SecureInt& jobCount) :
+    explicit TestJob(OutputPtr, SecureInt& jobCount) :
         m_jobCount(jobCount)
     {
     }
@@ -61,12 +61,12 @@ public:
         meta::Job::setStatus(status);
     }
 
-protected:
-    void runOverride() override
+    void run() override
     {
         ++m_jobCount;
     }
 
+protected:
     SecureInt& m_jobCount;
 };
 
@@ -74,10 +74,8 @@ class RescheduledJob : public meta::Job
 {
     meta::ThreadPool* m_scheduler = nullptr;
     OutputPtr m_out;
+
 public:
-
-    meta::TaskCompletionWatchObject m_jobWatch;
-
     explicit RescheduledJob(meta::ThreadPool* scheduler, OutputPtr out) :
         m_scheduler(scheduler),
         m_out(out)
@@ -99,12 +97,12 @@ public:
         const auto status = getStatus();
         if (status == Status::Deferred || status == Status::Stopped)
         {
-            m_jobWatch = m_scheduler->pushJob(shared_from_this());
+            m_scheduler->pushJob(shared_from_this());
         }
     }
 
 protected:
-    void runOverride() override
+    void run() override
     {
         meta::UniqueLock lock(m_lock);
         auto condition = [this]()
@@ -130,12 +128,12 @@ protected:
     std::queue<std::string> m_queue;
 };
 
-class QueuedJob : public Job
+class QueuedJob : public TestJob
 {
     OutputPtr m_out;
 public:
     explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
-        Job(out, jobCount),
+        TestJob(out, jobCount),
         m_out(out)
     {
     }
@@ -154,7 +152,7 @@ public:
     }
 
 protected:
-    void runOverride() override
+    void run() override
     {
         ++m_jobCount;
         while (!isStopped())
@@ -162,15 +160,11 @@ protected:
             meta::UniqueLock lock(m_lock);
             auto condition = [this]()
             {
-                return !this->m_queue.empty() || isStopped() || m_threadPool->isStopSignalled();
+                return isStopped() || !this->m_queue.empty();
             };
             m_signal.wait(lock, condition);
             if (m_queue.empty())
             {
-                if (m_threadPool->isStopSignalled())
-                {
-                    break;
-                }
                 continue;
             }
             while (!m_queue.empty())
@@ -222,8 +216,8 @@ protected:
     template <class JobType>
     struct ScenarioBase
     {
-        std::vector<meta::TaskPtr> jobs;
-        std::vector<meta::TaskCompletionWatchObject> futures;
+        std::vector<meta::JobPtr> jobs;
+        std::vector<meta::JobFuture> futures;
 
         std::shared_ptr<JobType> operator[](int index)
         {
@@ -244,8 +238,9 @@ protected:
             while (tasks-- != 0u)
             {
                 this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
+                this->futures.push_back(this->jobs.back()->getFuture());
             }
-            this->futures = test.taskScheduler->pushMultipleJobs(this->jobs);
+            test.taskScheduler->pushMultipleJobs(this->jobs);
             test.taskScheduler->schedule(std::chrono::milliseconds(1));
         }
 
@@ -270,21 +265,10 @@ protected:
 
 }
 
-TEST(Tasks, testJob)
-{
-    SecureInt jobCount = 0u;
-    OutputPtr out = std::make_shared<Output>();
-    Job job(out, jobCount);
-    job.setStatus(Job::Status::Scheduled);
-    job.run();
-    EXPECT_EQ(Job::Status::Stopped, job.getStatus());
-    EXPECT_EQ(1u, jobCount);
-}
-
 TEST_F(TaskSchedulerTest, testAddJobs)
 {
     constexpr auto maxJobs = 50u;
-    QueuedTaskScenario<Job> scenario(*this, maxJobs);
+    QueuedTaskScenario<TestJob> scenario(*this, maxJobs);
     ASSERT_EQ(scenario.jobCount, maxJobs);
 
     std::size_t jobCount = 0u;
@@ -332,7 +316,7 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
     scenario[0]->push("3rd string");
     scenario[0]->push("4th string");
     taskScheduler->schedule();
-    scenario[0]->m_jobWatch.wait();
+    scenario[0]->getFuture().wait();
 
     EXPECT_EQ(4u, m_output->getBuffer().size());
 }

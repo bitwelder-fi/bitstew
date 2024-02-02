@@ -24,14 +24,14 @@
 
 namespace meta { namespace detail {
 
-class WorkerPrivate
+class JobPrivate
 {
 public:
-    static void notifyTaskQueued(Job& self, ThreadPool* pool);
+    static void notifyJobQueued(Job& self, ThreadPool* pool);
 
-    static void notifyTaskScheduled(Job& self);
+    static void notifyJobScheduled(Job& self, ThreadId threadId);
 
-    static void runTask(Job& self);
+    static void runJob(Job& self);
 
     static bool isTaskQueued(Job& self);
 };

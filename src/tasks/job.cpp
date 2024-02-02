@@ -27,52 +27,50 @@ namespace meta
 namespace detail
 {
 
-void WorkerPrivate::notifyTaskQueued(Job& self, ThreadPool* pool)
+void JobPrivate::notifyJobQueued(Job& self, ThreadPool*)
 {
-    self.m_threadPool = pool;
+    self.m_worker.reset();
     self.setStatus(Job::Status::Queued);
     self.onTaskQueued();
 }
 
-void WorkerPrivate::notifyTaskScheduled(Job& self)
+void JobPrivate::notifyJobScheduled(Job& self, ThreadId threadId)
 {
     self.setStatus(Job::Status::Scheduled);
-    self.onTaskScheduled();
+    self.m_owningThread = threadId;
+    self.onJobScheduled();
 }
 
-bool WorkerPrivate::isTaskQueued(Job& self)
+bool JobPrivate::isTaskQueued(Job& self)
 {
-    return self.m_threadPool != nullptr;
+    return self.m_status != Job::Status::Stopped || self.m_status != Job::Status::Stopped;
 }
 
-void WorkerPrivate::runTask(Job& self)
+void JobPrivate::runJob(Job& self)
 {
-    abortIfFail(self.m_status == Job::Status::Scheduled);
-
-    self.setStatus(Job::Status::Running);
-    self.m_owningThread = ThisThread::get_id();
-
-    if ((self.m_threadPool && !self.m_threadPool->isStopSignalled()) || !self.m_stopSignalled)
-    {
-        self.runOverride();
-    }
-
-    self.setStatus(Job::Status::Stopped);
-    self.m_completed.set_value();
-
-    // Create a new promise as the current one is already consumed. Refetching the future of a promise
-    // throws exception.
-    self.reset();
-    self.m_threadPool = nullptr;
-    self.onTaskCompleted();
+    self.m_worker(self);
 }
 
 } // namespace detail
 
 
-Job::Job()
+Job::Job() :
+    m_worker([](Job& self)
+    {
+        abortIfFail(self.m_status == Job::Status::Scheduled);
+
+        self.setStatus(Job::Status::Running);
+
+        if (!self.m_stopSignalled)
+        {
+            self.run();
+        }
+
+        self.setStatus(Job::Status::Stopped);
+
+        self.onTaskCompleted();
+    })
 {
-    reset();
 }
 
 Job::~Job()
@@ -82,13 +80,12 @@ Job::~Job()
 
 void Job::reset()
 {
-    TaskCompletionSignal signal;
-    m_completed.swap(signal);
-}
+    abortIfFail(m_status == Status::Deferred || m_status == Status::Stopped);
 
-void Job::run()
-{
-    detail::WorkerPrivate::runTask(*this);
+    m_worker.reset();
+    m_stopSignalled = false;
+    m_owningThread = ThreadId();
+    setStatus(Status::Deferred);
 }
 
 void Job::stop()
@@ -97,9 +94,9 @@ void Job::stop()
     stopOverride();
 }
 
-TaskCompletionWatchObject Job::getCompletionWatchObject()
+JobFuture Job::getFuture()
 {
-    return m_completed.get_future();
+    return m_worker.get_future();
 }
 
 } // namespace meta

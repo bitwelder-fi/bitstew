@@ -49,8 +49,14 @@ using ConditionVariable = std::condition_variable;
 using Mutex = std::mutex;
 using Thread = std::thread;
 using ThreadId = std::thread::id;
-using TaskCompletionSignal = std::promise<void>;
-using TaskCompletionWatchObject = std::future<void>;
+
+template <class Callable>
+using PackagedTask = std::packaged_task<Callable>;
+
+template <class Result>
+using Future = std::future<Result>;
+
+using JobFuture = std::future<void>;
 
 using UniqueLock = std::unique_lock<std::mutex>;
 using GuardLock = std::lock_guard<std::mutex>;
@@ -82,49 +88,6 @@ template <class T>
 struct META_TEMPLATE_API SyncElement
 {
     T syncValue;
-};
-
-class TaskCompletionWatchObject;
-class META_API TaskCompletionSignal
-{
-public:
-    using PromiseData = SyncElement<bool>;
-    using PromiseDataPtr = std::shared_ptr<PromiseData>;
-
-    explicit TaskCompletionSignal();
-    ~TaskCompletionSignal() = default;
-    TaskCompletionSignal(TaskCompletionSignal&& other);
-    TaskCompletionSignal& operator=(TaskCompletionSignal&& other);
-    void swap(TaskCompletionSignal& other);
-    DISABLE_COPY(TaskCompletionSignal);
-
-    TaskCompletionWatchObject get_future();
-
-    void set_value();
-
-private:
-    PromiseDataPtr m_data;
-};
-
-class META_API TaskCompletionWatchObject
-{
-    friend class TaskCompletionSignal;
-
-public:
-    explicit TaskCompletionWatchObject() = default;
-    ~TaskCompletionWatchObject() = default;
-    TaskCompletionWatchObject(TaskCompletionWatchObject&& other);
-    TaskCompletionWatchObject& operator=(TaskCompletionWatchObject&& other);
-    void swap(TaskCompletionWatchObject& other);
-    DISABLE_COPY(TaskCompletionWatchObject);
-
-    void wait();
-    bool valid() const;
-
-private:
-    explicit TaskCompletionWatchObject(TaskCompletionSignal::PromiseDataPtr data);
-
-    TaskCompletionSignal::PromiseDataPtr m_data;
 };
 
 struct META_API defer_lock_t { explicit defer_lock_t() = default; };

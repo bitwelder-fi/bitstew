@@ -42,22 +42,29 @@ private:
     std::unique_ptr<char, void(*)(void*)> message;
 };
 
-struct META_API ArgumentType
-{
-    ArgumentType(const std::type_info& tinfo) :
-        type(tinfo)
-    {
-    }
-    std::string getName() const;
-
-private:
-    const std::type_info& type;
-};
-
 /// ArgumentData stores an argument passed on slot invocation.
 class META_API ArgumentData : public std::any
 {
 public:
+    /// Contains the type info of an argument.
+    struct META_API Type
+    {
+        Type(const std::type_info& tinfo) :
+            type(tinfo)
+        {
+        }
+        /// Returns the name of the type.
+        std::string getName() const;
+
+        /// Returns the type info of the type.
+        const std::type_info& getType() const
+        {
+            return type;
+        }
+
+    private:
+        const std::type_info& type;
+    };
     /// Creates a default argument data, with no data stored.
     ArgumentData() = default;
 
@@ -71,7 +78,8 @@ public:
     {
     }
 
-    ArgumentType getType() const;
+    /// Returns the type of the argument.
+    Type getType() const;
 
     /// Cast operator, returns the data stored by an ArgumentData instance.
     /// \tparam T The type of the casted value.

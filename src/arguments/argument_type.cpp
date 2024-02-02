@@ -28,8 +28,8 @@ namespace meta
 BadArgument::BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept :
     message(nullptr, std::free)
 {
-    auto actual = ArgumentType(actualType).getName();
-    auto expected = ArgumentType(expectedType).getName();
+    auto actual = ArgumentData::Type(actualType).getName();
+    auto expected = ArgumentData::Type(expectedType).getName();
     auto msg = "Bad argument: actual type: " + actual + ", expected: " + expected;
     message.reset(static_cast<char*>(std::calloc(msg.length(), sizeof(char))));
     memcpy(message.get(), msg.c_str(), msg.length());
@@ -53,7 +53,7 @@ const char* BadArgument::what() const noexcept
     return message.get();
 }
 
-std::string ArgumentType::getName() const
+std::string ArgumentData::Type::getName() const
 {
     int status = std::numeric_limits<int>::infinity();
 
@@ -66,9 +66,9 @@ std::string ArgumentType::getName() const
     return (status == 0) ? res.get() : type.name();
 }
 
-ArgumentType ArgumentData::getType() const
+ArgumentData::Type ArgumentData::getType() const
 {
-    return ArgumentType(type());
+    return Type(type());
 }
 
 

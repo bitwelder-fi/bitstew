@@ -78,6 +78,12 @@ public:
         return m_registry.end();
     }
 
+    /// Creates an instance from the registered meta class of an ObjectType, with the passed Arguments.
+    /// \tparam ObjectType The object type whose meta class must be registered.
+    /// \tparam Arguments The arguments to pass on create.
+    /// \param instanceName The name with which to create the instance.
+    /// \param args The arguments to pass to the instance creation.
+    /// \return On success, returns the instance created, or an invalid shared pointer on failure.
     template <class ObjectType, typename... Arguments>
     std::shared_ptr<ObjectType> create(std::string_view objectName, Arguments&&... args)
     {

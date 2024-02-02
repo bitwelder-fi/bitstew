@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_TASK_HPP
-#define META_TASK_HPP
+#ifndef META_WORKER_HPP
+#define META_WORKER_HPP
 
 #include <meta/meta_api.hpp>
 #include <meta/threading.hpp>
@@ -129,5 +129,5 @@ private:
 
 }
 
-#endif // META_TASK_HPP
+#endif // META_WORKER_HPP
 

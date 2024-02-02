@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_TASK_SCHEDULER_HPP
-#define META_TASK_SCHEDULER_HPP
+#ifndef META_THREAD_POOL_HPP
+#define META_THREAD_POOL_HPP
 
 #include <meta/meta.hpp>
 #include <meta/threading.hpp>
@@ -162,4 +162,4 @@ private:
 
 } // namespace meta
 
-#endif // META_TASK_SCHEDULER_HPP
+#endif // META_THREAD_POOL_HPP

@@ -19,7 +19,7 @@
 #include <assert.hpp>
 #include <meta/log/trace.hpp>
 #include <meta/log/trace_printer.hpp>
-#include <meta/tasks/task_scheduler.hpp>
+#include <meta/tasks/thread_pool.hpp>
 #include <meta/threading.hpp>
 
 namespace meta

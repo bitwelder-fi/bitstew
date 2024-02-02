@@ -19,8 +19,8 @@
 #ifndef META_TASK_SCHEDULER_PRIVATE_HPP
 #define META_TASK_SCHEDULER_PRIVATE_HPP
 
-#include <meta/tasks/task.hpp>
-#include <meta/tasks/task_scheduler.hpp>
+#include <meta/tasks/worker.hpp>
+#include <meta/tasks/thread_pool.hpp>
 
 namespace meta { namespace detail {
 

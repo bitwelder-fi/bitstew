@@ -21,10 +21,9 @@
 #include <gtest/gtest.h>
 #include <meta/meta.hpp>
 #include <meta/library_config.hpp>
-#include <meta/tasks/task.hpp>
-#include <meta/tasks/task_scheduler.hpp>
+#include <meta/tasks/worker.hpp>
+#include <meta/tasks/thread_pool.hpp>
 
-#include <queue>
 #include <string>
 
 using namespace meta;

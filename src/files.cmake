@@ -6,12 +6,12 @@ metadata/factory.cpp
 metadata/metaclass.cpp
 object.cpp
 object_extension.cpp
-tasks/task.cpp
-tasks/task_scheduler.cpp
+tasks/thread_pool.cpp
+tasks/worker.cpp
 template.cpp
 threading.cpp
 private/object.hpp
-tasks/task_scheduler_private.h
+private/thread_pool.hpp
 ../include/assert.hpp
 ../include/meta/arguments/argument_type.hpp
 ../include/meta/arguments/argument_type_impl.hpp
@@ -29,8 +29,8 @@ tasks/task_scheduler_private.h
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp
 ../include/meta/object_extension.hpp
-../include/meta/tasks/task.hpp
-../include/meta/tasks/task_scheduler.hpp
+../include/meta/tasks/thread_pool.hpp
+../include/meta/tasks/worker.hpp
 ../include/meta/threading.hpp
 ../include/pimpl.hpp
 ../include/preprocessor.hpp

@@ -20,7 +20,7 @@
 #define META_TRACE_HPP
 
 #include <meta/meta.hpp>
-#include <meta/tasks/task.hpp>
+#include <meta/tasks/worker.hpp>
 #include <meta/threading.hpp>
 #include <meta/log/trace_printer.hpp>
 

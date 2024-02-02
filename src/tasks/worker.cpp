@@ -17,9 +17,9 @@
  */
 
 #include <assert.hpp>
-#include <meta/tasks/task.hpp>
+#include <meta/tasks/worker.hpp>
 
-#include "task_scheduler_private.h"
+#include "../private/thread_pool.hpp"
 
 namespace meta
 {

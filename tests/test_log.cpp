@@ -17,7 +17,7 @@
  */
 
 #include "test_log_fixtures.hpp"
-#include <meta/tasks/task_scheduler.hpp>
+#include <meta/tasks/thread_pool.hpp>
 
 using namespace meta_test;
 

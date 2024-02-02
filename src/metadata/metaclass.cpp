@@ -16,16 +16,47 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/callable.hpp>
+#include <meta/meta.hpp>
+#include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/object.hpp>
+#include <meta/object_extension.hpp>
+#include <utils/scope_value.hpp>
 
 namespace meta
 {
 
-MetaObjectPtr MetaClass::create(std::string_view name) const
+MetaObject::MetaObject(std::string_view metaName) :
+    m_name(metaName)
+{
+    abortIfFail(isValidMetaName(m_name));
+}
+
+MetaObject::~MetaObject()
+{
+}
+
+
+MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta, std::string_view name)
+{
+    utils::ScopeValue<bool> unlock(self.m_descriptor->sealed, false);
+    self.addMetaExtension(extensionMeta, name);
+}
+
+
+void MetaClass::initializeInstance(ObjectPtr instance) const
+{
+    for (auto& metaExtension : m_descriptor->extensions)
+    {
+        auto extension = metaExtension.second->create<ObjectExtension>(metaExtension.second->getName());
+        instance->addExtension(extension);
+    }
+}
+
+bool MetaClass::isSealed() const
 {
     abortIfFail(m_descriptor);
-    return m_descriptor->create(name);
+    return m_descriptor->sealed;
 }
 
 std::string_view MetaClass::getName() const
@@ -68,26 +99,50 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
     return m_descriptor->hasSuperClass(metaClass);
 }
 
-bool MetaClass::addMethod(Callable& callable)
+void MetaClass::addMetaExtension(const MetaClass& extensionMeta, std::string_view name)
 {
-    abortIfFail(m_descriptor && !m_descriptor->sealed);
-    auto result = m_descriptor->callables.insert({std::string(callable.getName()), &callable});
-    if (!result.second)
+    abortIfFail(m_descriptor && !m_descriptor->sealed && extensionMeta.m_descriptor && extensionMeta.m_descriptor->isExtension());
+
+    if (name.empty())
     {
-        META_LOG_ERROR("Callable " << callable.getName() <<" is already registered to metaclass.");
+        // The metaExtension must have a name.
+        abortIfFail(!extensionMeta.getName().empty());
+        auto result = m_descriptor->extensions.insert({extensionMeta.getName(), &extensionMeta});
+        abortIfFail(result.second);
     }
+    else
+    {
+        abortIfFail(isValidMetaName(name));
+        auto result = m_descriptor->extensions.insert({name, &extensionMeta});
+        abortIfFail(result.second);
+        extensionMeta.m_descriptor->name = name;
+    }
+}
+
+bool MetaClass::tryAddExtension(std::string_view metaName)
+{
+    abortIfFail(m_descriptor && isValidMetaName(metaName));
+
+    auto metaClass = Library::instance().objectFactory()->findMetaClass(metaName);
+    if (!metaClass)
+    {
+        return false;
+    }
+    if (!metaClass->m_descriptor->isExtension())
+    {
+        return false;
+    }
+
+    auto result = m_descriptor->extensions.insert({metaName, metaClass});
     return result.second;
 }
 
-Callable* MetaClass::findMethod(std::string_view name) const
+const MetaClass* MetaClass::findMetaExtension(std::string_view name) const
 {
-    abortIfFail(m_descriptor);
-    auto it = m_descriptor->callables.find(std::string(name));
-    if (it == m_descriptor->callables.end())
-    {
-        return {};
-    }
-    return it->second;
+    abortIfFail(isValidMetaName(name) && m_descriptor);
+
+    auto it = m_descriptor->extensions.find(name);
+    return it != m_descriptor->extensions.end() ? it->second : nullptr;
 }
 
 }

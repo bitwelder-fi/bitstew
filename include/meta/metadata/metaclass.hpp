@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,9 +19,10 @@
 #ifndef META_METACLASS_HPP
 #define META_METACLASS_HPP
 
-#include <meta/meta_api.hpp>
-#include <meta/metadata/callable.hpp>
 #include <assert.hpp>
+#include <meta/arguments/argument_type.hpp>
+#include <meta/forwards.hpp>
+#include <meta/meta_api.hpp>
 
 #include <memory>
 #include <string>
@@ -31,26 +32,35 @@
 namespace meta
 {
 
-class MetaObject;
-using MetaObjectPtr = std::shared_ptr<MetaObject>;
-
-
 /// Defines the metaclass of an associated class.
 class META_API MetaClass
 {
     DISABLE_COPY(MetaClass);
+    DISABLE_MOVE(MetaClass);
 
 public:
-    /// The metamethod of a metaclass.
-    class META_API MetaMethod : public Callable
+    /// Container with the meta classes of the object extensions added to a meta class.
+    using MetaExtensionContainer = std::unordered_map<std::string_view, const MetaClass*>;
+    /// The iterator of the meta extensions.
+    using MetaExtensionIterator = MetaExtensionContainer::const_iterator;
+
+    /// Registers an object extension metaclass to a static meta class.
+    struct META_API MetaExtensionRegistrar
     {
-    public:
-        /// Constructor.
-        template<class Function>
-        explicit MetaMethod(MetaClass& metaClass, std::string_view name, Function function) :
-            Callable(name, function)
+        explicit MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta, std::string_view name = std::string_view());
+    };
+
+    struct META_API EnableDynamic
+    {
+        template <class TMetaClass>
+        explicit EnableDynamic(TMetaClass& self)
         {
-            metaClass.addMethod(*this);
+            self.m_descriptor->getDynamic = []()
+            {
+                static TMetaClass dynamic;
+                dynamic.m_descriptor->sealed = false;
+                return &dynamic;
+            };
         }
     };
 
@@ -59,14 +69,22 @@ public:
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    MetaObjectPtr create(std::string_view name) const;
-
-    /// Cast the created meta object to the given class type.
-    template <class ClassType>
-    std::shared_ptr<ClassType> create(std::string_view name) const
+    /// \param arguments The arguments with which to create the object.
+    template <class ClassType = MetaObject>
+    std::shared_ptr<ClassType> create(std::string_view name, const PackagedArguments& arguments = PackagedArguments()) const
     {
-        return std::dynamic_pointer_cast<ClassType>(create(name));
+        abortIfFail(m_descriptor);
+        auto result = std::dynamic_pointer_cast<ClassType>(m_descriptor->create(name, arguments));
+        if constexpr (std::is_base_of_v<Object, ClassType>)
+        {
+            initializeInstance(result);
+        }
+        return result;
     }
+
+    /// Returns whether the meta class is sealed.
+    /// \return If the meta class is sealed, returns \e true, otherwise \e false.
+    bool isSealed() const;
 
     /// Returns the name of the metaclass.
     std::string_view getName() const;
@@ -104,37 +122,72 @@ public:
         return m_descriptor->hasSuperClass(*TDerivedClass::getStaticMetaClass());
     }
 
-    /// Adds a callable to the meta class. The callable is either a method of the class, or an attached
-    /// function, or a lambda. The method fails if the meta class already has a callable with the same
-    /// name.
-    /// \param callable The callable object to add.
-    /// \return If the method is added with success, returns \e true, otherwise \e false. On failure,
-    ///         and tracing is enabled, an error log is printed.
-    /// \see Callable
-    bool addMethod(Callable& callable);
+    /// \name Meta extensions
+    /// \{
+    /// Meta extensions are meta classes of object extensions you can add to the meta class of an Object.
+    /// When you create an instance of an object through a meta class, Meta automatically attaches
+    /// the object extensions to the created instance.
 
-    /// Tries to find a callable with the given name.
-    /// \param name The name of the callable to find.
-    /// \return The callable with the name, or \e nullptr if no callable with the name is found.
-    /// \see Callable
-    Callable* findMethod(std::string_view name) const;
+    /// Adds the meta class of an object extension to this meta class. The method fails if either this
+    /// or the meta class of the object extension is invalid, the meta class is not a meta class of
+    /// an object extension, it is already registered, or the name specified is not a valid metaname,
+    /// or there is an object extension meta class registered with the name.
+    /// \param extensionMeta The meta class of the object extension to add.
+    /// \param name Optional, the metaname under which to register the meta class. You must specify
+    ///        a metaname for the stub meta classes.
+    void addMetaExtension(const MetaClass& extensionMeta, std::string_view name = std::string_view());
+
+    /// Tries to add the meta class of a registered object extension to this meta class. The meta class
+    /// must be registered to Meta library under the metaname passed as argument.
+    /// \param metaName The metaname of teh meta class to register as extension.
+    /// \return If the meta class of the object extension was registered with success, returns \e true,
+    ///         otherwise \e false.
+    bool tryAddExtension(std::string_view metaName);
+
+    /// Finds the object extension meta class registered under a given name.
+    /// \param name The metaname of the object extension meta class to find.
+    /// \return On success returns the meta class of the object extension, or \e nullptr on failure.
+    const MetaClass* findMetaExtension(std::string_view name) const;
+
+    /// Returns the begin iterator of the object extensions meta class register.
+    inline MetaExtensionIterator beginExtensions() const
+    {
+        abortIfFail(m_descriptor);
+        return m_descriptor->extensions.begin();
+    }
+
+    /// Returns the end iterator of the object extensions meta class register.
+    inline MetaExtensionIterator endExtensions() const
+    {
+        abortIfFail(m_descriptor);
+        return m_descriptor->extensions.end();
+    }
+    /// \}
+
+    MetaClass* getDynamicMetaClass() const
+    {
+        return m_descriptor->getDynamic ? m_descriptor->getDynamic() : nullptr;
+    }
 
 protected:
     /// The descriptor of the metaclass.
     struct META_API DescriptorInterface
     {
-        /// The callable container type.
-        using CallableContainer = std::unordered_map<std::string, Callable*>;
-
+        /// The container with the meta extensions.
+        MetaExtensionContainer extensions;
         /// The name of the meta class.
         std::string name;
-        /// The callable container of the meta class.
-        CallableContainer callables;
+        /// The dynamic meta class callback.
+        std::function<MetaClass*()> getDynamic;
         /// Whether the metaclass is sealed.
         bool sealed = false;
 
+        explicit DescriptorInterface(std::string_view name) :
+            name(name)
+        {
+        }
         virtual ~DescriptorInterface() = default;
-        virtual MetaObjectPtr create(std::string_view /*name*/) const
+        virtual MetaObjectPtr create(std::string_view /*name*/, const PackagedArguments& /*arguments*/) const
         {
             return {};
         }
@@ -151,21 +204,24 @@ protected:
             return false;
         }
         virtual bool isAbstract() const = 0;
+        virtual bool isExtension() const = 0;
         virtual bool isMetaClassOf(const MetaObject& object) const = 0;
     };
     using DescriptorPtr = std::unique_ptr<DescriptorInterface>;
 
-    /// Constructor. Creates a metaclass with a name and descriptor.
-    explicit MetaClass(std::string_view name, DescriptorPtr descriptor) :
+    /// Constructor. Creates a metaclass with a descriptor.
+    explicit MetaClass(DescriptorPtr descriptor) :
         m_descriptor(std::move(descriptor))
     {
-        m_descriptor->name = name;
     }
 
     /// The descriptor of the metaclass.
     DescriptorPtr m_descriptor;
-};
+    friend class ObjectFactory;
 
+private:
+    void initializeInstance(ObjectPtr instance) const;
+};
 
 } // namespace meta
 
@@ -177,7 +233,6 @@ protected:
 /// classes, preferrably in the order of their declaration.
 #define META_CLASS(ClassName, ...)                                              \
 struct MetaClassType;                                                           \
-using MetaClassTypePtr = const MetaClassType*;                                  \
 static const meta::MetaClass* getStaticMetaClass()                              \
 {                                                                               \
     static MetaClassType metaClass;                                             \
@@ -187,8 +242,24 @@ static inline constexpr char __MetaName[]{ClassName};                           
 using MetaClassTypeBase = meta::detail::MetaClassImpl<__MetaName, __VA_ARGS__>; \
 struct META_API MetaClassType : MetaClassTypeBase
 
-/// Defines a metamethod to a method of a class for a metaclass.
-#define META_METHOD(Class, Method) \
-MetaMethod _##Method{*this, #Method, &Class::Method}
+
+#define STUB_META_CLASS(DeclaredClass, ...)                                         \
+struct MetaClassType;                                                               \
+static const meta::MetaClass* getStaticMetaClass()                                  \
+{                                                                                   \
+    static MetaClassType metaClass;                                                 \
+    return &metaClass;                                                              \
+}                                                                                   \
+using MetaClassTypeBase = meta::detail::StubMetaClass<DeclaredClass, __VA_ARGS__>;  \
+struct META_API MetaClassType : MetaClassTypeBase
+
+/// Declares the meta class to have its dynamic copy.
+#define DYNAMIC_META_CLASS() EnableDynamic _d{*this}
+
+#define META_EXTENSION(Extension) \
+MetaExtensionRegistrar __##Extension {*this, *(Extension::getStaticMetaClass())}
+
+#define META_NAMED_EXTENSION(Extension, Name) \
+MetaExtensionRegistrar __##Extension {*this, *(Extension::getStaticMetaClass()), Name}
 
 #endif // META_METACLASS_HPP

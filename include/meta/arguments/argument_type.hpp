@@ -23,15 +23,48 @@
 #include <utils/function_traits.hpp>
 
 #include <any>
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace meta
 {
 
+class META_API BadArgument : public std::exception
+{
+public:
+    BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept;
+    BadArgument(const BadArgument&) noexcept;
+    ~BadArgument() noexcept = default;
+    const char* what() const noexcept override;
+
+private:
+    std::unique_ptr<char, void(*)(void*)> message;
+};
+
 /// ArgumentData stores an argument passed on slot invocation.
 class META_API ArgumentData : public std::any
 {
 public:
+    /// Contains the type info of an argument.
+    struct META_API Type
+    {
+        Type(const std::type_info& tinfo) :
+            type(tinfo)
+        {
+        }
+        /// Returns the name of the type.
+        std::string getName() const;
+
+        /// Returns the type info of the type.
+        const std::type_info& getType() const
+        {
+            return type;
+        }
+
+    private:
+        const std::type_info& type;
+    };
     /// Creates a default argument data, with no data stored.
     ArgumentData() = default;
 
@@ -39,10 +72,14 @@ public:
     /// \tparam T The type of the value passed as argument.
     /// \param value The value to store.
     template <class T>
-    ArgumentData(T value)
-        : std::any(value)
+    ArgumentData(T value) :
+        std::any(value),
+        m_isConst(std::is_const_v<T>)
     {
     }
+
+    /// Returns the type of the argument.
+    Type getType() const;
 
     /// Cast operator, returns the data stored by an ArgumentData instance.
     /// \tparam T The type of the casted value.
@@ -50,6 +87,9 @@ public:
     /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
     template <class T>
     operator T() const;
+
+private:
+    bool m_isConst = false;
 };
 
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
@@ -75,7 +115,15 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    explicit PackagedArguments(Arguments&&... arguments);
+    PackagedArguments(Arguments&&... arguments);
+
+    template <typename... Arguments>
+    PackagedArguments(std::initializer_list<Arguments...> ilist)
+    {
+        std::array<ArgumentData, sizeof... (Arguments)> aa = {ilist};
+        m_pack.reserve(aa.size());
+        m_pack.insert(m_pack.end(), aa.begin(), aa.end());
+    }
 
     /// Creates packaged arguments from a subset of an other packaged arguments.
     explicit PackagedArguments(Iterator begin, Iterator end);
@@ -89,6 +137,17 @@ struct META_API PackagedArguments
     /// \rhs The argument to add.
     /// \return The argument package.
     PackagedArguments& operator+=(ArgumentData rhs);
+
+    /// Adds an argument to a packaged arguments.
+    /// \tparam T The argument type to add.
+    /// \rhs The argument to add.
+    /// \return The argument package.
+    template <typename T>
+    PackagedArguments& operator+=(T&& rhs)
+    {
+        *this += ArgumentData(std::forward<T>(rhs));
+        return *this;
+    }
 
     /// Appends \a package arguments to this.
     /// \param package The packaged arguiments to append to this package.
@@ -137,7 +196,7 @@ struct META_API PackagedArguments
     auto toTuple() const;
 
 private:
-    std::vector<ArgumentData> m_pack;
+    Container m_pack;
 };
 
 } // namespace meta

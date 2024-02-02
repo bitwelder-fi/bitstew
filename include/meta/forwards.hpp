@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,32 +16,24 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/callable.hpp>
+#ifndef META_FORWARDS_HPP
+#define META_FORWARDS_HPP
+
+#include <memory>
 
 namespace meta
 {
 
-Callable::Callable(Callable&& other)
-{
-    swap(other);
-}
+class MetaObject;
+class Object;
+class ObjectExtension;
 
-Callable& Callable::operator=(Callable&& other)
-{
-    Callable tmp(std::forward<Callable>(other));
-    swap(tmp);
-    return *this;
-}
-
-void Callable::swap(Callable& other)
-{
-    std::swap(other.m_descriptor.name, m_descriptor.name);
-    std::swap(other.m_descriptor.invokable, m_descriptor.invokable);
-}
-
-bool Callable::isValid() const
-{
-    return static_cast<bool>(m_descriptor.invokable);
-}
+using MetaObjectPtr = std::shared_ptr<MetaObject>;
+using ObjectPtr = std::shared_ptr<Object>;
+using ObjectWeakPtr = std::weak_ptr<Object>;
+using ObjectExtensionPtr = std::shared_ptr<ObjectExtension>;
+using ObjectExtensionWeakPtr = std::shared_ptr<ObjectExtension>;
 
 }
+
+#endif // META_FORWARDS_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,33 +16,26 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/metadata/metaobject.hpp>
+#include <meta/object_extension.hpp>
+#include <meta/meta.hpp>
+#include <meta/object.hpp>
 
 namespace meta
 {
 
-MetaObject::MetaObject(std::string_view name) :
-    m_name(name)
+ObjectExtension::ObjectExtension(std::string_view name) :
+    MetaObject(name)
 {
 }
 
-MetaObjectPtr MetaObject::create(std::string_view name)
+ObjectPtr ObjectExtension::getOwner() const
 {
-    return MetaObjectPtr(new MetaObject(name));
+    return m_owner.lock();
 }
 
-
-std::optional<ArgumentData> invoke(MetaObjectPtr object, std::string_view invokableName, const PackagedArguments& arguments)
+ArgumentData ObjectExtension::run(const PackagedArguments& arguments)
 {
-    abortIfFail(object && !invokableName.empty());
-
-    auto metaClass = object->getStaticMetaClass();
-    auto metaMethod = metaClass->findMethod(invokableName);
-    if (!metaMethod)
-    {
-        return std::nullopt;
-    }
-    return metaMethod->apply(object.get(), arguments);
+    return runOverride(arguments);
 }
 
 }

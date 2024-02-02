@@ -28,7 +28,8 @@
 #include <meta/library_config.hpp>
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaobject.hpp>
+#include <meta/object.hpp>
+#include <meta/object_extension.hpp>
 #include <meta/tasks/task_scheduler.hpp>
 
 #include <meta/log/trace.hpp>
@@ -90,12 +91,14 @@ void Library::initialize(const LibraryArguments& arguments)
 #endif
 
     d->objectFactory = std::make_unique<ObjectFactory>();
-    d->objectFactory->registerMetaClass(MetaObject::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(Object::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(ObjectExtension::getStaticMetaClass());
 }
 
 void Library::uninitialize()
 {
     D();
+    d->objectFactory.reset();
     if (d->taskScheduler)
     {
         if (d->taskScheduler->isRunning())
@@ -128,7 +131,7 @@ ObjectFactory* Library::objectFactory() const
 
 bool isValidMetaName(std::string_view name)
 {
-    return name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
+    return !name.empty() && name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
 }
 
 }

@@ -20,6 +20,7 @@
 #define META_FACTORY_HPP
 
 #include <meta/meta_api.hpp>
+#include <meta/metadata/metaclass.hpp>
 
 #include <string_view>
 #include <unordered_map>
@@ -75,6 +76,18 @@ public:
     MetaClassIterator end() const
     {
         return m_registry.end();
+    }
+
+    template <class ObjectType, typename... Arguments>
+    std::shared_ptr<ObjectType> create(std::string_view objectName, Arguments&&... args)
+    {
+        auto metaClass = findMetaClass(ObjectType::getStaticMetaClass()->getName());
+        if (!metaClass)
+        {
+            return {};
+        }
+        PackagedArguments pack{std::forward<Arguments>(args)...};
+        return metaClass->template create<ObjectType>(objectName, pack);
     }
 };
 

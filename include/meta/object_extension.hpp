@@ -53,13 +53,7 @@ public:
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
     ///         return a void ArgumentData.
-    ArgumentData execute(const PackagedArguments& arguments = PackagedArguments());
-
-    template <typename... TArgs>
-    void run(TArgs&&... args)
-    {
-        execute(PackagedArguments(std::forward<TArgs>(args)...));
-    }
+    ArgumentData run(const PackagedArguments& arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
     META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
@@ -72,23 +66,14 @@ public:
     }
 
 protected:
-    /// The descriptor of an object extension.
-    struct META_API Descriptor
-    {
-        ObjectWeakPtr owner;
-
-        explicit Descriptor() = default;
-        virtual ~Descriptor() = default;
-    };
-
     /// Constructor, creates an object extension with a descriptor passed as argument.
-    explicit ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor = pimpl::make_d_ptr<Descriptor>());
+    explicit ObjectExtension(std::string_view name);
 
     /// Override this to provide extension specific executor.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
     ///         return a void ArgumentData.
-    virtual ArgumentData executeOverride(const PackagedArguments& arguments) = 0;
+    virtual ArgumentData runOverride(const PackagedArguments& arguments) = 0;
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -105,7 +90,7 @@ private:
     DISABLE_COPY(ObjectExtension);
     DISABLE_MOVE(ObjectExtension);
 
-    pimpl::d_ptr_type<Descriptor> m_descriptor;
+    ObjectWeakPtr m_owner;
     friend struct ObjectDescriptor;
 };
 

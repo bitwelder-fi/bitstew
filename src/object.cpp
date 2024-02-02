@@ -30,7 +30,7 @@ bool ObjectDescriptor::addExtention(Object& self, ObjectExtensionPtr extension)
     auto it = self.m_extensions.insert(std::make_pair(extension->getName(), extension));
     if (it.second)
     {
-        it.first->second->m_descriptor->owner = self.shared_from_this();
+        it.first->second->m_owner = self.shared_from_this();
         extension->onAttached();
     }
     else
@@ -48,7 +48,7 @@ bool ObjectDescriptor::removeInvokable(Object& self, ObjectExtension& extension)
     if (it != self.m_extensions.end())
     {
         extension.onDetached();
-        extension.m_descriptor->owner.reset();
+        extension.m_owner.reset();
         self.m_extensions.erase(it);
         return true;
     }
@@ -107,7 +107,7 @@ std::optional<ArgumentData> Object::invoke(std::string_view name, const Packaged
     {
         return std::nullopt;
     }
-    return extension->execute(arguments);
+    return extension->run(arguments);
 }
 
 

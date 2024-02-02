@@ -22,8 +22,6 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/metaclass.hpp>
 
-#include <memory>
-
 namespace meta
 {
 
@@ -45,9 +43,9 @@ public:
     {
     };
 
-    static MetaObjectPtr create(std::string_view, const PackagedArguments&)
+    static auto create(std::string_view name, const PackagedArguments&)
     {
-        return {};
+        return MetaObjectPtr(new MetaObject(name));
     }
 
 protected:

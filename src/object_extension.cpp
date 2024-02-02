@@ -23,23 +23,19 @@
 namespace meta
 {
 
-ObjectExtension::ObjectExtension(std::string_view name, pimpl::d_ptr_type<Descriptor> descriptor) :
-    MetaObject(name),
-    m_descriptor(std::move(descriptor))
+ObjectExtension::ObjectExtension(std::string_view name) :
+    MetaObject(name)
 {
 }
 
 ObjectPtr ObjectExtension::getOwner() const
 {
-    abortIfFail(m_descriptor);
-    return m_descriptor->owner.lock();
+    return m_owner.lock();
 }
 
-ArgumentData ObjectExtension::execute(const PackagedArguments& arguments)
+ArgumentData ObjectExtension::run(const PackagedArguments& arguments)
 {
-    abortIfFail(m_descriptor);
-
-    return executeOverride(arguments);
+    return runOverride(arguments);
 }
 
 }

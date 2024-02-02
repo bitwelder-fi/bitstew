@@ -107,7 +107,15 @@ struct META_API PackagedArguments
     /// \tparam Arguments Variadic number of arguments to pack.
     /// \param arguments The variadic argument values to pack.
     template <typename... Arguments>
-    explicit PackagedArguments(Arguments&&... arguments);
+    PackagedArguments(Arguments&&... arguments);
+
+    template <typename... Arguments>
+    PackagedArguments(std::initializer_list<Arguments...> ilist)
+    {
+        std::array<ArgumentData, sizeof... (Arguments)> aa = {ilist};
+        m_pack.reserve(aa.size());
+        m_pack.insert(m_pack.end(), aa.begin(), aa.end());
+    }
 
     /// Creates packaged arguments from a subset of an other packaged arguments.
     explicit PackagedArguments(Iterator begin, Iterator end);
@@ -121,6 +129,17 @@ struct META_API PackagedArguments
     /// \rhs The argument to add.
     /// \return The argument package.
     PackagedArguments& operator+=(ArgumentData rhs);
+
+    /// Adds an argument to a packaged arguments.
+    /// \tparam T The argument type to add.
+    /// \rhs The argument to add.
+    /// \return The argument package.
+    template <typename T>
+    PackagedArguments& operator+=(T&& rhs)
+    {
+        *this += ArgumentData(std::forward<T>(rhs));
+        return *this;
+    }
 
     /// Appends \a package arguments to this.
     /// \param package The packaged arguiments to append to this package.
@@ -169,7 +188,7 @@ struct META_API PackagedArguments
     auto toTuple() const;
 
 private:
-    std::vector<ArgumentData> m_pack;
+    Container m_pack;
 };
 
 } // namespace meta

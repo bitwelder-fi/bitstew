@@ -70,7 +70,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
 }
 
 template <class Function, Function function>
-ArgumentData Invokable<Function, function>::executeOverride(const PackagedArguments& arguments)
+ArgumentData Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
 {
     try
     {

@@ -54,8 +54,8 @@ class Invokable final : public ObjectExtension
 protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
-    /// Overrides ObjectExtension::Descriptor::execute().
-    ArgumentData executeOverride(const PackagedArguments& arguments);
+    /// Overrides ObjectExtension::Descriptor::runOverride().
+    ArgumentData runOverride(const PackagedArguments& arguments);
 
     /// Constructor.
     explicit Invokable(std::string_view name);

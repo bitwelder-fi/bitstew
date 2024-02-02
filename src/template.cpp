@@ -98,6 +98,7 @@ void Library::initialize(const LibraryArguments& arguments)
 void Library::uninitialize()
 {
     D();
+    d->objectFactory.reset();
     if (d->taskScheduler)
     {
         if (d->taskScheduler->isRunning())

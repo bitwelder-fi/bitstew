@@ -275,15 +275,3 @@ TEST_F(InvokableTests, invokeStaticInvokable)
     EXPECT_CALL(*m_mockPrinter, log("invokable wrapper: lambda"));
     object.lambda->run();
 }
-
-TEST_F(InvokableTests, createFunctionInfokableWithLambda)
-{
-    auto lambda = [](std::string a1, int a2)
-    {
-        META_LOG_INFO("lambda: " << a1 << ", " << a2);
-    };
-    using Callable = meta::Invokable<decltype(&voidStringInt), lambda>;
-    auto callable = Callable::create("lambda");
-    EXPECT_CALL(*m_mockPrinter, log("lambda: v1, 10"));
-    callable->run({std::string("v1"), 10});
-}

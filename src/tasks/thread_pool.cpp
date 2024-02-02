@@ -27,18 +27,18 @@
 namespace meta
 {
 
-class TaskScheduler::TaskSchedulerPrivate
+class ThreadPool::ThreadPoolPrivate
 {
 public:
-    static TaskPtr dequeueTask(TaskScheduler& self)
+    static TaskPtr dequeueJob(ThreadPool& self)
     {
         auto task = self.m_tasks.front();
         self.m_tasks.pop_front();
-        detail::TaskPrivate::notifyTaskScheduled(*task);
+        detail::WorkerPrivate::notifyTaskScheduled(*task);
         return task;
     }
 
-    static TaskPtr popTask(TaskScheduler& self)
+    static TaskPtr popTask(ThreadPool& self)
     {
         UniqueLock lock(self.m_queueLock);
         auto condition = [&self]()
@@ -53,14 +53,14 @@ public:
             return {};
         }
 
-        auto task = dequeueTask(self);
+        auto task = dequeueJob(self);
         // Move the task to the running list.
         self.m_runningTasks.push_back(task);
 
         return task;
     }
 
-    static void removeRunningTask(TaskScheduler& self, TaskPtr task)
+    static void removeRunningTask(ThreadPool& self, TaskPtr task)
     {
         UniqueLock lock(self.m_queueLock);
         auto it = std::find(self.m_runningTasks.begin(), self.m_runningTasks.end(), task);
@@ -70,7 +70,7 @@ public:
         }
     }
 
-    static void stopRunningTasks(TaskScheduler& self)
+    static void stopRunningTasks(ThreadPool& self)
     {
         UniqueLock lock(self.m_queueLock);
 
@@ -81,13 +81,13 @@ public:
         }
     }
 
-    static bool hasRunningTasks(TaskScheduler& self)
+    static bool hasRunningTasks(ThreadPool& self)
     {
         UniqueLock lock(self.m_queueLock);
         return !self.m_tasks.empty();
     }
 
-    static void runSingleTask(TaskScheduler& self)
+    static void runSingleTask(ThreadPool& self)
     {
         auto currentTask = popTask(self);
         if (!currentTask)
@@ -100,13 +100,13 @@ public:
         }
 
         --self.m_idleThreadCount;
-        detail::TaskPrivate::runTask(*currentTask);
+        detail::WorkerPrivate::runTask(*currentTask);
         ++self.m_idleThreadCount;
 
         removeRunningTask(self, currentTask);
     }
 
-    static void threadMain(TaskScheduler* self)
+    static void threadMain(ThreadPool* self)
     {
         // Increase idle thread count before starting the thread loop.
         ++self->m_idleThreadCount;
@@ -122,7 +122,7 @@ public:
 };
 
 
-TaskScheduler::TaskScheduler(std::size_t threadCount) :
+ThreadPool::ThreadPool(std::size_t threadCount) :
 #ifndef CONFIG_MULTI_THREADED
     m_threadCount(0u)
 #else
@@ -132,12 +132,12 @@ TaskScheduler::TaskScheduler(std::size_t threadCount) :
     MAYBE_UNUSED(threadCount);
 }
 
-TaskScheduler::~TaskScheduler()
+ThreadPool::~ThreadPool()
 {
     abortIfFail(!m_isRunning);
 }
 
-void TaskScheduler::start()
+void ThreadPool::start()
 {
     abortIfFail(!m_isRunning);
     m_stopSignalled = false;
@@ -147,7 +147,7 @@ void TaskScheduler::start()
     m_threads.reserve(m_threadCount);
     for (std::size_t i = 0u; i < m_threadCount; ++i)
     {
-        m_threads.push_back(Thread(&TaskSchedulerPrivate::threadMain, this));
+        m_threads.push_back(Thread(&ThreadPoolPrivate::threadMain, this));
         schedule();
     }
     m_isRunning = true;
@@ -158,7 +158,7 @@ void TaskScheduler::start()
     }
 }
 
-void TaskScheduler::stop()
+void ThreadPool::stop()
 {
     abortIfFail(m_isRunning);
 
@@ -166,12 +166,12 @@ void TaskScheduler::stop()
     m_stopSignalled = true;
 
     // Wait till all the tasks queued get scheduled.
-    while (TaskSchedulerPrivate::hasRunningTasks(*this))
+    while (ThreadPoolPrivate::hasRunningTasks(*this))
     {
         schedule(std::chrono::milliseconds(10));
     }
 
-    TaskSchedulerPrivate::stopRunningTasks(*this);
+    ThreadPoolPrivate::stopRunningTasks(*this);
     // Notify all the threads to stop executing their tasks.
     m_lockCondition.notify_all();
 
@@ -198,7 +198,7 @@ void TaskScheduler::stop()
     m_isRunning = false;
 }
 
-bool TaskScheduler::isBusy()
+bool ThreadPool::isBusy()
 {
     bool busy = false;
     {
@@ -208,11 +208,11 @@ bool TaskScheduler::isBusy()
     return busy;
 }
 
-TaskCompletionWatchObject TaskScheduler::tryQueueTask(TaskPtr task)
+TaskCompletionWatchObject ThreadPool::pushJob(TaskPtr task)
 {
     abortIfFail(task);
     const auto taskStatus = task->getStatus();
-    abortIfFail(taskStatus == Task::Status::Deferred || taskStatus == Task::Status::Stopped);
+    abortIfFail(taskStatus == Job::Status::Deferred || taskStatus == Job::Status::Stopped);
 
     if (m_stopSignalled)
     {
@@ -222,7 +222,7 @@ TaskCompletionWatchObject TaskScheduler::tryQueueTask(TaskPtr task)
     {
         GuardLock lock(m_queueLock);
         m_tasks.push_back(task);
-        detail::TaskPrivate::notifyTaskQueued(*task, this);
+        detail::WorkerPrivate::notifyTaskQueued(*task, this);
     }
 
     m_lockCondition.notify_one();
@@ -230,7 +230,7 @@ TaskCompletionWatchObject TaskScheduler::tryQueueTask(TaskPtr task)
     return task->getCompletionWatchObject();
 }
 
-std::vector<TaskCompletionWatchObject> TaskScheduler::tryQueueTasks(std::vector<TaskPtr> tasks)
+std::vector<TaskCompletionWatchObject> ThreadPool::pushMultipleJobs(std::vector<TaskPtr> tasks)
 {
     abortIfFail(!tasks.empty());
     if (m_stopSignalled)
@@ -246,7 +246,7 @@ std::vector<TaskCompletionWatchObject> TaskScheduler::tryQueueTasks(std::vector<
         m_tasks.insert(m_tasks.end(), tasks.begin(), tasks.end());
         for (auto& task : tasks)
         {
-            detail::TaskPrivate::notifyTaskQueued(*task, this);
+            detail::WorkerPrivate::notifyTaskQueued(*task, this);
             result.push_back(task->getCompletionWatchObject());
         }
     }
@@ -263,17 +263,17 @@ std::vector<TaskCompletionWatchObject> TaskScheduler::tryQueueTasks(std::vector<
     return result;
 }
 
-std::size_t TaskScheduler::getTaskCount() const
+std::size_t ThreadPool::getQueuedJobs() const
 {
     return m_tasks.size();
 }
 
-void TaskScheduler::schedule()
+void ThreadPool::schedule()
 {
     schedule(std::chrono::nanoseconds(1));
 }
 
-void TaskScheduler::schedule(const std::chrono::nanoseconds& delay)
+void ThreadPool::schedule(const std::chrono::nanoseconds& delay)
 {
 #if defined(CONFIG_MULTI_THREADED)
     std::this_thread::sleep_for(delay);
@@ -281,7 +281,7 @@ void TaskScheduler::schedule(const std::chrono::nanoseconds& delay)
     MAYBE_UNUSED(delay);
     while (!m_tasks.empty())
     {
-        TaskSchedulerPrivate::runSingleTask(*this);
+        ThreadPoolPrivate::runSingleTask(*this);
     }
 #endif
 }

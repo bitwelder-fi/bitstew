@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_WORKER_HPP
-#define META_WORKER_HPP
+#ifndef META_JOB_HPP
+#define META_JOB_HPP
 
 #include <meta/meta_api.hpp>
 #include <meta/threading.hpp>
@@ -27,107 +27,107 @@ namespace meta
 
 namespace detail
 {
-class TaskPrivate;
+class WorkerPrivate;
 }
-class TaskScheduler;
+class ThreadPool;
 
-/// Represents a job executed by the task scheduler.
-class META_API Task : public std::enable_shared_from_this<Task>
+/// Represents a job executed by the thread pool.
+class META_API Job : public std::enable_shared_from_this<Job>
 {
 public:
-    /// The status of the task.
+    /// The status of the job.
     enum class Status
     {
-        /// The task is deferred.
+        /// The job is deferred.
         Deferred,
-        /// The task is queued for excecution.
+        /// The job is queued for excecution.
         Queued,
-        /// The task is scheduled, but not yet running.
+        /// The job is scheduled, but not yet running.
         Scheduled,
-        /// The task is running.
+        /// The job is running.
         Running,
-        /// The task is idling.
+        /// The job is idling.
         Idle,
-        /// The task is stopped.
+        /// The job is stopped.
         Stopped
     };
 
     /// Destructor.
-    virtual ~Task();
+    virtual ~Job();
 
-    /// Returns the status of the task.
-    /// \return The status of the task.
+    /// Returns the status of the job.
+    /// \return The status of the job.
     Status getStatus() const
     {
         return m_status.load();
     }
 
-    /// Returns the thread which runs the task.
-    /// \return The identifier of the thread which runs the task.
+    /// Returns the thread which runs the job.
+    /// \return The identifier of the thread which runs the job.
     ThreadId getOwningThread() const
     {
         return m_owningThread;
     }
 
-    /// Executes the task.
+    /// Executes the job.
     void run();
 
-    /// Stops the task. Call this to schedule the downinding of the task.
+    /// Stops the job. Call this to schedule the downinding of the job.
     void stop();
 
-    /// Returns whether the stop got signalled on the task.
+    /// Returns whether the stop got signalled on the job.
     bool isStopped() const
     {
         return m_stopSignalled;
     }
 
-    /// Returns the future object which notifies the completion of the task.
-    /// \return The future object of the task. Use this to wait for the task completion.
+    /// Returns the future object which notifies the completion of the job.
+    /// \return The future object of the job. Use this to wait for the job completion.
     TaskCompletionWatchObject getCompletionWatchObject();
 
 protected:
     /// Constructor.
-    explicit Task();
+    explicit Job();
 
-    /// Resets the task for reuse.
+    /// Resets the job for reuse.
     void reset();
 
-    /// The main function of the task. Override this to implement task specific logic.
+    /// The main function of the job. Override this to implement job specific logic.
     virtual void runOverride(){}
 
-    /// Override this to implement task specific stop logic.
+    /// Override this to implement job specific stop logic.
     virtual void stopOverride(){}
 
-    /// Called by task scheduler when the task is queued.
+    /// Called by job scheduler when the job is queued.
     virtual void onTaskQueued(){}
-    /// Called by task scheduler when the task is scheduled and removed from the task scheduler queue.
+    /// Called by job scheduler when the job is scheduled and removed from the job scheduler queue.
     virtual void onTaskScheduled(){}
-    /// Called by the task when the task is completed. Override this to implement task specific logic.
+    /// Called by the job when the job is completed. Override this to implement job specific logic.
     virtual void onTaskCompleted(){}
 
-    /// Sets the status of the task.
+    /// Sets the status of the job.
     /// \param status The status to set.
     void setStatus(Status status)
     {
         m_status = status;
     }
 
-    /// The task scheduler to which the task is queued.
-    TaskScheduler* m_taskScheduler = nullptr;
+    /// The job scheduler to which the job is queued.
+    ThreadPool* m_threadPool = nullptr;
     // Holds the signalled stop.
     AtomicBool m_stopSignalled = false;
 
 private:
-    friend class detail::TaskPrivate;
-    // The thread which owns the task.
+    friend class detail::WorkerPrivate;
+    // The thread which owns the job.
     ThreadId m_owningThread;
     // TaskCompletionSignal for completion.
     TaskCompletionSignal m_completed;
-    // The task status.
+    // The job status.
     Atomic<Status> m_status = Status::Deferred;
 };
 
 }
 
-#endif // META_WORKER_HPP
+#endif // META_JOB_HPP
 

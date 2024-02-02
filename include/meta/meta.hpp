@@ -28,7 +28,7 @@ namespace meta
 {
 
 class Tracer;
-class TaskScheduler;
+class ThreadPool;
 struct LibraryArguments;
 class MetaLibraryPrivate;
 class ObjectFactory;
@@ -50,7 +50,7 @@ public:
     /// Returns the task scheduler of the library.
     /// \return The task scheduler of the library, or nullptr, if the library is initialized without
     ///         a task scheduler.
-    TaskScheduler* taskScheduler() const;
+    ThreadPool* taskScheduler() const;
 
     /// Returns the tracer of the library. The method is only available when tracing is eanbled.
     /// \return The tracer of the library.

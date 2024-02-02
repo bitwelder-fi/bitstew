@@ -268,7 +268,7 @@ public:
     }
 
 private:
-    friend class TaskScheduler;
+    friend class ThreadPool;
     std::function<void()> m_function;
     bool m_joinable = true;
 };

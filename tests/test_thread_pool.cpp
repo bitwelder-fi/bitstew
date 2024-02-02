@@ -21,17 +21,15 @@
 #include <gtest/gtest.h>
 #include <meta/meta.hpp>
 #include <meta/library_config.hpp>
-#include <meta/tasks/worker.hpp>
+#include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
 #include <string>
 
-using namespace meta;
-
 namespace
 {
 
-using SecureInt = Atomic<std::size_t>;
+using SecureInt = meta::Atomic<std::size_t>;
 
 class Output
 {
@@ -50,7 +48,7 @@ public:
 using OutputPtr = std::shared_ptr<Output>;
 
 
-class Job : public Task
+class Job : public meta::Job
 {
 public:
     explicit Job(OutputPtr, SecureInt& jobCount) :
@@ -60,7 +58,7 @@ public:
 
     void setStatus(Status status)
     {
-        Task::setStatus(status);
+        meta::Job::setStatus(status);
     }
 
 protected:
@@ -72,15 +70,15 @@ protected:
     SecureInt& m_jobCount;
 };
 
-class RescheduledJob : public Task
+class RescheduledJob : public meta::Job
 {
-    TaskScheduler* m_scheduler = nullptr;
+    meta::ThreadPool* m_scheduler = nullptr;
     OutputPtr m_out;
 public:
 
-    TaskCompletionWatchObject m_jobWatch;
+    meta::TaskCompletionWatchObject m_jobWatch;
 
-    explicit RescheduledJob(TaskScheduler* scheduler, OutputPtr out) :
+    explicit RescheduledJob(meta::ThreadPool* scheduler, OutputPtr out) :
         m_scheduler(scheduler),
         m_out(out)
     {
@@ -94,21 +92,21 @@ public:
         }
 
         {
-            GuardLock lock(m_lock);
+            meta::GuardLock lock(m_lock);
             m_queue.push(std::string(text));
         }
         m_signal.notify_one();
         const auto status = getStatus();
         if (status == Status::Deferred || status == Status::Stopped)
         {
-            m_jobWatch = m_scheduler->tryQueueTask(shared_from_this());
+            m_jobWatch = m_scheduler->pushJob(shared_from_this());
         }
     }
 
 protected:
     void runOverride() override
     {
-        UniqueLock lock(m_lock);
+        meta::UniqueLock lock(m_lock);
         auto condition = [this]()
         {
             return !this->m_queue.empty() || isStopped();
@@ -127,8 +125,8 @@ protected:
         m_signal.notify_all();
     }
 
-    Mutex m_lock;
-    ConditionVariable m_signal;
+    meta::Mutex m_lock;
+    meta::ConditionVariable m_signal;
     std::queue<std::string> m_queue;
 };
 
@@ -149,7 +147,7 @@ public:
             return;
         }
         {
-            GuardLock lock(m_lock);
+            meta::GuardLock lock(m_lock);
             m_queue.push(string);
         }
         m_signal.notify_all();
@@ -161,15 +159,15 @@ protected:
         ++m_jobCount;
         while (!isStopped())
         {
-            UniqueLock lock(m_lock);
+            meta::UniqueLock lock(m_lock);
             auto condition = [this]()
             {
-                return !this->m_queue.empty() || isStopped() || m_taskScheduler->isStopSignalled();
+                return !this->m_queue.empty() || isStopped() || m_threadPool->isStopSignalled();
             };
             m_signal.wait(lock, condition);
             if (m_queue.empty())
             {
-                if (m_taskScheduler->isStopSignalled())
+                if (m_threadPool->isStopSignalled())
                 {
                     break;
                 }
@@ -189,20 +187,20 @@ protected:
         m_signal.notify_all();
     }
 
-    Mutex m_lock;
-    ConditionVariable m_signal;
+    meta::Mutex m_lock;
+    meta::ConditionVariable m_signal;
     std::queue<std::string> m_queue;
 };
 
 class TaskSchedulerTest : public ::testing::Test
 {
 protected:
-    std::unique_ptr<TaskScheduler> taskScheduler;
+    std::unique_ptr<meta::ThreadPool> taskScheduler;
     OutputPtr m_output;
 
     void SetUp() override
     {
-        taskScheduler = std::make_unique<meta::TaskScheduler>(Thread::hardware_concurrency());
+        taskScheduler = std::make_unique<meta::ThreadPool>(meta::Thread::hardware_concurrency());
         if (!taskScheduler->isRunning())
         {
             taskScheduler->start();
@@ -224,8 +222,8 @@ protected:
     template <class JobType>
     struct ScenarioBase
     {
-        std::vector<TaskPtr> jobs;
-        std::vector<TaskCompletionWatchObject> futures;
+        std::vector<meta::TaskPtr> jobs;
+        std::vector<meta::TaskCompletionWatchObject> futures;
 
         std::shared_ptr<JobType> operator[](int index)
         {
@@ -247,7 +245,7 @@ protected:
             {
                 this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
             }
-            this->futures = test.taskScheduler->tryQueueTasks(this->jobs);
+            this->futures = test.taskScheduler->pushMultipleJobs(this->jobs);
             test.taskScheduler->schedule(std::chrono::milliseconds(1));
         }
 

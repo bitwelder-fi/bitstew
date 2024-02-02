@@ -48,7 +48,7 @@ public:
     {
     }
 
-    std::unique_ptr<TaskScheduler> taskScheduler;
+    std::unique_ptr<ThreadPool> taskScheduler;
     std::shared_ptr<Tracer> tracer;
     std::unique_ptr<ObjectFactory> objectFactory;
 };
@@ -74,7 +74,7 @@ void Library::initialize(const LibraryArguments& arguments)
     D();
     if (arguments.taskScheduler.createThreadPool)
     {
-        d->taskScheduler = std::make_unique<TaskScheduler>(arguments.taskScheduler.threadCount);
+        d->taskScheduler = std::make_unique<ThreadPool>(arguments.taskScheduler.threadCount);
         d->taskScheduler->start();
     }
 
@@ -110,7 +110,7 @@ void Library::uninitialize()
     d->tracer.reset();
 }
 
-TaskScheduler* Library::taskScheduler() const
+ThreadPool* Library::taskScheduler() const
 {
     D();
     return d->taskScheduler.get();

@@ -17,7 +17,7 @@
  */
 
 #include <assert.hpp>
-#include <meta/tasks/worker.hpp>
+#include <meta/tasks/job.hpp>
 
 #include "../private/thread_pool.hpp"
 
@@ -27,77 +27,77 @@ namespace meta
 namespace detail
 {
 
-void TaskPrivate::notifyTaskQueued(Task& self, TaskScheduler* pool)
+void WorkerPrivate::notifyTaskQueued(Job& self, ThreadPool* pool)
 {
-    self.m_taskScheduler = pool;
-    self.setStatus(Task::Status::Queued);
+    self.m_threadPool = pool;
+    self.setStatus(Job::Status::Queued);
     self.onTaskQueued();
 }
 
-void TaskPrivate::notifyTaskScheduled(Task& self)
+void WorkerPrivate::notifyTaskScheduled(Job& self)
 {
-    self.setStatus(Task::Status::Scheduled);
+    self.setStatus(Job::Status::Scheduled);
     self.onTaskScheduled();
 }
 
-bool TaskPrivate::isTaskQueued(Task& self)
+bool WorkerPrivate::isTaskQueued(Job& self)
 {
-    return self.m_taskScheduler != nullptr;
+    return self.m_threadPool != nullptr;
 }
 
-void TaskPrivate::runTask(Task& self)
+void WorkerPrivate::runTask(Job& self)
 {
-    abortIfFail(self.m_status == Task::Status::Scheduled);
+    abortIfFail(self.m_status == Job::Status::Scheduled);
 
-    self.setStatus(Task::Status::Running);
+    self.setStatus(Job::Status::Running);
     self.m_owningThread = ThisThread::get_id();
 
-    if ((self.m_taskScheduler && !self.m_taskScheduler->isStopSignalled()) || !self.m_stopSignalled)
+    if ((self.m_threadPool && !self.m_threadPool->isStopSignalled()) || !self.m_stopSignalled)
     {
         self.runOverride();
     }
 
-    self.setStatus(Task::Status::Stopped);
+    self.setStatus(Job::Status::Stopped);
     self.m_completed.set_value();
 
     // Create a new promise as the current one is already consumed. Refetching the future of a promise
     // throws exception.
     self.reset();
-    self.m_taskScheduler = nullptr;
+    self.m_threadPool = nullptr;
     self.onTaskCompleted();
 }
 
 } // namespace detail
 
 
-Task::Task()
+Job::Job()
 {
     reset();
 }
 
-Task::~Task()
+Job::~Job()
 {
     abortIfFail(m_status == Status::Deferred || m_status == Status::Stopped);
 }
 
-void Task::reset()
+void Job::reset()
 {
     TaskCompletionSignal signal;
     m_completed.swap(signal);
 }
 
-void Task::run()
+void Job::run()
 {
-    detail::TaskPrivate::runTask(*this);
+    detail::WorkerPrivate::runTask(*this);
 }
 
-void Task::stop()
+void Job::stop()
 {
     m_stopSignalled = true;
     stopOverride();
 }
 
-TaskCompletionWatchObject Task::getCompletionWatchObject()
+TaskCompletionWatchObject Job::getCompletionWatchObject()
 {
     return m_completed.get_future();
 }

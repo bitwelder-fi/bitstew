@@ -6,8 +6,8 @@ metadata/factory.cpp
 metadata/metaclass.cpp
 object.cpp
 object_extension.cpp
+tasks/job.cpp
 tasks/thread_pool.cpp
-tasks/worker.cpp
 template.cpp
 threading.cpp
 private/object.hpp
@@ -29,8 +29,8 @@ private/thread_pool.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp
 ../include/meta/object_extension.hpp
+../include/meta/tasks/job.hpp
 ../include/meta/tasks/thread_pool.hpp
-../include/meta/tasks/worker.hpp
 ../include/meta/threading.hpp
 ../include/pimpl.hpp
 ../include/preprocessor.hpp

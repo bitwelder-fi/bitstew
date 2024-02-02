@@ -20,7 +20,7 @@
 #define META_TRACE_HPP
 
 #include <meta/meta.hpp>
-#include <meta/tasks/worker.hpp>
+#include <meta/tasks/job.hpp>
 #include <meta/threading.hpp>
 #include <meta/log/trace_printer.hpp>
 
@@ -98,11 +98,11 @@ public:
  };
 
 /// Trace manager.
-class META_API Tracer : public Task
+class META_API Tracer : public Job
 {
 public:
     /// Constructor.
-    explicit Tracer(TaskScheduler* taskScheduler);
+    explicit Tracer(ThreadPool* taskScheduler);
     /// Destructor.
     ~Tracer();
 
@@ -172,7 +172,7 @@ private:
     ConditionVariable m_signal;
     std::vector<TracePrinterPtr> m_outputs;
     std::queue<TraceRecord> m_buffer;
-    TaskScheduler* m_taskScheduler = nullptr;
+    ThreadPool* m_threadPool = nullptr;
     Atomic<LogLevel> m_logLevel = LogLevel::Debug;
 };
 using TracerPtr = std::shared_ptr<Tracer>;

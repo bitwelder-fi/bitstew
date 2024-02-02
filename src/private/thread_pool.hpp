@@ -19,21 +19,21 @@
 #ifndef META_TASK_SCHEDULER_PRIVATE_HPP
 #define META_TASK_SCHEDULER_PRIVATE_HPP
 
-#include <meta/tasks/worker.hpp>
+#include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
 namespace meta { namespace detail {
 
-class TaskPrivate
+class WorkerPrivate
 {
 public:
-    static void notifyTaskQueued(Task& self, TaskScheduler* pool);
+    static void notifyTaskQueued(Job& self, ThreadPool* pool);
 
-    static void notifyTaskScheduled(Task& self);
+    static void notifyTaskScheduled(Job& self);
 
-    static void runTask(Task& self);
+    static void runTask(Job& self);
 
-    static bool isTaskQueued(Task& self);
+    static bool isTaskQueued(Job& self);
 };
 
 

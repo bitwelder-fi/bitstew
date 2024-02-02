@@ -40,19 +40,19 @@ struct TracerPrivate
         }
         self.m_signal.notify_one();
 
-        if (self.m_taskScheduler)
+        if (self.m_threadPool)
         {
             const auto status = self.getStatus();
-            if (status == Task::Status::Deferred || status == Task::Status::Stopped)
+            if (status == Job::Status::Deferred || status == Job::Status::Stopped)
             {
-                self.m_taskScheduler->tryQueueTask(self.shared_from_this());
+                self.m_threadPool->pushJob(self.shared_from_this());
             }
-            // self.m_taskScheduler->schedule();
+            // self.m_threadPool->schedule();
             return;
         }
 
         // The thread pool is not active, run the task.
-        self.setStatus(Task::Status::Scheduled);
+        self.setStatus(Job::Status::Scheduled);
         self.run();
     }
 
@@ -67,8 +67,8 @@ struct TracerPrivate
 };
 
 
-Tracer::Tracer(TaskScheduler* taskScheduler) :
-    m_taskScheduler(taskScheduler)
+Tracer::Tracer(ThreadPool* taskScheduler) :
+    m_threadPool(taskScheduler)
 {
 }
 

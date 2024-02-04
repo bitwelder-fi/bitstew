@@ -323,7 +323,6 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
 
 TEST(AThread, test)
 {
-    std::cout << "MAIN " << std::this_thread::get_id() << std::endl;
-    auto thread = std::thread([]() { std::cout << "THREAD " << std::this_thread::get_id() << std::endl; });
+    auto thread = std::thread([]() { std::cout << "THREAD " << std::endl; });
     thread.join();
 }

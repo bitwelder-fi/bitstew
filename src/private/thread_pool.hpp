@@ -38,8 +38,6 @@ class JobPrivate
     std::packaged_task<void(Job*)> worker;
     // The job status.
     std::atomic<Job::Status> status = Job::Status::Deferred;
-    // Holds the signalled stop.
-    std::atomic_bool stopSignalled = false;
 
     static void main(Job* job);
 

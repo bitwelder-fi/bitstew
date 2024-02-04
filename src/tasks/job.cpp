@@ -38,14 +38,14 @@ void JobPrivate::main(Job* job)
 
     job->setStatus(Job::Status::Running);
 
-    if (!job->descriptor->stopSignalled)
+    if (!job->isStopped())
     {
         job->run();
     }
 
     job->setStatus(Job::Status::Stopped);
-
     job->onTaskCompleted();
+    job->setStatus(Job::Status::Deferred);
 }
 
 void JobPrivate::notifyJobQueued(Job& self)
@@ -94,19 +94,18 @@ void Job::reset()
     abortIfFail(descriptor->status == Status::Deferred || descriptor->status == Status::Stopped);
 
     descriptor->worker.reset();
-    descriptor->stopSignalled = false;
     setStatus(Status::Deferred);
 }
 
 void Job::stop()
 {
-    descriptor->stopSignalled = true;
+    setStatus(Status::Stopped);
     stopOverride();
 }
 
 bool Job::isStopped() const
 {
-    return descriptor->stopSignalled;
+    return getStatus() == Status::Stopped;
 }
 
 

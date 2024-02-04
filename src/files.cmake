@@ -9,7 +9,6 @@ object_extension.cpp
 tasks/job.cpp
 tasks/thread_pool.cpp
 template.cpp
-threading.cpp
 private/object.hpp
 private/thread_pool.hpp
 ../include/assert.hpp

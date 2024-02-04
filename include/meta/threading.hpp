@@ -35,8 +35,7 @@
 #include <assert.hpp>
 #include <pimpl.hpp>
 
-#include <functional>
-#include <memory>
+#include <future>
 
 #endif
 
@@ -79,9 +78,25 @@ public:
     explicit Mutex() = default;
     ~Mutex() = default;
 
-    void lock();
-    void unlock();
-    bool try_lock();
+    inline void lock()
+    {
+        abortIfFail(m_lockCount == 0u);
+        ++m_lockCount;
+    }
+    inline void unlock()
+    {
+        abortIfFail(m_lockCount > 0u);
+        --m_lockCount;
+    }
+    inline bool try_lock()
+    {
+        if (m_lockCount != 0u)
+        {
+            return false;
+        }
+        lock();
+        return true;
+    }
 };
 
 template <class T>
@@ -100,23 +115,97 @@ class META_API UniqueLock
     bool m_owns = false;
 public:
     explicit UniqueLock() = default;
-    explicit UniqueLock(Mutex& mutex);
-    explicit UniqueLock(Mutex& mutex, defer_lock_t);
-    explicit UniqueLock(Mutex& mutex, try_to_lock_t);
-    explicit UniqueLock(Mutex& mutex, adopt_lock_t);
-    ~UniqueLock();
-    void swap(UniqueLock& other);
-    UniqueLock(UniqueLock&& other);
-    UniqueLock& operator=(UniqueLock&& other);
+    explicit UniqueLock(Mutex& mutex) :
+        m_mutex(&mutex),
+        m_owns(true)
+    {
+        m_mutex->lock();
+    }
+    explicit UniqueLock(Mutex& mutex, defer_lock_t) :
+        m_mutex(&mutex),
+        m_owns(false)
+    {
+    }
+    explicit UniqueLock(Mutex& mutex, try_to_lock_t) :
+        m_mutex(&mutex),
+        m_owns(m_mutex->try_lock())
+    {
+    }
+    explicit UniqueLock(Mutex& mutex, adopt_lock_t) :
+        m_mutex(&mutex),
+        m_owns(true)
+    {
+    }
+    ~UniqueLock()
+    {
+        if (m_owns)
+        {
+            m_mutex->unlock();
+        }
+    }
+    inline void swap(UniqueLock& other)
+    {
+        std::swap(other.m_mutex, m_mutex);
+        std::swap(other.m_owns, m_owns);
+    }
+    UniqueLock(UniqueLock&& other) :
+        m_mutex(std::move(other.m_mutex)),
+        m_owns(std::move(other.m_owns))
+    {
+        other.m_mutex = nullptr;
+        other.m_owns = false;
+    }
+    inline UniqueLock& operator=(UniqueLock&& other)
+    {
+        if (m_owns)
+        {
+            m_mutex->unlock();
+        }
+
+        UniqueLock tmp(std::forward<UniqueLock>(other));
+        swap(tmp);
+
+        return *this;
+    }
     DISABLE_COPY(UniqueLock);
 
-    void lock();
-    void unlock();
-    bool try_lock();
+    inline void lock()
+    {
+        abortIfFail(m_mutex);
+        abortIfFail(!m_owns);
+        m_mutex->lock();
+        m_owns = true;
+    }
+    inline void unlock()
+    {
+        abortIfFail(m_mutex);
+        abortIfFail(m_owns);
+        m_mutex->unlock();
+        m_owns = false;
+    }
+    inline bool try_lock()
+    {
+        abortIfFail(m_mutex);
+        abortIfFail(!m_owns);
+        m_owns = m_mutex->try_lock();
+        return m_owns;
+    }
 
-    bool owns_lock() const;
-    Mutex* mutex() const;
-    Mutex* release();
+    inline bool owns_lock() const
+    {
+        return m_owns;
+    }
+    inline Mutex* mutex() const
+    {
+        return m_mutex;
+    }
+    inline Mutex* release()
+    {
+        Mutex* mutex = m_mutex;
+        m_mutex = nullptr;
+        m_owns = false;
+        return mutex;
+    }
 };
 
 using GuardLock = UniqueLock;
@@ -127,10 +216,19 @@ public:
     explicit ConditionVariable() = default;
     DISABLE_COPY(ConditionVariable);
 
-    void notify_one();
-    void notify_all();
+    inline void notify_one()
+    {
+    }
+    inline void notify_all()
+    {
+    }
 
-    void wait(UniqueLock& lock);
+    inline void wait(UniqueLock& lock)
+    {
+        abortIfFail(lock.owns_lock());
+        lock.unlock();
+        lock.lock();
+    }
 
     template <class Predicate>
     void wait(UniqueLock& lock, Predicate predicate)
@@ -143,7 +241,7 @@ public:
 };
 
 template <class T>
-struct META_API Atomic
+struct META_TEMPLATE_API Atomic
 {
     explicit Atomic() = default;
     Atomic(T value) :
@@ -190,6 +288,10 @@ private:
 
 using AtomicBool = Atomic<bool>;
 
+using JobFuture = std::future<void>;
+
+template <class Callable>
+using PackagedTask = std::packaged_task<Callable>;
 
 using ThreadId = unsigned int;
 
@@ -209,18 +311,37 @@ public:
         m_function = lambda;
     }
 
-    Thread(Thread&& other);
-    Thread& operator=(Thread&& other);
-    void swap(Thread& other);
+    Thread(Thread&& other) :
+        m_function(std::move(other.m_function)),
+        m_joinable(std::move(other.m_joinable))
+    {
+    }
+    inline Thread& operator=(Thread&& other)
+    {
+        Thread tmp(std::forward<Thread>(other));
+        swap(tmp);
+        return *this;
+    }
+    inline void swap(Thread& other)
+    {
+        std::swap(other.m_function, m_function);
+        std::swap(other.m_joinable, m_joinable);
+    }
     DISABLE_COPY(Thread);
 
-    bool joinable() const
+    inline bool joinable() const
     {
         return m_joinable;
     }
-    void join();
-    void detach();
-    ThreadId get_id() const
+    inline void join()
+    {
+        abortIfFail(m_joinable);
+    }
+    inline void detach()
+    {
+        m_joinable = false;
+    }
+    inline ThreadId get_id() const
     {
         return 0u;
     }

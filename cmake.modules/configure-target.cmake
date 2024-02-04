@@ -10,6 +10,9 @@ macro(__common_config arg_target)
     if (BUILD_MULTI_THREADED)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_MULTI_THREADED)
         target_compile_options(${arg_target} PUBLIC -pthread)
+
+        find_package(Threads)
+        target_link_libraries(${arg_target} Threads::Threads)
     endif()
 
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")

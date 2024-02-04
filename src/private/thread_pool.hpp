@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -22,18 +22,35 @@
 #include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
-namespace meta { namespace detail {
+#include <future>
+
+namespace meta {
+
+using GuardLock = std::lock_guard<std::mutex>;
+using UniqueLock = std::unique_lock<std::mutex>;
+
+namespace detail {
 
 class JobPrivate
 {
-public:
-    static void notifyJobQueued(Job& self, ThreadPool* pool);
+    friend class meta::Job;
+    // The worker task.
+    std::packaged_task<void(Job*)> worker;
+    // The job status.
+    std::atomic<Job::Status> status = Job::Status::Deferred;
+    // Holds the signalled stop.
+    std::atomic_bool stopSignalled = false;
 
-    static void notifyJobScheduled(Job& self, ThreadId threadId);
+    static void main(Job* job);
+
+public:
+    explicit JobPrivate();
+
+    static void notifyJobQueued(Job& self);
+
+    static void notifyJobScheduled(Job& self);
 
     static void runJob(Job& self);
-
-    static bool isTaskQueued(Job& self);
 };
 
 

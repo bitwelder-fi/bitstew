@@ -27,76 +27,92 @@ namespace meta
 namespace detail
 {
 
-void JobPrivate::notifyJobQueued(Job& self, ThreadPool*)
+JobPrivate::JobPrivate() :
+    worker(&JobPrivate::main)
 {
-    self.m_worker.reset();
+}
+
+void JobPrivate::main(Job* job)
+{
+    abortIfFail(job && job->descriptor->status == Job::Status::Scheduled);
+
+    job->setStatus(Job::Status::Running);
+
+    if (!job->descriptor->stopSignalled)
+    {
+        job->run();
+    }
+
+    job->setStatus(Job::Status::Stopped);
+
+    job->onTaskCompleted();
+}
+
+void JobPrivate::notifyJobQueued(Job& self)
+{
+    self.descriptor->worker.reset();
     self.setStatus(Job::Status::Queued);
     self.onTaskQueued();
 }
 
-void JobPrivate::notifyJobScheduled(Job& self, ThreadId threadId)
+void JobPrivate::notifyJobScheduled(Job& self)
 {
     self.setStatus(Job::Status::Scheduled);
-    self.m_owningThread = threadId;
     self.onJobScheduled();
-}
-
-bool JobPrivate::isTaskQueued(Job& self)
-{
-    return self.m_status != Job::Status::Stopped || self.m_status != Job::Status::Stopped;
 }
 
 void JobPrivate::runJob(Job& self)
 {
-    self.m_worker(self);
+    self.descriptor->worker(&self);
 }
 
 } // namespace detail
 
 
 Job::Job() :
-    m_worker([](Job& self)
-    {
-        abortIfFail(self.m_status == Job::Status::Scheduled);
-
-        self.setStatus(Job::Status::Running);
-
-        if (!self.m_stopSignalled)
-        {
-            self.run();
-        }
-
-        self.setStatus(Job::Status::Stopped);
-
-        self.onTaskCompleted();
-    })
+    descriptor(std::make_unique<detail::JobPrivate>())
 {
 }
 
 Job::~Job()
 {
-    abortIfFail(m_status == Status::Deferred || m_status == Status::Stopped);
+    abortIfFail(descriptor->status == Status::Deferred || descriptor->status == Status::Stopped);
+}
+
+Job::Status Job::getStatus() const
+{
+    return descriptor->status;
+}
+
+void Job::setStatus(Status status)
+{
+    descriptor->status = status;
 }
 
 void Job::reset()
 {
-    abortIfFail(m_status == Status::Deferred || m_status == Status::Stopped);
+    abortIfFail(descriptor->status == Status::Deferred || descriptor->status == Status::Stopped);
 
-    m_worker.reset();
-    m_stopSignalled = false;
-    m_owningThread = ThreadId();
+    descriptor->worker.reset();
+    descriptor->stopSignalled = false;
     setStatus(Status::Deferred);
 }
 
 void Job::stop()
 {
-    m_stopSignalled = true;
+    descriptor->stopSignalled = true;
     stopOverride();
 }
 
-JobFuture Job::getFuture()
+bool Job::isStopped() const
 {
-    return m_worker.get_future();
+    return descriptor->stopSignalled;
+}
+
+
+void Job::wait()
+{
+    descriptor->worker.get_future().wait();
 }
 
 } // namespace meta

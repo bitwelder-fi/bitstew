@@ -20,133 +20,149 @@
 #include <assert.hpp>
 #include <utils/scope_value.hpp>
 
-#include <algorithm>
+#include <atomic>
+#include <deque>
+#include <thread>
+#include <mutex>
 
 #include "../private/thread_pool.hpp"
 
 namespace meta
 {
 
-class ThreadPool::ThreadPoolPrivate
+class ThreadPool::Descriptor
 {
-public:
-    static JobPtr dequeueJob(ThreadPool& self)
+    JobPtr popFrontJob()
     {
-        auto job = self.m_jobs.front();
-        self.m_jobs.pop_front();
-        detail::JobPrivate::notifyJobScheduled(*job, ThisThread::get_id());
+        auto job = jobs.front();
+        jobs.pop_front();
+        detail::JobPrivate::notifyJobScheduled(*job);
         return job;
     }
 
-    static JobPtr popJob(ThreadPool& self)
+    JobPtr getNextJob()
     {
-        UniqueLock lock(self.m_queueLock);
-        auto condition = [&self]()
+        UniqueLock lock(queueLock);
+        auto condition = [this]()
         {
             // Bail out if there is a task to schedule, or stop thread is set.
-            return self.m_stopSignalled || !self.m_jobs.empty();
+            return stopSignalled || !jobs.empty();
         };
-        self.m_lockCondition.wait(lock, condition);
+        lockCondition.wait(lock, condition);
 
-        if (self.m_jobs.empty())
+        if (jobs.empty())
         {
             return {};
         }
 
-        return dequeueJob(self);
+        return popFrontJob();
     }
 
-    static void stopJobs(ThreadPool& self)
+    void runSingleJob()
     {
-        GuardLock lock(self.m_queueLock);
-
-        // Stop the queued jobs first.
-        for (auto& job : self.m_jobs)
-        {
-            job->stop();
-        }
-        self.m_jobs.clear();
-
-        // Then stop the scheduled jobs.
-        for (auto& job :self.m_scheduledJobs)
-        {
-            job->stop();
-        }
-    }
-
-    static bool hasRunningJobs(ThreadPool& self)
-    {
-        UniqueLock lock(self.m_queueLock);
-        return !self.m_jobs.empty() || !self.m_scheduledJobs.empty() || self.m_idleThreadCount < self.m_threadCount;
-    }
-
-    static void runSingleJob(ThreadPool& self)
-    {
-        auto currentJob = popJob(self);
-        if (!currentJob || self.m_stopSignalled || currentJob->isStopped())
+        auto currentJob = getNextJob();
+        if (!currentJob || stopSignalled || currentJob->isStopped())
         {
             return;
         }
 
-        --self.m_idleThreadCount;
+        --idleThreadCount;
         {
-            GuardLock lock(self.m_queueLock);
-            self.m_scheduledJobs.push_back(currentJob);
+            GuardLock lock(queueLock);
+            scheduledJobs.push_back(currentJob);
         }
         detail::JobPrivate::runJob(*currentJob);
 
         {
-            GuardLock lock(self.m_queueLock);
-            std::erase(self.m_scheduledJobs, currentJob);
+            GuardLock lock(queueLock);
+            std::erase(scheduledJobs, currentJob);
         }
-        ++self.m_idleThreadCount;
+        ++idleThreadCount;
+    }
+
+public:
+    // The amount of threads to create.
+    const std::size_t threadCount = 0u;
+    // The number of idling threads.
+    std::atomic_size_t idleThreadCount = 0u;
+    // Locks the task queue.
+    std::mutex queueLock;
+    // Threads wait on new tasks.
+    std::condition_variable lockCondition;
+    // The scheduled jobs.
+    std::deque<JobPtr> jobs;
+    // The running jobs.
+    std::deque<JobPtr> scheduledJobs;
+    // The executor threads of the pool.
+    std::vector<std::thread> threads;
+    // Tells the thread pool to stop executing.
+    std::atomic_bool stopSignalled = false;
+    // Whether the pool is running.
+    bool isRunning = false;
+
+    explicit Descriptor(std::size_t threadCount) :
+        threadCount(threadCount)
+    {
+    }
+
+    void stopJobs()
+    {
+        GuardLock lock(queueLock);
+
+        // Stop the queued jobs first.
+        for (auto& job : jobs)
+        {
+            job->stop();
+        }
+        jobs.clear();
+
+        // Then stop the scheduled jobs.
+        for (auto& job : scheduledJobs)
+        {
+            job->stop();
+        }
     }
 
     static void threadMain(ThreadPool* self)
     {
         // Increase idle thread count before starting the thread loop.
-        ++self->m_idleThreadCount;
+        ++self->descriptor->idleThreadCount;
 
-        while (!self->m_stopSignalled)
+        while (!self->descriptor->stopSignalled)
         {
-            runSingleJob(*self);
+            self->descriptor->runSingleJob();
         }
 
         // Decrease idle thread count before exiting the thread loop.
-        --self->m_idleThreadCount;
+        --self->descriptor->idleThreadCount;
     }
 };
 
 
 ThreadPool::ThreadPool(std::size_t threadCount) :
-#ifndef CONFIG_MULTI_THREADED
-    m_threadCount(0u)
-#else
-    m_threadCount(threadCount)
-#endif
+    descriptor(std::make_unique<ThreadPool::Descriptor>(threadCount))
 {
-    MAYBE_UNUSED(threadCount);
 }
 
 ThreadPool::~ThreadPool()
 {
-    abortIfFail(!m_isRunning);
+    abortIfFail(!descriptor->isRunning);
 }
 
 void ThreadPool::start()
 {
-    abortIfFail(!m_isRunning);
-    m_stopSignalled = false;
-    m_idleThreadCount = 0u;
+    abortIfFail(!descriptor->isRunning);
+    descriptor->stopSignalled = false;
+    descriptor->idleThreadCount = 0u;
 
-    m_threads.reserve(m_threadCount);
-    for (std::size_t i = 0u; i < m_threadCount; ++i)
+    descriptor->threads.reserve(descriptor->threadCount);
+    for (std::size_t i = 0u; i < descriptor->threadCount; ++i)
     {
-        m_threads.push_back(Thread(&ThreadPoolPrivate::threadMain, this));
+        descriptor->threads.push_back(std::thread(&Descriptor::threadMain, this));
     }
-    m_isRunning = true;
+    descriptor->isRunning = true;
     // Wait till the threads are all up and running.
-    while (m_idleThreadCount < m_threadCount)
+    while (descriptor->idleThreadCount < descriptor->threadCount)
     {
         schedule(std::chrono::milliseconds(10));
     }
@@ -154,31 +170,24 @@ void ThreadPool::start()
 
 void ThreadPool::stop()
 {
-    abortIfFail(m_isRunning);
+    abortIfFail(descriptor->isRunning);
 
     // Signal stop call.
-    m_stopSignalled = true;
-    ThreadPoolPrivate::stopJobs(*this);
+    descriptor->stopSignalled = true;
+    descriptor->stopJobs();
 
     // Notify all the threads to stop executing their jobs.
-    m_lockCondition.notify_all();
+    descriptor->lockCondition.notify_all();
     schedule();
 
     // Wait till threads complete the tasks.
-    // bool oneMoreTime = m_idleThreadCount > 0u;
-    while (m_idleThreadCount > 0u)
+    while (descriptor->idleThreadCount > 0u)
     {
         schedule(std::chrono::milliseconds(10));
     }
 
-    // if (oneMoreTime)
-    {
-        // There were few threads waiting.
-        m_lockCondition.notify_all();
-    }
-
     // Join the threads.
-    for (auto& thread : m_threads)
+    for (auto& thread : descriptor->threads)
     {
         if (thread.joinable())
         {
@@ -186,18 +195,41 @@ void ThreadPool::stop()
         }
     }
 
-    m_threads.clear();
-    m_isRunning = false;
+    descriptor->threads.clear();
+    descriptor->isRunning = false;
 }
 
 bool ThreadPool::isBusy()
 {
-    return ThreadPoolPrivate::hasRunningJobs(*this);
+    UniqueLock lock(descriptor->queueLock);
+    return !descriptor->jobs.empty() ||
+           !descriptor->scheduledJobs.empty() ||
+           descriptor->idleThreadCount < descriptor->threadCount;
+}
+
+bool ThreadPool::isRunning() const
+{
+    return descriptor->isRunning;
+}
+
+bool ThreadPool::isStopSignalled() const
+{
+    return descriptor->stopSignalled;
+}
+
+std::size_t ThreadPool::getThreadCount() const
+{
+    return descriptor->isRunning ? descriptor->threadCount : 0u;
+}
+
+std::size_t ThreadPool::getIdleCount() const
+{
+    return descriptor->idleThreadCount;
 }
 
 bool ThreadPool::pushJob(JobPtr job)
 {
-    if (m_stopSignalled)
+    if (descriptor->stopSignalled)
     {
         return false;
     }
@@ -208,19 +240,19 @@ bool ThreadPool::pushJob(JobPtr job)
     abortIfFail(jobStatus == Job::Status::Deferred || jobStatus == Job::Status::Stopped);
 
     {
-        GuardLock lock(m_queueLock);
-        m_jobs.push_back(job);
-        detail::JobPrivate::notifyJobQueued(*job, this);
+        GuardLock lock(descriptor->queueLock);
+        descriptor->jobs.push_back(job);
+        detail::JobPrivate::notifyJobQueued(*job);
     }
 
-    m_lockCondition.notify_one();
+    descriptor->lockCondition.notify_one();
 
     return true;
 }
 
 std::size_t ThreadPool::pushMultipleJobs(std::vector<JobPtr> jobs)
 {
-    if (m_stopSignalled)
+    if (descriptor->stopSignalled)
     {
         return 0u;
     }
@@ -229,23 +261,23 @@ std::size_t ThreadPool::pushMultipleJobs(std::vector<JobPtr> jobs)
     std::size_t result = 0u;
 
     {
-        GuardLock lock(m_queueLock);
+        GuardLock lock(descriptor->queueLock);
 
-        m_jobs.insert(m_jobs.end(), jobs.begin(), jobs.end());
+        descriptor->jobs.insert(descriptor->jobs.end(), jobs.begin(), jobs.end());
         for (auto& job : jobs)
         {
-            detail::JobPrivate::notifyJobQueued(*job, this);
+            detail::JobPrivate::notifyJobQueued(*job);
             ++result;
         }
     }
 
     if (jobs.size() > 1)
     {
-        m_lockCondition.notify_all();
+        descriptor->lockCondition.notify_all();
     }
     else
     {
-        m_lockCondition.notify_one();
+        descriptor->lockCondition.notify_one();
     }
 
     return result;
@@ -253,7 +285,7 @@ std::size_t ThreadPool::pushMultipleJobs(std::vector<JobPtr> jobs)
 
 std::size_t ThreadPool::getQueuedJobs() const
 {
-    return m_jobs.size();
+    return descriptor->jobs.size();
 }
 
 void ThreadPool::schedule()
@@ -263,15 +295,7 @@ void ThreadPool::schedule()
 
 void ThreadPool::schedule(const std::chrono::nanoseconds& delay)
 {
-#if defined(CONFIG_MULTI_THREADED)
     std::this_thread::sleep_for(delay);
-#else
-    MAYBE_UNUSED(delay);
-    while (!m_jobs.empty())
-    {
-        ThreadPoolPrivate::runSingleJob(*this);
-    }
-#endif
 }
 
 } // namespace meta

@@ -20,18 +20,7 @@ FetchContent_Declare(
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-# We must adjust gtest variables, so cannot use FetchContent_MakeAvailable(googletest)
-FetchContent_GetProperties(googletest)
-if (NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-
-    set(gtest_disable_pthreads ${BUILD_THREADS_DISABLED})
-    add_definitions("-DGTEST_HAS_PTHREAD=0")
-    set(INSTALL_GTEST OFF)
-
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-endif()
-
+FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed.
 add_executable(unittests ${SOURCES})

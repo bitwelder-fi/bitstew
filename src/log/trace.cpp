@@ -20,9 +20,10 @@
 #include <meta/log/trace.hpp>
 #include <meta/log/trace_printer.hpp>
 #include <meta/tasks/thread_pool.hpp>
-#include <meta/threading.hpp>
 
 #include "../private/thread_pool.hpp"
+
+#include <thread>
 
 namespace meta
 {
@@ -116,7 +117,7 @@ void Tracer::clearTracePrinters()
 
 
 LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const char* file, unsigned line) :
-    TraceRecord(level, ThisThread::get_id(), function, file, line, ""),
+    TraceRecord(level, std::this_thread::get_id(), function, file, line, ""),
     m_tracer(tracer)
 
 {

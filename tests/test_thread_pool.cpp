@@ -24,12 +24,13 @@
 #include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
+#include <atomic>
 #include <string>
 
 namespace
 {
 
-using SecureInt = meta::Atomic<std::size_t>;
+using SecureInt = std::atomic_size_t;
 
 class Output
 {
@@ -90,7 +91,7 @@ public:
         }
 
         {
-            meta::GuardLock lock(m_lock);
+            std::lock_guard<std::mutex> lock(m_lock);
             m_queue.push(std::string(text));
         }
         m_signal.notify_one();
@@ -104,7 +105,7 @@ public:
 protected:
     void run() override
     {
-        meta::UniqueLock lock(m_lock);
+        std::unique_lock<std::mutex> lock(m_lock);
         auto condition = [this]()
         {
             return !this->m_queue.empty() || isStopped();
@@ -123,8 +124,8 @@ protected:
         m_signal.notify_all();
     }
 
-    meta::Mutex m_lock;
-    meta::ConditionVariable m_signal;
+    std::mutex m_lock;
+    std::condition_variable m_signal;
     std::queue<std::string> m_queue;
 };
 
@@ -145,7 +146,7 @@ public:
             return;
         }
         {
-            meta::GuardLock lock(m_lock);
+            std::lock_guard<std::mutex> lock(m_lock);
             m_queue.push(string);
         }
         m_signal.notify_all();
@@ -157,7 +158,7 @@ protected:
         ++m_jobCount;
         while (!isStopped())
         {
-            meta::UniqueLock lock(m_lock);
+            std::unique_lock<std::mutex> lock(m_lock);
             auto condition = [this]()
             {
                 return isStopped() || !this->m_queue.empty();
@@ -181,8 +182,8 @@ protected:
         m_signal.notify_all();
     }
 
-    meta::Mutex m_lock;
-    meta::ConditionVariable m_signal;
+    std::mutex m_lock;
+    std::condition_variable m_signal;
     std::queue<std::string> m_queue;
 };
 
@@ -194,7 +195,7 @@ protected:
 
     void SetUp() override
     {
-        threadPool = std::make_unique<meta::ThreadPool>(meta::Thread::hardware_concurrency());
+        threadPool = std::make_unique<meta::ThreadPool>(std::thread::hardware_concurrency());
         if (!threadPool->isRunning())
         {
             threadPool->start();
@@ -217,7 +218,6 @@ protected:
     struct ScenarioBase
     {
         std::vector<meta::JobPtr> jobs;
-        std::vector<meta::JobFuture> futures;
 
         std::shared_ptr<JobType> operator[](int index)
         {
@@ -238,7 +238,6 @@ protected:
             while (tasks-- != 0u)
             {
                 this->jobs.push_back(std::make_shared<JobType>(test.m_output, jobCount));
-                this->futures.push_back(this->jobs.back()->getFuture());
             }
             test.threadPool->pushMultipleJobs(this->jobs);
             test.threadPool->schedule(std::chrono::milliseconds(1));
@@ -272,10 +271,10 @@ TEST_F(TaskSchedulerTest, testAddJobs)
     ASSERT_EQ(scenario.jobCount, maxJobs);
 
     std::size_t jobCount = 0u;
-    for (auto& future : scenario.futures)
+    for (auto& job : scenario.jobs)
     {
         ++jobCount;
-        future.wait();
+        job->wait();
     }    
     EXPECT_EQ(jobCount, maxJobs);
     EXPECT_FALSE(threadPool->isBusy());
@@ -283,7 +282,6 @@ TEST_F(TaskSchedulerTest, testAddJobs)
 
 TEST_F(TaskSchedulerTest, testAddQueuedJobs)
 {
-    SKIP_IF_NOT_MULTI_THREADED;
     QueuedTaskScenario<QueuedJob> scenario(*this, 1u);
     EXPECT_EQ(scenario.jobCount, 1u);
 
@@ -298,7 +296,6 @@ TEST_F(TaskSchedulerTest, testAddQueuedJobs)
 
 TEST_F(TaskSchedulerTest, stressTestExclusiveJobs)
 {
-    SKIP_IF_NOT_MULTI_THREADED;
     QueuedTaskScenario<QueuedJob> scenario(*this, threadPool->getThreadCount());
     EXPECT_EQ(scenario.jobCount, threadPool->getThreadCount());
 
@@ -316,13 +313,7 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
     scenario[0]->push("3rd string");
     scenario[0]->push("4th string");
     threadPool->schedule();
-    scenario[0]->getFuture().wait();
+    scenario[0]->wait();
 
     EXPECT_EQ(4u, m_output->getBuffer().size());
-}
-
-TEST(AThread, test)
-{
-    auto thread = std::thread([]() { std::cout << "THREAD " << std::endl; });
-    thread.join();
 }

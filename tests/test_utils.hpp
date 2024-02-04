@@ -21,14 +21,4 @@
 
 #include <gtest/gtest.h>
 
-#ifdef CONFIG_MULTI_THREADED
-
-#define SKIP_IF_NOT_MULTI_THREADED
-
-#else
-
-#define SKIP_IF_NOT_MULTI_THREADED GTEST_SKIP_("Test not possible in single threaded environment.")
-
-#endif
-
 #endif // TEST_UTILS_HPP

@@ -20,7 +20,8 @@
 #define META_JOB_HPP
 
 #include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
+
+#include <thread>
 
 namespace meta
 {
@@ -125,30 +126,17 @@ public:
 
     /// Returns the status of the job.
     /// \return The status of the job.
-    inline Status getStatus() const
-    {
-        return m_status.load();
-    }
+    Status getStatus() const;
 
-    /// Returns the thread which runs the job.
-    /// \return The identifier of the thread which runs the job.
-    inline ThreadId getOwningThread() const
-    {
-        return m_owningThread;
-    }
-
-    /// Stops the job. Call this to schedule the downinding of the job.
+    /// Stops the job. Call this to schedule the downwinding of a job. To make this effective, you
+    /// must check the stopped state of the job.
     void stop();
 
     /// Returns whether the stop got signalled on the job.
-    inline bool isStopped() const
-    {
-        return m_stopSignalled;
-    }
+    bool isStopped() const;
 
-    /// Returns the future object which notifies the completion of the job.
-    /// \return The future object of the job. Use this to wait for the job completion.
-    JobFuture getFuture();
+    /// Waits for the job to complete.
+    void wait();
 
 protected:
     /// Constructor.
@@ -172,22 +160,11 @@ protected:
 
     /// Sets the status of the job.
     /// \param status The status to set.
-    inline void setStatus(Status status)
-    {
-        m_status = status;
-    }
+    void setStatus(Status status);
 
 private:
     friend class detail::JobPrivate;
-
-    // The worker task.
-    PackagedTask<void(Job&)> m_worker;
-    // The thread which owns the job.
-    ThreadId m_owningThread;
-    // The job status.
-    Atomic<Status> m_status = Status::Deferred;
-    // Holds the signalled stop.
-    AtomicBool m_stopSignalled = false;
+    std::unique_ptr<detail::JobPrivate> descriptor;
 };
 
 }

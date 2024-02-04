@@ -21,13 +21,15 @@
 
 #include <meta/meta.hpp>
 #include <meta/tasks/job.hpp>
-#include <meta/threading.hpp>
 #include <meta/log/trace_printer.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <sstream>
+#include <thread>
 #include <vector>
 
 namespace meta
@@ -68,12 +70,12 @@ struct META_API TraceRecord
     /// The time when the trace got logged.
     TimeStamp time;
     /// The thread where the trace got logged
-    ThreadId threadId;
+    std::thread::id threadId;
     /// The logging level of the trace.
     LogLevel logLevel;
 
     /// Records a log now.
-    explicit TraceRecord(LogLevel level, ThreadId threadId, std::string_view function, std::string_view file, unsigned line, std::string_view message) :
+    explicit TraceRecord(LogLevel level, std::thread::id threadId, std::string_view function, std::string_view file, unsigned line, std::string_view message) :
         message(message),
         function(function),
         file(file),
@@ -130,7 +132,7 @@ public:
     template <class PrinterClass>
     std::shared_ptr<PrinterClass> getPrinterAt(std::size_t index)
     {
-        UniqueLock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         auto printer = m_outputs.at(index);
         while (printer)
         {
@@ -157,7 +159,7 @@ protected:
 
     TracePrinterPtr getTracePrinterAt(std::size_t index)
     {
-        GuardLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         return m_outputs.at(index);
     }
     std::size_t getTracePrinterCount() const
@@ -168,12 +170,12 @@ protected:
 private:
     friend struct TracerPrivate;
 
-    Mutex m_mutex;
-    ConditionVariable m_signal;
+    std::mutex m_mutex;
+    std::condition_variable m_signal;
     std::vector<TracePrinterPtr> m_outputs;
     std::queue<TraceRecord> m_buffer;
     ThreadPool* m_threadPool = nullptr;
-    Atomic<LogLevel> m_logLevel = LogLevel::Debug;
+    std::atomic<LogLevel> m_logLevel = LogLevel::Debug;
 };
 using TracerPtr = std::shared_ptr<Tracer>;
 

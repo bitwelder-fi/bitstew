@@ -20,10 +20,8 @@
 #define META_THREAD_POOL_HPP
 
 #include <meta/meta.hpp>
-#include <meta/threading.hpp>
 
 #include <chrono>
-#include <deque>
 #include <memory>
 #include <vector>
 
@@ -78,31 +76,19 @@ public:
 
     /// Returns whether the thread pool is running.
     /// \return If the thread pool is running, returns \e true, otherwise \e false.
-    bool isRunning() const
-    {
-        return m_isRunning;
-    }
+    bool isRunning() const;
 
     /// Returns whether the thread pool got signalled to stop.
     /// \return If the thread pool got signalled to stop, returns \e true, otherwise \e false.
-    bool isStopSignalled() const
-    {
-        return m_stopSignalled;
-    }
+    bool isStopSignalled() const;
 
     /// Returns the number of running threads of a thread pool.
     /// \return The number of threads running. If the thread pool is stopped, returns 0u.
-    std::size_t getThreadCount() const
-    {
-        return m_isRunning ? m_threadCount : 0u;
-    }
+    std::size_t getThreadCount() const;
 
     /// Returns the number of idle threads of the thread pool.
     /// \return The number of idle threads.
-    std::size_t getIdleCount() const
-    {
-        return m_idleThreadCount;
-    }
+    std::size_t getIdleCount() const;
 
     /// Queues a job to for execution.
     /// \param job The job to queue for execution.
@@ -129,26 +115,8 @@ public:
     void schedule(const std::chrono::nanoseconds& delay);
 
 private:
-    class ThreadPoolPrivate;
-
-    // The amount of threads to create.
-    const std::size_t m_threadCount = 0u;
-    // The number of idling threads.
-    Atomic<std::size_t> m_idleThreadCount = 0u;
-    // Locks the task queue.
-    Mutex m_queueLock;
-    // Threads wait on new tasks.
-    ConditionVariable m_lockCondition;
-    // The scheduled jobs.
-    std::deque<JobPtr> m_jobs;
-    // The running jobs.
-    std::deque<JobPtr> m_scheduledJobs;
-    // The executor threads of the pool.
-    std::vector<Thread> m_threads;
-    // Tells the thread pool to stop executing.
-    AtomicBool m_stopSignalled = false;
-    // Whether the pool is running.
-    bool m_isRunning = false;
+    class Descriptor;
+    std::unique_ptr<Descriptor> descriptor;
 };
 
 } // namespace meta

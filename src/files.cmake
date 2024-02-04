@@ -30,7 +30,6 @@ private/thread_pool.hpp
 ../include/meta/object_extension.hpp
 ../include/meta/tasks/job.hpp
 ../include/meta/tasks/thread_pool.hpp
-../include/meta/threading.hpp
 ../include/pimpl.hpp
 ../include/preprocessor.hpp
 ../include/utils/function_traits.hpp

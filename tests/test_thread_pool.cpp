@@ -320,3 +320,10 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
 
     EXPECT_EQ(4u, m_output->getBuffer().size());
 }
+
+TEST(AThread, test)
+{
+    std::cout << "MAIN " << std::this_thread::get_id() << std::endl;
+    auto thread = std::thread([]() { std::cout << "THREAD " << std::this_thread::get_id() << std::endl; });
+    thread.join();
+}

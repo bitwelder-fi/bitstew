@@ -7,7 +7,7 @@ macro(__common_config arg_target)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_ENABLE_LOGS)
     endif()
 
-    if (BUILD_MULTI_THREADED)
+    if (NOT BUILD_THREADS_DISABLED)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_MULTI_THREADED)
         target_compile_options(${arg_target} PUBLIC -pthread)
 

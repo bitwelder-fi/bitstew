@@ -121,6 +121,7 @@ public:
         {
             job->stop();
         }
+        scheduledJobs.clear();
     }
 
     static void threadMain(ThreadPool* self)
@@ -296,6 +297,30 @@ void ThreadPool::schedule()
 void ThreadPool::schedule(const std::chrono::nanoseconds& delay)
 {
     std::this_thread::sleep_for(delay);
+}
+
+
+void async(JobPtr job)
+{
+    auto pool = Library::instance().threadPool();
+    if (pool)
+    {
+        pool->pushJob(job);
+    }
+    else
+    {
+        detail::JobPrivate::setStatus(*job, Job::Status::Scheduled);
+        detail::JobPrivate::runJob(*job);
+    }
+}
+
+void yield()
+{
+    auto pool = Library::instance().threadPool();
+    if (pool)
+    {
+        pool->schedule();
+    }
 }
 
 } // namespace meta

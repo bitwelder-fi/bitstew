@@ -23,6 +23,7 @@
 
 #include "../private/thread_pool.hpp"
 
+#include <iostream>
 #include <thread>
 
 namespace meta
@@ -37,16 +38,17 @@ struct TracerPrivate
             return;
         }
 
+        while (!self.m_buffer.push(std::make_shared<const TraceRecord>(trace)))
         {
-            GuardLock lock(self.m_mutex);
-            self.m_buffer.push(trace);
+            // Yield, give some time for the job to execute, and then retry.
+            yield();
+            self.m_bufferOverflowCount++;
         }
         self.m_signal.notify_one();
 
         if (self.m_threadPool)
         {
-            const auto status = self.getStatus();
-            if (status == Job::Status::Deferred || status == Job::Status::Stopped)
+            if (self.getStatus() == Job::Status::Deferred)
             {
                 abortIfFail(self.m_threadPool);
                 self.m_threadPool->pushJob(self.shared_from_this());
@@ -87,14 +89,18 @@ void Tracer::run()
     UniqueLock lock(m_mutex);
     auto condition = [this]()
     {
-        return !this->m_buffer.empty() || isStopped();
+        return !this->m_buffer.isEmpty() || isStopped();
     };
     m_signal.wait(lock, condition);
-    while (!m_buffer.empty())
+
+    for (;!isStopped();)
     {
-        auto trace = m_buffer.front();
-        m_buffer.pop();
-        TracerPrivate::print(*this, trace);
+        auto trace = m_buffer.pop();
+        if (!trace)
+        {
+            break;
+        }
+        TracerPrivate::print(*this, *trace);
     }
 }
 

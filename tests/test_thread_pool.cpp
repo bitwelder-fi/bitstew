@@ -23,6 +23,7 @@
 #include <meta/library_config.hpp>
 #include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
+#include <meta/safe_queue.hpp>
 
 #include <atomic>
 #include <string>
@@ -90,13 +91,10 @@ public:
             return;
         }
 
-        {
-            std::lock_guard<std::mutex> lock(m_lock);
-            m_queue.push(std::string(text));
-        }
+        m_queue.push(std::string(text));
         m_signal.notify_one();
         const auto status = getStatus();
-        if (status == Status::Deferred || status == Status::Stopped)
+        if (status == Status::Deferred)
         {
             m_scheduler->pushJob(shared_from_this());
         }
@@ -108,13 +106,16 @@ protected:
         std::unique_lock<std::mutex> lock(m_lock);
         auto condition = [this]()
         {
-            return !this->m_queue.empty() || isStopped();
+            return !this->m_queue.isEmpty() || isStopped();
         };
         m_signal.wait(lock, condition);
-        while (!m_queue.empty())
+        for (;;)
         {
-            auto text = m_queue.front();
-            m_queue.pop();
+            auto text = m_queue.pop();
+            if (text.empty())
+            {
+                break;
+            }
             m_out->write(text);
         }
     }
@@ -126,7 +127,7 @@ protected:
 
     std::mutex m_lock;
     std::condition_variable m_signal;
-    std::queue<std::string> m_queue;
+    meta::SharedQueue<std::string> m_queue;
 };
 
 class QueuedJob : public TestJob
@@ -145,10 +146,8 @@ public:
         {
             return;
         }
-        {
-            std::lock_guard<std::mutex> lock(m_lock);
-            m_queue.push(string);
-        }
+
+        m_queue.push(string);
         m_signal.notify_all();
     }
 
@@ -161,17 +160,16 @@ protected:
             std::unique_lock<std::mutex> lock(m_lock);
             auto condition = [this]()
             {
-                return isStopped() || !this->m_queue.empty();
+                return isStopped() || !this->m_queue.isEmpty();
             };
             m_signal.wait(lock, condition);
-            if (m_queue.empty())
+            for (;;)
             {
-                continue;
-            }
-            while (!m_queue.empty())
-            {
-                auto text = m_queue.front();
-                m_queue.pop();
+                auto text = m_queue.pop();
+                if (text.empty())
+                {
+                    break;
+                }
                 m_out->write(text);
             }
         }
@@ -184,7 +182,7 @@ protected:
 
     std::mutex m_lock;
     std::condition_variable m_signal;
-    std::queue<std::string> m_queue;
+    meta::SharedQueue<std::string> m_queue;
 };
 
 class TaskSchedulerTest : public ::testing::Test

@@ -22,12 +22,13 @@
 #include <meta/meta.hpp>
 #include <meta/tasks/job.hpp>
 #include <meta/log/trace_printer.hpp>
+#include <meta/safe_queue.hpp>
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <queue>
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -103,6 +104,12 @@ public:
 class META_API Tracer : public Job
 {
 public:
+
+    struct META_API Diagnostics
+    {
+        std::size_t bufferSize;
+        std::size_t bufferOverflowCount;
+    };
     /// Constructor.
     explicit Tracer(ThreadPool* threadPool);
     /// Destructor.
@@ -153,6 +160,11 @@ public:
         return {};
     }
 
+    Diagnostics getDiagnostics() const
+    {
+        return {m_buffer.Capacity, m_bufferOverflowCount.load()};
+    }
+
 protected:
     void run() override;
     void stopOverride() override;
@@ -173,7 +185,8 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_signal;
     std::vector<TracePrinterPtr> m_outputs;
-    std::queue<TraceRecord> m_buffer;
+    CircularBuffer<std::shared_ptr<const TraceRecord>, 10u> m_buffer;
+    std::atomic_size_t m_bufferOverflowCount = 0u;
     ThreadPool* m_threadPool = nullptr;
     std::atomic<LogLevel> m_logLevel = LogLevel::Debug;
 };

@@ -61,6 +61,11 @@ void JobPrivate::notifyJobScheduled(Job& self)
     self.onJobScheduled();
 }
 
+void JobPrivate::setStatus(Job& self, Job::Status status)
+{
+    self.descriptor->status = status;
+}
+
 void JobPrivate::runJob(Job& self)
 {
     self.descriptor->worker(&self);
@@ -86,7 +91,7 @@ Job::Status Job::getStatus() const
 
 void Job::setStatus(Status status)
 {
-    descriptor->status = status;
+    detail::JobPrivate::setStatus(*this, status);
 }
 
 void Job::reset()

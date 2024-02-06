@@ -149,3 +149,18 @@ TEST_P(MetaTraceTest, testMetaTracer)
     // Ensure the log happens.
     meta::Library::instance().threadPool()->schedule(std::chrono::milliseconds(10));
 }
+
+TEST_F(MetaTraceStressTest, stressTrace)
+{
+    constexpr auto stressCount = 1000;
+    EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log(::testing::HasSubstr("stress #"))).Times(stressCount);
+
+    for (auto i = 0; i < stressCount; ++i)
+    {
+        META_LOG_INFO("stress #" << (i + 1));
+        // meta::yield();
+    }
+    meta::yield();
+    auto diag = m_tracer->getDiagnostics();
+    std::cerr << "number of push() retries: " << diag.bufferOverflowCount << std::endl;
+}

@@ -28,6 +28,7 @@ private/thread_pool.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp
 ../include/meta/object_extension.hpp
+../include/meta/safe_queue.hpp
 ../include/meta/tasks/job.hpp
 ../include/meta/tasks/thread_pool.hpp
 ../include/pimpl.hpp

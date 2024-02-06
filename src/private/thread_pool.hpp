@@ -48,6 +48,8 @@ public:
 
     static void notifyJobScheduled(Job& self);
 
+    static void setStatus(Job& self, Job::Status status);
+
     static void runJob(Job& self);
 };
 

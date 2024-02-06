@@ -119,6 +119,14 @@ private:
     std::unique_ptr<Descriptor> descriptor;
 };
 
+
+/// Executes the job asynchronously. To wait for the job completion, call Job::wait() methods.
+/// \param job The job to execute.
+void META_API async(JobPtr job);
+
+/// Yields the meta thread pool of the library.
+void META_API yield();
+
 } // namespace meta
 
 #endif // META_THREAD_POOL_HPP

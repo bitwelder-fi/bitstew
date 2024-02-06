@@ -23,7 +23,7 @@
 #include <meta/log/trace.hpp>
 #include <meta/log/trace.hpp>
 #include <meta/log/trace_printer.hpp>
-#include "utils/trace_printer_mock.hpp"
+#include "utils/domain_test_environment.hpp"
 
 #include <filesystem>
 #include <tuple>
@@ -93,6 +93,18 @@ public:
         warningCount = std::get<3>(params);
         infoCount = std::get<4>(params);
         debugCount = std::get<5>(params);
+    }
+};
+
+class MetaTraceStressTest : public DomainTestEnvironment
+{
+protected:
+    meta::Tracer* m_tracer;
+
+    void SetUp() override
+    {
+        initializeDomain(true, true);
+        m_tracer = meta::Library::instance().tracer();
     }
 };
 

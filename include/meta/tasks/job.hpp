@@ -21,7 +21,8 @@
 
 #include <meta/meta_api.hpp>
 
-#include <thread>
+#include <atomic>
+#include <memory>
 
 namespace meta
 {

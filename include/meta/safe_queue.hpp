@@ -36,9 +36,6 @@ namespace queue
 
 class META_API SharedQueueNotifier
 {
-    std::condition_variable m_signal;
-    std::function<bool()> m_condition;
-
 public:
     template <typename Condition>
     void setCondition(Condition condition)
@@ -51,15 +48,14 @@ public:
         m_signal.notify_one();
     }
 
-    void notifyAll()
-    {
-        m_signal.notify_all();
-    }
-
     void wait(std::unique_lock<std::mutex> &lock)
     {
         m_signal.wait(lock, m_condition);
     }
+
+protected:
+    std::condition_variable m_signal;
+    std::function<bool()> m_condition;
 };
 
 }
@@ -129,7 +125,11 @@ public:
 
 /// A shared, thread safe dynamic queue of elements. The queue gets locked on every push and pop call.
 /// \tparam ElementType The type of an element of the shared queue.
-/// \tparam Notifier The notifier of the shared queue.
+/// \tparam Notifier The notifier of the shared queue. The notifier is expected to have the following
+///         API:
+///         -# The constructor should take a reference to the
+///         -# auto notifyOne(): to notify a single change.
+///         -# auto wait(stdL:unique_lock<std::mutex>&): to wait on a lock.
 template <class ElementType, class Notifier = queue::SharedQueueNotifier>
 class META_TEMPLATE_API SharedQueue
 {
@@ -200,7 +200,16 @@ public:
 
     /// Returns whether the queue is empty.
     /// \return If the queue is empty, returns \e true, otherwise \e false.
-    bool isEmpty() const
+    bool isEmpty()
+    {
+        std::lock_guard<std::mutex> lock(m_lock);
+        return m_buffer.empty();
+    }
+
+    /// Returns a state of the queue, in a non-thread-safe manner. Use this method only when you are
+    /// providing a custom notifier.
+    /// \return If the queue is empty, returns \e true, otherwise \e false.
+    bool unsafe_isEmpty() const
     {
         return m_buffer.empty();
     }

@@ -92,38 +92,24 @@ public:
             return;
         }
 
+        auto successfulSchedule = false;
+        auto self = shared_from_this();
         while (!m_queue.push(std::string(text)))
         {
-            m_scheduler->schedule();
+            successfulSchedule |= m_scheduler->tryScheduleJob(self);
         }
-        m_signal.notify_one();
-        if (getStatus() == Status::Deferred)
+        if (!successfulSchedule)
         {
-            m_scheduler->tryScheduleJob(shared_from_this());
+            m_scheduler->tryScheduleJob(self);
         }
     }
 
 protected:
     void run() override
     {
-        // ++rescheduleCount;
-        // for (auto text = m_queue.pop(); !text.empty(); text = m_queue.pop())
-        // {
-        //     m_out->write(text);
-        // }
-        std::unique_lock<std::mutex> lock(m_lock);
-        auto condition = [this]()
+        ++rescheduleCount;
+        for (auto text = m_queue.pop(); !text.empty(); text = m_queue.pop())
         {
-            return !this->m_queue.isEmpty() || isStopped();
-        };
-        m_signal.wait(lock, condition);
-        for (;;)
-        {
-            auto text = m_queue.pop();
-            if (text.empty())
-            {
-                break;
-            }
             m_out->write(text);
         }
     }
@@ -137,15 +123,21 @@ protected:
         m_scheduler->tryScheduleJob(shared_from_this());
     }
 
-    void stopOverride() override
+    meta::CircularBuffer<std::string> m_queue;
+};
+
+#define FLAT_REUSE_LOGIC
+
+struct TestNotifier;
+using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
+struct TestNotifier : public meta::queue::SharedQueueNotifier
+{
+    void notifyAll()
     {
         m_signal.notify_all();
     }
-
-    std::mutex m_lock;
-    std::condition_variable m_signal;
-    meta::CircularBuffer<std::string> m_queue;
 };
+
 
 class QueuedJob : public TestJob
 {
@@ -157,7 +149,7 @@ public:
     {
         auto condition = [this]()
         {
-            return isStopped() || !m_queue.isEmpty();
+            return isStopped() || !m_queue.unsafe_isEmpty();
         };
         m_queue.getNotifier().setCondition(condition);
     }
@@ -196,15 +188,7 @@ protected:
         m_queue.getNotifier().notifyAll();
     }
 
-    struct TestNotifier
-    {
-        TestNotifier() = default;
-
-    };
-
-    // std::mutex m_lock;
-    // std::condition_variable m_signal;
-    meta::SharedQueue<std::string> m_queue;
+    TestSharedQueue m_queue;
 };
 
 class TaskSchedulerTest : public ::testing::Test
@@ -333,7 +317,7 @@ TEST_F(TaskSchedulerTest, reschedulingTask)
     scenario[0]->wait();
 
     EXPECT_EQ(4u, m_output->getBuffer().size());
-    // EXPECT_GE(scenario[0]->rescheduleCount, 1u);
+    EXPECT_GE(scenario[0]->rescheduleCount, 1u);
 }
 
 TEST_F(TaskSchedulerTest, stressTestReschedulingTask)
@@ -348,6 +332,6 @@ TEST_F(TaskSchedulerTest, stressTestReschedulingTask)
     threadPool->schedule();
     scenario[0]->wait();
     EXPECT_EQ(stressCount, m_output->getBuffer().size());
-    // EXPECT_GT(scenario[0]->rescheduleCount, 1u);
-    std::cerr << "reschedule count = " << scenario[0]->rescheduleCount << std::endl;
+    EXPECT_GE(scenario[0]->rescheduleCount, 1u);
+    // std::cerr << "reschedule count = " << scenario[0]->rescheduleCount << std::endl;
 }

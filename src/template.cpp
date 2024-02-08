@@ -99,6 +99,12 @@ void Library::uninitialize()
 {
     D();
     d->objectFactory.reset();
+    if (!d->tracer->isStopped())
+    {
+        d->tracer->stop();
+        d->tracer->wait();
+        d->tracer.reset();
+    }
     if (d->threadPool)
     {
         if (d->threadPool->isRunning())
@@ -107,7 +113,6 @@ void Library::uninitialize()
         }
         d->threadPool.reset();
     }
-    d->tracer.reset();
 }
 
 ThreadPool* Library::threadPool() const

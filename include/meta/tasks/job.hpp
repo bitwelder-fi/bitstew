@@ -136,6 +136,9 @@ public:
     /// Returns whether the stop got signalled on the job.
     bool isStopped() const;
 
+    /// Returns whether the job is queued or running.
+    bool isBusy() const;
+
     /// Waits for the job to complete.
     void wait();
 

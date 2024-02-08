@@ -167,7 +167,7 @@ public:
 
 protected:
     void run() override;
-    void stopOverride() override;
+    void onCompleted() override;
 
     TracePrinterPtr getTracePrinterAt(std::size_t index)
     {
@@ -183,7 +183,6 @@ private:
     friend struct TracerPrivate;
 
     std::mutex m_mutex;
-    std::condition_variable m_signal;
     std::vector<TracePrinterPtr> m_outputs;
     CircularBuffer<std::shared_ptr<const TraceRecord>, 10u> m_buffer;
     std::atomic_size_t m_bufferOverflowCount = 0u;

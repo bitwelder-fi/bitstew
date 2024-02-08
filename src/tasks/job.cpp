@@ -79,6 +79,11 @@ bool JobPrivate::isNextStatusValid(Job& self, Job::Status nextStatus)
         {
             return (nextStatus == Job::Status::Stopped);
         }
+        default:
+        {
+            // Compiler yawn.
+            return true;
+        }
     }
 }
 
@@ -143,6 +148,12 @@ void Job::stop()
 bool Job::isStopped() const
 {
     return getStatus() == Status::Stopped;
+}
+
+bool Job::isBusy() const
+{
+    const auto status = getStatus();
+    return status == Status::Queued || status == Status::Running || status == Status::Completed;
 }
 
 

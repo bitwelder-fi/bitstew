@@ -98,21 +98,20 @@ void Library::initialize(const LibraryArguments& arguments)
 void Library::uninitialize()
 {
     D();
+
+    if (d->threadPool && d->threadPool->isRunning())
+    {
+        d->threadPool->stop();
+    }
+
     d->objectFactory.reset();
-    if (!d->tracer->isStopped())
+    if (d->tracer && d->tracer->isBusy())
     {
         d->tracer->stop();
         d->tracer->wait();
-        d->tracer.reset();
     }
-    if (d->threadPool)
-    {
-        if (d->threadPool->isRunning())
-        {
-            d->threadPool->stop();
-        }
-        d->threadPool.reset();
-    }
+    d->tracer.reset();
+    d->threadPool.reset();
 }
 
 ThreadPool* Library::threadPool() const

@@ -158,7 +158,6 @@ TEST_F(MetaTraceStressTest, stressTrace)
     for (auto i = 0; i < stressCount; ++i)
     {
         META_LOG_INFO("stress #" << (i + 1));
-        meta::yield();
     }
     meta::yield();
     auto diag = m_tracer->getDiagnostics();

@@ -126,7 +126,6 @@ protected:
     meta::CircularBuffer<std::string> m_queue;
 };
 
-#define FLAT_REUSE_LOGIC
 
 struct TestNotifier;
 using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
@@ -137,7 +136,6 @@ struct TestNotifier : public meta::queue::SharedQueueNotifier
         m_signal.notify_all();
     }
 };
-
 
 class QueuedJob : public TestJob
 {

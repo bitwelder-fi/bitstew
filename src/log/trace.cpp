@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -38,27 +38,32 @@ struct TracerPrivate
             return;
         }
 
-        while (!self.m_buffer.push(std::make_shared<const TraceRecord>(trace)))
+        auto data = std::make_shared<const TraceRecord>(trace);
+        auto job = self.shared_from_this();
+        auto successfulReschedule = false;
+
+        while (!self.m_buffer.push(data))
         {
-            // Yield, give some time for the job to execute, and then retry.
-            yield();
+            if (self.m_threadPool)
+            {
+                successfulReschedule |= self.m_threadPool->tryScheduleJob(job);
+            }
             self.m_bufferOverflowCount++;
         }
-        self.m_signal.notify_one();
 
         if (self.m_threadPool)
         {
-            if (self.getStatus() == Job::Status::Deferred)
+            if (!successfulReschedule)
             {
-                abortIfFail(self.m_threadPool);
-                self.m_threadPool->tryScheduleJob(self.shared_from_this());
+                self.m_threadPool->tryScheduleJob(job);
             }
         }
         else
         {
             // The thread pool is not active, run the task.
-            self.setStatus(Job::Status::Queued);
-            detail::JobPrivate::runJob(self.shared_from_this());
+            detail::JobPrivate::notifyJobQueued(*job);
+            detail::JobPrivate::runJob(job);
+            detail::JobPrivate::completeJob(job);
         }
     }
 
@@ -85,27 +90,22 @@ Tracer::~Tracer()
 // Consume the buffer when scheduled.
 void Tracer::run()
 {
-    UniqueLock lock(m_mutex);
-    auto condition = [this]()
+    for (auto data = m_buffer.pop(); data; data = m_buffer.pop())
     {
-        return !this->m_buffer.isEmpty() || isStopped();
-    };
-    m_signal.wait(lock, condition);
-
-    for (;!isStopped();)
-    {
-        auto trace = m_buffer.pop();
-        if (!trace)
-        {
-            break;
-        }
-        TracerPrivate::print(*this, *trace);
+        TracerPrivate::print(*this, *data);
     }
 }
 
-void Tracer::stopOverride()
+void Tracer::onCompleted()
 {
-    m_signal.notify_all();
+    if (m_buffer.isEmpty())
+    {
+        return;
+    }
+    if (m_threadPool)
+    {
+        m_threadPool->tryScheduleJob(shared_from_this());
+    }
 }
 
 void Tracer::addTracePrinter(TracePrinterPtr output)

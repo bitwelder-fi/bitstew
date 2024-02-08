@@ -51,15 +51,14 @@ struct TracerPrivate
             if (self.getStatus() == Job::Status::Deferred)
             {
                 abortIfFail(self.m_threadPool);
-                self.m_threadPool->pushJob(self.shared_from_this());
+                self.m_threadPool->tryScheduleJob(self.shared_from_this());
             }
         }
         else
         {
             // The thread pool is not active, run the task.
-            self.reset();
-            self.setStatus(Job::Status::Scheduled);
-            detail::JobPrivate::runJob(self);
+            self.setStatus(Job::Status::Queued);
+            detail::JobPrivate::runJob(self.shared_from_this());
         }
     }
 

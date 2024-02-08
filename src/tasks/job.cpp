@@ -34,41 +34,81 @@ JobPrivate::JobPrivate() :
 
 void JobPrivate::main(Job* job)
 {
-    abortIfFail(job && job->descriptor->status == Job::Status::Scheduled);
-
-    job->setStatus(Job::Status::Running);
-
-    if (!job->isStopped())
+    if (job->isStopped())
     {
-        job->run();
+        return;
     }
 
-    job->setStatus(Job::Status::Stopped);
-    job->onTaskCompleted();
-    job->setStatus(Job::Status::Deferred);
+    job->setStatus(Job::Status::Running);
+    job->run();
+    if (job->getStatus() != Job::Status::Stopped)
+    {
+        job->setStatus(Job::Status::Completed);
+    }
 }
 
 void JobPrivate::notifyJobQueued(Job& self)
 {
     self.descriptor->worker.reset();
     self.setStatus(Job::Status::Queued);
-    self.onTaskQueued();
+    self.onQueued();
 }
 
-void JobPrivate::notifyJobScheduled(Job& self)
+bool JobPrivate::isNextStatusValid(Job& self, Job::Status nextStatus)
 {
-    self.setStatus(Job::Status::Scheduled);
-    self.onJobScheduled();
+    auto currentStatus = self.descriptor->status.load();
+    switch (currentStatus)
+    {
+        case Job::Status::Deferred:
+        {
+            return (nextStatus == Job::Status::Deferred || nextStatus == Job::Status::Queued || nextStatus == Job::Status::Stopped);
+        }
+        case Job::Status::Queued:
+        {
+            return (nextStatus == Job::Status::Running || nextStatus == Job::Status::Stopped);
+        }
+        case Job::Status::Running:
+        {
+            return (nextStatus == Job::Status::Completed || nextStatus == Job::Status::Stopped);
+        }
+        case Job::Status::Completed:
+        {
+            return (nextStatus == Job::Status::Deferred || nextStatus == Job::Status::Stopped);
+        }
+        case Job::Status::Stopped:
+        {
+            return (nextStatus == Job::Status::Stopped);
+        }
+    }
 }
 
-void JobPrivate::setStatus(Job& self, Job::Status status)
+void JobPrivate::setStatus(Job& self, Job::Status nextStatus)
 {
-    self.descriptor->status = status;
+    abortIfFail(isNextStatusValid(self, nextStatus));
+    auto currentStatus = self.descriptor->status.load();
+    // If the current status has changed, abort.
+    abortIfFail(self.descriptor->status.compare_exchange_weak(currentStatus, nextStatus));
 }
 
-void JobPrivate::runJob(Job& self)
+void JobPrivate::runJob(JobPtr self)
 {
-    self.descriptor->worker(&self);
+    if (self && !self->isStopped())
+    {
+        self->descriptor->worker(self.get());
+    }
+}
+
+void JobPrivate::completeJob(JobPtr self)
+{
+    if (!self)
+    {
+        return;
+    }
+    if (self->descriptor->status.load() == Job::Status::Completed)
+    {
+        setStatus(*self, Job::Status::Deferred);
+    }
+    self->onCompleted();
 }
 
 } // namespace detail
@@ -92,14 +132,6 @@ Job::Status Job::getStatus() const
 void Job::setStatus(Status status)
 {
     detail::JobPrivate::setStatus(*this, status);
-}
-
-void Job::reset()
-{
-    abortIfFail(descriptor->status == Status::Deferred || descriptor->status == Status::Stopped);
-
-    descriptor->worker.reset();
-    setStatus(Status::Deferred);
 }
 
 void Job::stop()

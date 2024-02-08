@@ -114,10 +114,10 @@ public:
         Deferred,
         /// The job is queued for excecution.
         Queued,
-        /// The job is scheduled, but not yet running.
-        Scheduled,
         /// The job is running.
         Running,
+        /// The job is completed its duties.
+        Completed,
         /// The job is stopped.
         Stopped
     };
@@ -143,9 +143,6 @@ protected:
     /// Constructor.
     explicit Job();
 
-    /// Resets the job for reuse. Do not call this while the job is running.
-    void reset();
-
     /// The main function of the job. Override this to implement job specific logic.
     virtual void run() = 0;
 
@@ -153,11 +150,9 @@ protected:
     virtual void stopOverride(){}
 
     /// Called by the thread pool when the job gets queued.
-    virtual void onTaskQueued(){}
-    /// Called by the thread pool when the job gets scheduled for execution.
-    virtual void onJobScheduled(){}
+    virtual void onQueued(){}
     /// Called by the the thread pool when the job gets completed.
-    virtual void onTaskCompleted(){}
+    virtual void onCompleted(){}
 
     /// Sets the status of the job.
     /// \param status The status to set.

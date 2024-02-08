@@ -23,11 +23,46 @@
 
 #include <atomic>
 #include <array>
+#include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <deque>
 
 namespace meta
 {
+
+namespace queue
+{
+
+class META_API SharedQueueNotifier
+{
+    std::condition_variable m_signal;
+    std::function<bool()> m_condition;
+
+public:
+    template <typename Condition>
+    void setCondition(Condition condition)
+    {
+        m_condition = condition;
+    }
+
+    void notifyOne()
+    {
+        m_signal.notify_one();
+    }
+
+    void notifyAll()
+    {
+        m_signal.notify_all();
+    }
+
+    void wait(std::unique_lock<std::mutex> &lock)
+    {
+        m_signal.wait(lock, m_condition);
+    }
+};
+
+}
 
 /// A lock-free thread safe circular buffer with elements of arbitrar type.
 /// \tparam ElementType The element type.
@@ -93,26 +128,17 @@ public:
 };
 
 /// A shared, thread safe dynamic queue of elements. The queue gets locked on every push and pop call.
-template <class ElementType>
+/// \tparam ElementType The type of an element of the shared queue.
+/// \tparam Notifier The notifier of the shared queue.
+template <class ElementType, class Notifier = queue::SharedQueueNotifier>
 class META_TEMPLATE_API SharedQueue
 {
     std::deque<ElementType> m_buffer;
     std::mutex m_lock;
+    Notifier m_notifier;
 
-public:
-    /// Pushes the element into the queue. The method returns when the element gets pushed with success.
-    /// \param element The element to push into the queue.
-    void push(ElementType element)
+    ElementType _pop()
     {
-        std::lock_guard<decltype(m_lock)> lock(m_lock);
-        m_buffer.push_back(std::move(element));
-    }
-
-    /// Returns the element at head of the queue, and advances the head.
-    /// \return The element at head on success, or an invalid element when the queue is empty.
-    ElementType pop()
-    {
-        std::lock_guard<decltype(m_lock)> lock(m_lock);
         if (m_buffer.empty())
         {
             return {};
@@ -121,6 +147,55 @@ public:
         auto data = m_buffer.front();
         m_buffer.pop_front();
         return data;
+    }
+
+public:
+    explicit SharedQueue()
+    {
+        if constexpr (std::is_same_v<Notifier, queue::SharedQueueNotifier>)
+        {
+            m_notifier.setCondition([this]() { return !m_buffer.empty(); });
+        }
+    }
+
+    /// The notifier of the shared queue.
+    Notifier& getNotifier()
+    {
+        return m_notifier;
+    }
+    /// Pushes the element into the queue. The method returns when the element gets pushed with success.
+    /// \param element The element to push into the queue.
+    void push(ElementType element)
+    {
+        {
+            std::lock_guard<decltype(m_lock)> lock(m_lock);
+            m_buffer.push_back(std::move(element));
+        }
+        m_notifier.notifyOne();
+    }
+
+    /// Waits till the queue gets notified, returns the element at the head of the queue, and advances
+    /// the head. If the queue is empty, returns an invalid element.
+    /// \return The element at head on success, or an invalid element when the queue is empty.
+    ElementType pop()
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        m_notifier.wait(lock);
+
+        return _pop();
+    }
+
+    /// Waits till the queue gets notified, and applies the command on each popped element of the queue.
+    /// \tparam Command The command with syntax `bool(ElementType&)` to execute for each individual
+    ///         element of the queue. The loop stops if the queue gets emptied or the command returns
+    ///         false.
+    /// \param command The command to execute on the elements of the queue.
+    template <typename Command>
+    void forEach(Command command)
+    {
+        std::unique_lock<std::mutex> lock(m_lock);
+        m_notifier.wait(lock);
+        while (!m_buffer.empty() && command(_pop()));
     }
 
     /// Returns whether the queue is empty.

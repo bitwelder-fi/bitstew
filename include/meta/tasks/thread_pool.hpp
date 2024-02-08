@@ -40,8 +40,8 @@ using JobPtr = std::shared_ptr<Job>;
 ///
 /// You must start the thread pool to run jobs. To do that, call the start() method.
 ///
-/// To queue a worker job for execution, call pushJob() method. To queue a set of worker jobs for
-/// execution, call pushMultipleJobs() method. Both methods return the futures of the queued workers.
+/// To queue a worker job for execution, call tryScheduleJob() method. To queue a set of worker jobs for
+/// execution, call tryScheduleJobs() method. Both methods return the futures of the queued workers.
 /// You can use these future objects to wait for the job completion.
 ///
 /// In multi-threaded environments, the thread pool schedules jobs automatically. In single-
@@ -93,12 +93,12 @@ public:
     /// Queues a job to for execution.
     /// \param job The job to queue for execution.
     /// \returns If the job was queued with success. returns \e true, otherwise \e false.
-    bool pushJob(JobPtr job);
+    bool tryScheduleJob(JobPtr job);
 
     /// Queue multiple jobs for execution.
     /// \param jobs The jobs to queue for execution.
     /// \returns The number of jobs pushed with success.
-    std::size_t pushMultipleJobs(std::vector<JobPtr> jobs);
+    std::size_t tryScheduleJobs(std::vector<JobPtr> jobs);
 
     /// Returns the queued job count.
     /// \return The queued job count.
@@ -126,6 +126,9 @@ void META_API async(JobPtr job);
 
 /// Yields the meta thread pool of the library.
 void META_API yield();
+
+void META_API yield(const std::chrono::nanoseconds& delay);
+
 
 } // namespace meta
 

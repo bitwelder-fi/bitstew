@@ -32,20 +32,12 @@ namespace meta
 
 class ThreadPool::Descriptor
 {
-    JobPtr popFrontJob()
-    {
-        auto job = jobs.front();
-        jobs.pop_front();
-        detail::JobPrivate::notifyJobScheduled(*job);
-        return job;
-    }
-
-    JobPtr getNextJob()
+    // Pop the job from the queue and put it into the list of scheduled jobs.
+    JobPtr scheduleNextJob()
     {
         UniqueLock lock(queueLock);
         auto condition = [this]()
         {
-            // Bail out if there is a task to schedule, or stop thread is set.
             return stopSignalled || !jobs.empty();
         };
         lockCondition.wait(lock, condition);
@@ -55,29 +47,28 @@ class ThreadPool::Descriptor
             return {};
         }
 
-        return popFrontJob();
+        auto job = jobs.front();
+        jobs.pop_front();
+        scheduledJobs.push_back(job);
+        return job;
     }
 
     void runSingleJob()
     {
-        auto currentJob = getNextJob();
-        if (!currentJob || stopSignalled || currentJob->isStopped())
+        auto currentJob = scheduleNextJob();
+        if (!stopSignalled)
         {
-            return;
+            --idleThreadCount;
+            detail::JobPrivate::runJob(currentJob);
+            ++idleThreadCount;
         }
 
-        --idleThreadCount;
-        {
-            GuardLock lock(queueLock);
-            scheduledJobs.push_back(currentJob);
-        }
-        detail::JobPrivate::runJob(*currentJob);
-
+        if (currentJob)
         {
             GuardLock lock(queueLock);
             std::erase(scheduledJobs, currentJob);
         }
-        ++idleThreadCount;
+        detail::JobPrivate::completeJob(currentJob);
     }
 
 public:
@@ -228,20 +219,21 @@ std::size_t ThreadPool::getIdleCount() const
     return descriptor->idleThreadCount;
 }
 
-bool ThreadPool::pushJob(JobPtr job)
+bool ThreadPool::tryScheduleJob(JobPtr job)
 {
     if (descriptor->stopSignalled)
     {
         return false;
     }
 
-    abortIfFail(job);
-
-    const auto jobStatus = job->getStatus();
-    abortIfFail(jobStatus == Job::Status::Deferred || jobStatus == Job::Status::Stopped);
+    abortIfFail(job);    
 
     {
         GuardLock lock(descriptor->queueLock);
+        if (!detail::JobPrivate::isNextStatusValid(*job, Job::Status::Queued))
+        {
+            return false;
+        }
         descriptor->jobs.push_back(job);
         detail::JobPrivate::notifyJobQueued(*job);
     }
@@ -251,7 +243,7 @@ bool ThreadPool::pushJob(JobPtr job)
     return true;
 }
 
-std::size_t ThreadPool::pushMultipleJobs(std::vector<JobPtr> jobs)
+std::size_t ThreadPool::tryScheduleJobs(std::vector<JobPtr> jobs)
 {
     if (descriptor->stopSignalled)
     {
@@ -305,12 +297,12 @@ void async(JobPtr job)
     auto pool = Library::instance().threadPool();
     if (pool)
     {
-        pool->pushJob(job);
+        pool->tryScheduleJob(job);
     }
     else
     {
-        detail::JobPrivate::setStatus(*job, Job::Status::Scheduled);
-        detail::JobPrivate::runJob(*job);
+        detail::JobPrivate::setStatus(*job, Job::Status::Queued);
+        detail::JobPrivate::runJob(job);
     }
 }
 
@@ -320,6 +312,15 @@ void yield()
     if (pool)
     {
         pool->schedule();
+    }
+}
+
+void yield(const std::chrono::nanoseconds& delay)
+{
+    auto pool = Library::instance().threadPool();
+    if (pool)
+    {
+        pool->schedule(delay);
     }
 }
 

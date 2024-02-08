@@ -46,11 +46,12 @@ public:
 
     static void notifyJobQueued(Job& self);
 
-    static void notifyJobScheduled(Job& self);
+    static bool isNextStatusValid(Job& self, Job::Status nextStatus);
+    static void setStatus(Job& self, Job::Status nextStatus);
 
-    static void setStatus(Job& self, Job::Status status);
+    static void runJob(JobPtr self);
 
-    static void runJob(Job& self);
+    static void completeJob(JobPtr self);
 };
 
 

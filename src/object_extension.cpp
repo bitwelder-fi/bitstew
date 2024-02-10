@@ -33,7 +33,7 @@ ObjectPtr ObjectExtension::getOwner() const
     return m_owner.lock();
 }
 
-ArgumentData ObjectExtension::run(const PackagedArguments& arguments)
+Argument ObjectExtension::run(const PackagedArguments& arguments)
 {
     return runOverride(arguments);
 }

@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/meta.hpp>
 
 namespace
@@ -88,15 +88,15 @@ struct Class
 
 }
 
-TEST(ArgumentData, invalidArgumentData)
+TEST(Argument, invalidArgumentData)
 {
-    auto voidArgument = meta::ArgumentData();
+    auto voidArgument = meta::Argument();
     EXPECT_FALSE(voidArgument.has_value());
 }
 
-TEST(ArgumentData, testArgumentData)
+TEST(Argument, testArgumentData)
 {
-    auto argument = meta::ArgumentData(std::string("one"));
+    auto argument = meta::Argument(std::string("one"));
     EXPECT_EQ(std::string("one"), static_cast<std::string>(argument));
 }
 

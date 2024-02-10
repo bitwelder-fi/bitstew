@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_OBJECT_HPP
-#define META_OBJECT_HPP
+#ifndef META_METAOBJECT_HPP
+#define META_METAOBJECT_HPP
 
 #include <meta/meta.hpp>
 #include <meta/metadata/metaclass.hpp>

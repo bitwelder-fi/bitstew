@@ -1,5 +1,6 @@
 set(SOURCES
-arguments/argument_type.cpp
+arguments/argument.cpp
+arguments/packaged_arguments.cpp
 log/trace.cpp
 log/trace_printer.cpp
 metadata/factory.cpp
@@ -12,8 +13,9 @@ template.cpp
 private/object.hpp
 private/thread_pool.hpp
 ../include/assert.hpp
-../include/meta/arguments/argument_type.hpp
-../include/meta/arguments/argument_type_impl.hpp
+../include/meta/arguments/argument.hpp
+../include/meta/arguments/packaged_arguments.hpp
+../include/meta/detail/packaged_arguments.hpp
 ../include/meta/detail/safe_queue.hpp
 ../include/meta/forwards.hpp
 ../include/meta/library_config.hpp

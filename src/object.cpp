@@ -18,6 +18,8 @@
 
 #include <meta/object_extension.hpp>
 #include <meta/object.hpp>
+#include <meta/log/trace.hpp>
+
 #include "private/object.hpp"
 
 namespace meta
@@ -98,7 +100,7 @@ ObjectExtensionPtr Object::findExtension(std::string_view name) const
     return (it != m_extensions.end()) ? it->second : ObjectExtensionPtr();
 }
 
-std::optional<ArgumentData> Object::invoke(std::string_view name, const PackagedArguments& arguments)
+std::optional<Argument> Object::invoke(std::string_view name, const PackagedArguments& arguments)
 {
     abortIfFail(!name.empty());
 
@@ -111,7 +113,7 @@ std::optional<ArgumentData> Object::invoke(std::string_view name, const Packaged
 }
 
 
-std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
+std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
 {
     abortIfFail(object && !name.empty());
     return object->invoke(name, arguments);

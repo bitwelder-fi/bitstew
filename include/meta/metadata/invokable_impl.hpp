@@ -54,7 +54,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
             auto object = getOwner();
             if (object)
             {
-                result += ArgumentData(dynamic_cast<ClassType*>(object.get()));
+                result += Argument(dynamic_cast<ClassType*>(object.get()));
             }
         }
     }
@@ -62,7 +62,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
     if constexpr (detail::enableRepack<Function>::packSelf)
     {
         using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
-        result += ArgumentData(dynamic_cast<ZipType>(this));
+        result += Argument(dynamic_cast<ZipType>(this));
     }
 
     result += arguments;
@@ -70,7 +70,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
 }
 
 template <class Function, Function function>
-ArgumentData Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
+Argument Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
 {
     try
     {
@@ -79,18 +79,18 @@ ArgumentData Invokable<Function, function>::runOverride(const PackagedArguments&
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
             std::apply(function, pack);
-            return ArgumentData();
+            return Argument();
         }
         else
         {
             auto result = std::apply(function, pack);
-            return ArgumentData(result);
+            return Argument(result);
         }
     }
     catch (const std::exception& e)
     {
         META_LOG_ERROR(e.what());
-        return ArgumentData();
+        return Argument();
     }
 }
 }

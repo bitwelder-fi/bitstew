@@ -19,7 +19,7 @@
 #ifndef META_INVOKABLE_HPP
 #define META_INVOKABLE_HPP
 
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/object_extension.hpp>
@@ -55,7 +55,7 @@ protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    ArgumentData runOverride(const PackagedArguments& arguments);
+    Argument runOverride(const PackagedArguments& arguments);
 
     /// Constructor.
     explicit Invokable(std::string_view name);

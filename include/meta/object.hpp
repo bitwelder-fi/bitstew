@@ -16,12 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_METAOBJECT_HPP
-#define META_METAOBJECT_HPP
+#ifndef META_OBJECT_HPP
+#define META_OBJECT_HPP
 
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/metadata/meta_object.hpp>
 #include <pimpl.hpp>
 
@@ -72,9 +72,9 @@ public:
     /// \param args Optional, the arguments with which to invoke the extension.
     /// \return returns one of the following:
     ///         - If the extension is found, and has a return value, the return value of the extension.
-    ///         - If the extension is found, and has no return value, returns an invalid ArgumentData.
+    ///         - If the extension is found, and has no return value, returns an invalid Argument.
     ///         - If the extension is not found, returns nullopt.
-    std::optional<ArgumentData> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+    std::optional<Argument> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
 
 protected:
     /// Constructor.
@@ -94,9 +94,9 @@ private:
 /// \param arguments The arguments with which to invoke the extension.
 /// \return returns one of the following:
 ///         - If the extension is found, and has a return value, the return value of the extension.
-///         - If the extension is found, and has no return value, returns an invalid ArgumentData.
+///         - If the extension is found, and has no return value, returns an invalid Argument.
 ///         - If the extension is not found, returns nullopt.
-META_API std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
+META_API std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
 
 }
 

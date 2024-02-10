@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
+#include <limits>
 
 namespace meta
 {

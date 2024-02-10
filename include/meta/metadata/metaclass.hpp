@@ -24,6 +24,7 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>

@@ -127,71 +127,32 @@ protected:
 };
 
 
-// struct TestNotifier;
-// using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
-// class QueuedJob;
-// struct TestNotifier : public meta::queue::SharedQueueNotifier
-// {
-//     void notifyAll()
-//     {
-//         m_signal.notify_all();
-//     }
-// };
-
-class QueuedJob : public TestJob
+class QueuedJob : public TestJob, public meta::SharedQueue<std::string, QueuedJob>
 {
-    struct TestNotifier
-    {
-        QueuedJob& job;
-        std::condition_variable m_signal;
-
-        TestNotifier(QueuedJob& job) :
-            job(job)
-        {
-        }
-
-        void notifyOne()
-        {
-            m_signal.notify_one();
-        }
-
-        void notifyAll()
-        {
-            m_signal.notify_all();
-        }
-
-        void wait(std::unique_lock<std::mutex>& lock)
-        {
-            auto condition = [this]()
-            {
-                return job.isStopped() || !job.m_queue.nolock_isEmpty();
-            };
-            m_signal.wait(lock, condition);
-        }
-    };
-
-    using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
     OutputPtr m_out;
-    TestNotifier m_notifier;
-    TestSharedQueue m_queue;
+    std::condition_variable m_signal;
 
 public:
     explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
         TestJob(out, jobCount),
-        m_out(out),
-        m_notifier(*this),
-        m_queue(m_notifier)
+        meta::SharedQueue<std::string, QueuedJob>(*this),
+        m_out(out)
     {
     }
 
-    void push(std::string string)
+    // notifier functions
+    void notifyOne()
     {
-        if (isStopped())
-        {
-            return;
-        }
+        m_signal.notify_one();
+    }
 
-        m_queue.push(string);
+    void wait(std::unique_lock<std::mutex>& lock)
+    {
+        auto condition = [this]()
+        {
+            return isStopped() || !nolock_isEmpty();
+        };
+        m_signal.wait(lock, condition);
     }
 
 protected:
@@ -209,13 +170,13 @@ protected:
                 m_out->write(text);
                 return true;
             };
-            m_queue.forEach(processor);
+            forEach(processor);
         }
     }
 
     void stopOverride() override
     {
-        m_notifier.notifyAll();
+        m_signal.notify_all();
     }
 };
 

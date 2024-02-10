@@ -112,16 +112,29 @@ using JobPtr = std::shared_ptr<Job>;
 /// long running tasks, which lock the job to the thread which runs the job. Locked threads must check
 /// in their loop whether they got stopped by the thread pool, and bail out the loop if they were.
 ///
-/// The first
+/// The following example uses a SharedQueue, and sets itself as the notifier type for the queue. For
+/// this, the SharedQueue requires the noitifier a notifyOne() and a wait() method. The push and pop
+/// methods are provided by SharedQueue.
 /// \code
-/// class Queue : public Job
+/// class Queue : public Job, public SharedQueue<std::string, Queue>
 /// {
-///     SharedQueue<std::string> m_queue;
+///     // The Queue is the notifier for the shared queue.
+///     std::condition_variable m_signal;
 ///
 /// public:
-///     void push(std::string text)
+///     // The notifier for the SharedQueue.
+///     void notifyOne()
 ///     {
-///
+///         m_signal.notify_one();
+///     }
+///     // The wait for the SharedQueue.
+///     void wait(std::unique_lock<std::mutex>& lock)
+///     {
+///         auto condition = [this]()
+///         {
+///             return isStopped() || !nolock_isEmpty();
+///         };
+///         m_signal.wait(lock, condition);
 ///     }
 ///
 /// protected:
@@ -130,38 +143,29 @@ using JobPtr = std::shared_ptr<Job>;
 ///     {
 ///         while (!isStopped())
 ///         {
-///             std::unique_lock<std::mutex> lock(guard);
-///             auto condition = [this]()
+///             auto processor = [this](auto data)
 ///             {
-///                 return isStopped() || !this->m_queue.empty();
+///                 if (data.empty())
+///                 {
+///                     return false;
+///                 }
+///                 // Process the data.
+///                 // ...
+///                 return true;
 ///             };
-///             signal.wait(lock, condition);
-///             if (queue.empty())
-///             {
-///                 continue;
-///             }
-///
-///             while (!queue.empty())
-///             {
-///                 // Process the queued data.
-///             }
+///             forEach(processor);
 ///         }
 ///     }
 ///
+///     // Override Job::stopOverride() to signal the condition variable when the thread pool stops
+///     // the running jobs.
 ///     void stopOverride() override
 ///     {
 ///         // Notifies the wait in the run() method to wake up and check the conditiom.
-///         signal.notify_all();
+///         m_signal.notify_all();
 ///     }
-///
-///     std::mutex guard;
-///     std::queue<std::string> queue;
-///     std::condition_variable signal;
 /// };
 /// \endcode
-///
-/// you must make sure you can stop the job when the thread pool gets
-/// signalled to stop the threads.
 class META_API Job : public std::enable_shared_from_this<Job>
 {
 public:
@@ -227,7 +231,8 @@ private:
 
 /// Executes the job asynchronously. To wait for the job completion, call Job::wait() methods.
 /// \param job The job to execute.
-void META_API async(JobPtr job);
+/// \return If the job got scheduled with success, returns \e true, otherwise \e false.
+bool META_API async(JobPtr job);
 
 }
 

@@ -292,17 +292,19 @@ void ThreadPool::schedule(const std::chrono::nanoseconds& delay)
 }
 
 
-void async(JobPtr job)
+bool async(JobPtr job)
 {
     auto pool = Library::instance().threadPool();
     if (pool)
     {
-        pool->tryScheduleJob(job);
+        return pool->tryScheduleJob(job);
     }
     else
     {
         detail::JobPrivate::setStatus(*job, Job::Status::Queued);
         detail::JobPrivate::runJob(job);
+        detail::JobPrivate::completeJob(job);
+        return true;
     }
 }
 

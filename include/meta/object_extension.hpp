@@ -47,7 +47,7 @@ public:
 
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
-    ObjectPtr getOwner() const;
+    ObjectPtr getObject() const;
 
     /// The entry point of an object extensions.
     /// \param arguments The arguments with which the extension gets executed.
@@ -90,8 +90,11 @@ private:
     DISABLE_COPY(ObjectExtension);
     DISABLE_MOVE(ObjectExtension);
 
-    ObjectWeakPtr m_owner;
-    friend struct ObjectDescriptor;
+    void attachToObject(Object& object);
+    void detachFromObject();
+
+    ObjectWeakPtr m_object;
+    friend class Object;
 };
 
 }

@@ -51,7 +51,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
         using ClassType = typename traits::function_traits<Function>::object;
         if constexpr (std::is_base_of_v<MetaObject, ClassType>)
         {
-            auto object = getOwner();
+            auto object = getObject();
             if (object)
             {
                 result += Argument(dynamic_cast<ClassType*>(object.get()));

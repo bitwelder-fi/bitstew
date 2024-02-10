@@ -39,7 +39,7 @@ namespace meta
 /// auto lambda = [](meta::ObjectExtension* self)
 /// {
 ///     // You can access the object through the extension.
-///     auto object = self->getOwner();
+///     auto object = self->getObject();
 /// };
 /// using LambdaExtension = meta::Invokable<decltype(lambda), lambda>;
 /// object->addExtension(LambdaExtension::create("lambda"));

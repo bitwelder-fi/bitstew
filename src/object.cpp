@@ -20,44 +20,8 @@
 #include <meta/object.hpp>
 #include <meta/log/trace.hpp>
 
-#include "private/object.hpp"
-
 namespace meta
 {
-
-bool ObjectDescriptor::addExtention(Object& self, ObjectExtensionPtr extension)
-{
-    abortIfFail(!extension->getOwner());
-
-    auto it = self.m_extensions.insert(std::make_pair(extension->getName(), extension));
-    if (it.second)
-    {
-        it.first->second->m_owner = self.shared_from_this();
-        extension->onAttached();
-    }
-    else
-    {
-        META_LOG_ERROR("Extension " << extension->getName() <<" already extends the object.");
-    }
-    return it.second;
-}
-
-bool ObjectDescriptor::removeInvokable(Object& self, ObjectExtension& extension)
-{
-    abortIfFail(extension.getOwner().get() == &self);
-
-    auto it = self.m_extensions.find(extension.getName());
-    if (it != self.m_extensions.end())
-    {
-        extension.onDetached();
-        extension.m_owner.reset();
-        self.m_extensions.erase(it);
-        return true;
-    }
-    META_LOG_ERROR("Extension " << extension.getName() <<" does not extend the object.");
-    return false;
-}
-
 
 Object::Object(std::string_view name) :
     MetaObject(name)
@@ -74,24 +38,37 @@ ObjectPtr Object::create(std::string_view name, const PackagedArguments&)
     return ObjectPtr(new Object(name));
 }
 
-bool Object::addExtension(ObjectExtensionPtr invokable)
+void Object::addExtension(ObjectExtensionPtr extension)
 {
-    if (m_sealed)
+    abortIfFail(!extension->getObject());
+
+    if (extension->getObject().get() == this)
     {
-        META_LOG_ERROR("The object " << getName() <<" is sealed.");
-        return false;
+        META_LOG_ERROR("Extension " << extension->getName() <<" already extends the object.");
+        return;
     }
-    return ObjectDescriptor::addExtention(*this, std::move(invokable));
+
+    auto it = m_extensions.insert(std::make_pair(extension->getName(), extension));
+    if (it.second)
+    {
+        extension->attachToObject(*this);
+    }
+    // return it.second;
 }
 
-bool Object::removeExtension(ObjectExtension& invokable)
+bool Object::removeExtension(ObjectExtension& extension)
 {
-    if (m_sealed)
+    abortIfFail(extension.getObject().get() == this);
+
+    auto it = m_extensions.find(extension.getName());
+    if (it != m_extensions.end())
     {
-        META_LOG_ERROR("The object " << getName() <<" is sealed.");
-        return false;
+        extension.detachFromObject();
+        m_extensions.erase(it);
+        return true;
     }
-    return ObjectDescriptor::removeInvokable(*this, invokable);
+    META_LOG_ERROR("Extension " << extension.getName() <<" does not extend the object.");
+    return false;
 }
 
 ObjectExtensionPtr Object::findExtension(std::string_view name) const

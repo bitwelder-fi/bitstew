@@ -32,8 +32,6 @@
 namespace meta
 {
 
-struct ObjectDescriptor;
-
 /// The base class of any object that defines a meta class.
 class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
 {
@@ -54,12 +52,13 @@ public:
     /// fails if the extension is already added to the object.
     /// \param extension The extension to add to the object.
     /// \return If the extension gets added with success, returns \e true, otherwise \e false.
-    bool addExtension(ObjectExtensionPtr extension);
+    void addExtension(ObjectExtensionPtr extension);
 
     /// Removes an extension from the object. The extension gets destroyed if the object owns the
     /// extension. The method fails if the extension does not extend the object.
+    /// \param extension The extension to remove from the object.
     /// \return If the extension gets removed with success, returns \e true, otherwise \e false.
-    bool removeExtension(ObjectExtension& invokable);
+    bool removeExtension(ObjectExtension& extension);
 
     /// Tries to locate the extension with the name.
     /// \param name The extension name to locate.
@@ -84,8 +83,6 @@ private:
     using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
 
     ExtensionsMap m_extensions;
-    std::atomic_bool m_sealed = false;
-    friend struct ObjectDescriptor;
 };
 
 /// Invokes an extension of a object.

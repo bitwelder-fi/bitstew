@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,6 @@
 
 #include <meta/meta_api.hpp>
 
-#include <atomic>
 #include <memory>
 
 namespace meta
@@ -31,7 +30,9 @@ namespace detail
 {
 class JobPrivate;
 }
-class ThreadPool;
+
+class Job;
+using JobPtr = std::shared_ptr<Job>;
 
 /// Represents a job executed by the thread pool. Derive from this to write jobs or queues.
 ///
@@ -48,22 +49,79 @@ class ThreadPool;
 /// };
 /// \endcode
 ///
-/// To create a job with a queue, you must put a loop to process the queue. Queues by nature require
-/// a loop, which processes the queued data. This loop locks are long running tasks, which lock the
-/// job to the thread which runs the job. Locked threads cannot be stopped by the thread pool, however
-/// the thread pool signals the running jobs to stop. You should override the stopOverride() method,
-/// and ensure the queue loop gets stopped, and the job can be closed.
+/// \name Processing queues
+///
+/// Depending on the queue type, you can use a different setup with a Job to process the queue.
+/// Processing a circular buffer does not necessarily require to reserve a thread, whilst processing
+/// a shared queue most likely would be more efficient when the queue resides in a steady thread.
+///
+/// A job which proceses a circular buffer would need to reschedule itself, so that it can properly
+/// consume the buffer content. You reschedule the job by overriding the onCompleted() method, and
+/// try to schedule it if the buffer has some content.
 /// \code
-/// class SimpleJob : public Job
+/// class Buffer : public Job
 /// {
+///     // A thread-safe circular buffer of 10 elements.
+///     CircularBuffer<std::string, 10u> m_buffer;
+///
+/// public:.
+///     // Pushes the text into the buffer.
+///     void push(std::string text)
+///     {
+///         // Try to push the job into the buffer. If the push fails, try to schedule the job,
+///         // so that it can process the buffer.
+///         auto scheduled = false;
+///         while (!m_buffer.tryPush(text))
+///         {
+///             scheduled != async(shared_from_this());
+///         }
+///         // If it was a successful push, or there was a successful push after an unsuccessful one,
+///         // schedule itself for processing.
+///         if (!scheduled)
+///         {
+///             async(shared_from_this());
+///         }
+///     }
+///
+/// protected:
+///     //...
+///     void run() override
+///     {
+///         // Process the buffer.
+///         for (auto text = m_buffer.tryPop(); !text.empty(); text = m_buffer.tryPop())
+///         {
+///             // Do somethign with the text.
+///         }
+///     }
+///
+///     // Override Job::onCompleted() and check if the buffer already has some data added to process.
+///     // If there is data to process, reschedule.
+///     void onCompleted() override
+///     {
+///         if (m_buffer.wasEmpty())
+///         {
+///             return;
+///         }
+///         // Reschedule.
+///         async(shared_from_this());
+///     }
+/// };
+/// \endcode
+///
+/// To create a job which processes a shared queue, put a loop to process the queue. This loops are
+/// long running tasks, which lock the job to the thread which runs the job. Locked threads must check
+/// in their loop whether they got stopped by the thread pool, and bail out the loop if they were.
+///
+/// The first
+/// \code
+/// class Queue : public Job
+/// {
+///     SharedQueue<std::string> m_queue;
+///
 /// public:
 ///     void push(std::string text)
 ///     {
-///         {
-///             std::lock_guard<std::mutex> lock(guard);
-///             queue.push(text);
-///         }
-///         signal.notify_one();
+///
 ///     }
 ///
 /// protected:
@@ -165,6 +223,11 @@ private:
     friend class detail::JobPrivate;
     std::unique_ptr<detail::JobPrivate> descriptor;
 };
+
+
+/// Executes the job asynchronously. To wait for the job completion, call Job::wait() methods.
+/// \param job The job to execute.
+void META_API async(JobPtr job);
 
 }
 

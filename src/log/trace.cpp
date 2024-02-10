@@ -42,7 +42,7 @@ struct TracerPrivate
         auto job = self.shared_from_this();
         auto successfulReschedule = false;
 
-        while (!self.m_buffer.push(data))
+        while (!self.m_buffer.tryPush(data))
         {
             if (self.m_threadPool)
             {
@@ -90,7 +90,7 @@ Tracer::~Tracer()
 // Consume the buffer when scheduled.
 void Tracer::run()
 {
-    for (auto data = m_buffer.pop(); data; data = m_buffer.pop())
+    for (auto data = m_buffer.tryPop(); data; data = m_buffer.tryPop())
     {
         TracerPrivate::print(*this, *data);
     }
@@ -98,7 +98,7 @@ void Tracer::run()
 
 void Tracer::onCompleted()
 {
-    if (m_buffer.isEmpty())
+    if (m_buffer.wasEmpty())
     {
         return;
     }

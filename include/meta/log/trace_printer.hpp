@@ -22,7 +22,6 @@
 #include <meta/meta.hpp>
 
 #include <memory>
-#include <string_view>
 
 namespace meta
 {

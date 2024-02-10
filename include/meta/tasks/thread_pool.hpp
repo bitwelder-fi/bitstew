@@ -120,13 +120,11 @@ private:
 };
 
 
-/// Executes the job asynchronously. To wait for the job completion, call Job::wait() methods.
-/// \param job The job to execute.
-void META_API async(JobPtr job);
-
 /// Yields the meta thread pool of the library.
 void META_API yield();
 
+/// Yields the meta thread pool of the library with a given delay.
+/// \param delay The delay in nanoseconds with which to yield.
 void META_API yield(const std::chrono::nanoseconds& delay);
 
 

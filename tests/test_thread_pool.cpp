@@ -94,7 +94,7 @@ public:
 
         auto successfulSchedule = false;
         auto self = shared_from_this();
-        while (!m_queue.push(std::string(text)))
+        while (!m_queue.tryPush(std::string(text)))
         {
             successfulSchedule |= m_scheduler->tryScheduleJob(self);
         }
@@ -108,7 +108,7 @@ protected:
     void run() override
     {
         ++rescheduleCount;
-        for (auto text = m_queue.pop(); !text.empty(); text = m_queue.pop())
+        for (auto text = m_queue.tryPop(); !text.empty(); text = m_queue.tryPop())
         {
             m_out->write(text);
         }
@@ -116,7 +116,7 @@ protected:
 
     void onCompleted() override
     {
-        if (m_queue.isEmpty())
+        if (m_queue.wasEmpty())
         {
             return;
         }
@@ -127,29 +127,61 @@ protected:
 };
 
 
-struct TestNotifier;
-using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
-struct TestNotifier : public meta::queue::SharedQueueNotifier
-{
-    void notifyAll()
-    {
-        m_signal.notify_all();
-    }
-};
+// struct TestNotifier;
+// using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
+// class QueuedJob;
+// struct TestNotifier : public meta::queue::SharedQueueNotifier
+// {
+//     void notifyAll()
+//     {
+//         m_signal.notify_all();
+//     }
+// };
 
 class QueuedJob : public TestJob
 {
+    struct TestNotifier
+    {
+        QueuedJob& job;
+        std::condition_variable m_signal;
+
+        TestNotifier(QueuedJob& job) :
+            job(job)
+        {
+        }
+
+        void notifyOne()
+        {
+            m_signal.notify_one();
+        }
+
+        void notifyAll()
+        {
+            m_signal.notify_all();
+        }
+
+        void wait(std::unique_lock<std::mutex>& lock)
+        {
+            auto condition = [this]()
+            {
+                return job.isStopped() || !job.m_queue.nolock_isEmpty();
+            };
+            m_signal.wait(lock, condition);
+        }
+    };
+
+    using TestSharedQueue = meta::SharedQueue<std::string, TestNotifier>;
     OutputPtr m_out;
+    TestNotifier m_notifier;
+    TestSharedQueue m_queue;
+
 public:
     explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
         TestJob(out, jobCount),
-        m_out(out)
+        m_out(out),
+        m_notifier(*this),
+        m_queue(m_notifier)
     {
-        auto condition = [this]()
-        {
-            return isStopped() || !m_queue.unsafe_isEmpty();
-        };
-        m_queue.getNotifier().setCondition(condition);
     }
 
     void push(std::string string)
@@ -183,10 +215,8 @@ protected:
 
     void stopOverride() override
     {
-        m_queue.getNotifier().notifyAll();
+        m_notifier.notifyAll();
     }
-
-    TestSharedQueue m_queue;
 };
 
 class TaskSchedulerTest : public ::testing::Test

@@ -14,6 +14,7 @@ private/thread_pool.hpp
 ../include/assert.hpp
 ../include/meta/arguments/argument_type.hpp
 ../include/meta/arguments/argument_type_impl.hpp
+../include/meta/detail/safe_queue.hpp
 ../include/meta/forwards.hpp
 ../include/meta/library_config.hpp
 ../include/meta/log/trace.hpp

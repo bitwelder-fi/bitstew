@@ -22,6 +22,7 @@
 #include <utils/scope_value.hpp>
 
 #include <atomic>
+#include <condition_variable>
 #include <deque>
 #include <thread>
 #include <mutex>

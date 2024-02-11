@@ -21,7 +21,7 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extension.hpp>
+#include <meta/object_extensions/object_extension.hpp>
 
 namespace
 {

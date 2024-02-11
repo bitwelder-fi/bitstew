@@ -23,6 +23,7 @@
 
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 namespace meta
@@ -32,7 +33,8 @@ class Job;
 class ThreadPool;
 
 using JobPtr = std::shared_ptr<Job>;
-
+using GuardLock = std::lock_guard<std::mutex>;
+using UniqueLock = std::unique_lock<std::mutex>;
 
 /// The thread pool is responsible to dispatch worker jobs to threads in an efficien way. Though the
 /// system allows you to have several thread pools per application, for efficiency, it is recommended
@@ -58,6 +60,25 @@ using JobPtr = std::shared_ptr<Job>;
 class META_API ThreadPool
 {
 public:
+    /// The base of the jobs the thread pool handles;
+    class META_API BaseJob : public std::enable_shared_from_this<BaseJob>
+    {
+        friend class ThreadPool;
+        friend bool async(JobPtr);
+
+    protected:
+        virtual ~BaseJob() = default;
+        /// Reports whether the queuing of the job is possible.
+        virtual bool canQueue() const = 0;
+        /// Queues the job.
+        virtual void queue() = 0;
+        /// Schedules the job.
+        virtual void schedule() = 0;
+        /// Completes the job.
+        virtual void complete() = 0;
+    };
+    using BaseJobPtr = std::shared_ptr<BaseJob>;
+
     /// Constructor. Creates a thread pool with a number of threads. The argument is ignored in
     /// single-threaded environment.
     explicit ThreadPool(std::size_t threadCount);
@@ -117,6 +138,8 @@ public:
 private:
     class Descriptor;
     std::unique_ptr<Descriptor> descriptor;
+
+    void runNextJob();
 };
 
 

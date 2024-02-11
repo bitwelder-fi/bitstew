@@ -22,7 +22,11 @@
 #include <utils/function_traits.hpp>
 #include <tuple>
 
-namespace meta { namespace detail {
+namespace meta {
+
+class ObjectExtension;
+
+namespace detail {
 
 template <typename Function, class ArgPack>
 struct PackToTuple
@@ -40,6 +44,15 @@ struct PackToTuple
             return std::tuple_cat(convert<Index - 1, PackIndex - 1>(arguments), std::make_tuple(arguments.template get<ArgType>(PackIndex - 1)));
         }
     }
+};
+
+
+template <typename Function>
+struct enableRepack
+{
+    static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
+    static constexpr bool packSelf = traits::is_base_arg_of<ObjectExtension*, Function, 0u>::value;
+    static constexpr bool value = packObject || packSelf;
 };
 
 }} // meta::detail

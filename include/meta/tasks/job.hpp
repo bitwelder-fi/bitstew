@@ -20,16 +20,12 @@
 #define META_JOB_HPP
 
 #include <meta/meta_api.hpp>
+#include <meta/tasks/thread_pool.hpp>
 
 #include <memory>
 
 namespace meta
 {
-
-namespace detail
-{
-class JobPrivate;
-}
 
 class Job;
 using JobPtr = std::shared_ptr<Job>;
@@ -166,7 +162,7 @@ using JobPtr = std::shared_ptr<Job>;
 ///     }
 /// };
 /// \endcode
-class META_API Job : public std::enable_shared_from_this<Job>
+class META_API Job : public ThreadPool::BaseJob
 {
 public:
     /// The status of the job.
@@ -204,9 +200,21 @@ public:
     /// Waits for the job to complete.
     void wait();
 
+    /// Overloads enable_shared_from_this
+    JobPtr shared_from_this()
+    {
+        return std::static_pointer_cast<Job>(std::enable_shared_from_this<ThreadPool::BaseJob>::shared_from_this());
+    }
 protected:
     /// Constructor.
     explicit Job();
+
+    /// Implement BaseJob interface.
+    bool canQueue() const override;
+    void queue() final;
+    void schedule() final;
+    void complete() final;
+
 
     /// The main function of the job. Override this to implement job specific logic.
     virtual void run() = 0;
@@ -224,8 +232,8 @@ protected:
     void setStatus(Status status);
 
 private:
-    friend class detail::JobPrivate;
-    std::unique_ptr<detail::JobPrivate> descriptor;
+    struct JobPrivate;
+    std::unique_ptr<JobPrivate> descriptor;
 };
 
 

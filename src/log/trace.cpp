@@ -21,8 +21,6 @@
 #include <meta/log/trace_printer.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
-#include "../private/thread_pool.hpp"
-
 #include <iostream>
 #include <thread>
 
@@ -61,9 +59,7 @@ struct TracerPrivate
         else
         {
             // The thread pool is not active, run the task.
-            detail::JobPrivate::notifyJobQueued(*job);
-            detail::JobPrivate::runJob(job);
-            detail::JobPrivate::completeJob(job);
+            async(job);
         }
     }
 

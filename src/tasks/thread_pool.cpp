@@ -16,6 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
+#include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 #include <assert.hpp>
 #include <utils/scope_value.hpp>
@@ -25,15 +26,38 @@
 #include <thread>
 #include <mutex>
 
-#include "../private/thread_pool.hpp"
-
 namespace meta
 {
 
 class ThreadPool::Descriptor
 {
+public:
+    // The executor threads of the pool.
+    std::vector<std::thread> threads;
+    // The scheduled jobs.
+    std::deque<BaseJobPtr> jobs;
+    // The running jobs.
+    std::deque<BaseJobPtr> scheduledJobs;
+    // Locks the task queue.
+    std::mutex queueLock;
+    // Threads wait on new tasks.
+    std::condition_variable lockCondition;
+    // The amount of threads to create.
+    const std::size_t threadCount = 0u;
+    // The number of idling threads.
+    std::atomic_size_t idleThreadCount = 0u;
+    // Tells the thread pool to stop executing.
+    std::atomic_bool stopSignalled = false;
+    // Whether the pool is running.
+    std::atomic_bool isRunning = false;
+
+    explicit Descriptor(std::size_t threadCount) :
+        threadCount(threadCount)
+    {
+    }
+
     // Pop the job from the queue and put it into the list of scheduled jobs.
-    JobPtr scheduleNextJob()
+    BaseJobPtr scheduleNextJob()
     {
         UniqueLock lock(queueLock);
         auto condition = [this]()
@@ -53,68 +77,6 @@ class ThreadPool::Descriptor
         return job;
     }
 
-    void runSingleJob()
-    {
-        auto currentJob = scheduleNextJob();
-        if (!stopSignalled)
-        {
-            --idleThreadCount;
-            detail::JobPrivate::runJob(currentJob);
-            ++idleThreadCount;
-        }
-
-        if (currentJob)
-        {
-            GuardLock lock(queueLock);
-            std::erase(scheduledJobs, currentJob);
-        }
-        detail::JobPrivate::completeJob(currentJob);
-    }
-
-public:
-    // The amount of threads to create.
-    const std::size_t threadCount = 0u;
-    // The number of idling threads.
-    std::atomic_size_t idleThreadCount = 0u;
-    // Locks the task queue.
-    std::mutex queueLock;
-    // Threads wait on new tasks.
-    std::condition_variable lockCondition;
-    // The scheduled jobs.
-    std::deque<JobPtr> jobs;
-    // The running jobs.
-    std::deque<JobPtr> scheduledJobs;
-    // The executor threads of the pool.
-    std::vector<std::thread> threads;
-    // Tells the thread pool to stop executing.
-    std::atomic_bool stopSignalled = false;
-    // Whether the pool is running.
-    bool isRunning = false;
-
-    explicit Descriptor(std::size_t threadCount) :
-        threadCount(threadCount)
-    {
-    }
-
-    void stopJobs()
-    {
-        GuardLock lock(queueLock);
-
-        // Stop the queued jobs first.
-        for (auto& job : jobs)
-        {
-            job->stop();
-        }
-        jobs.clear();
-
-        // Then stop the scheduled jobs.
-        for (auto& job : scheduledJobs)
-        {
-            job->stop();
-        }
-        scheduledJobs.clear();
-    }
-
     static void threadMain(ThreadPool* self)
     {
         // Increase idle thread count before starting the thread loop.
@@ -122,7 +84,7 @@ public:
 
         while (!self->descriptor->stopSignalled)
         {
-            self->descriptor->runSingleJob();
+            self->runNextJob();
         }
 
         // Decrease idle thread count before exiting the thread loop.
@@ -139,6 +101,28 @@ ThreadPool::ThreadPool(std::size_t threadCount) :
 ThreadPool::~ThreadPool()
 {
     abortIfFail(!descriptor->isRunning);
+}
+
+void ThreadPool::runNextJob()
+{
+    auto currentJob = descriptor->scheduleNextJob();
+    if (!descriptor->stopSignalled)
+    {
+        --descriptor->idleThreadCount;
+        currentJob->schedule();
+        ++descriptor->idleThreadCount;
+    }
+
+    if (!currentJob)
+    {
+        return;
+    }
+
+    {
+        GuardLock lock(descriptor->queueLock);
+        std::erase(descriptor->scheduledJobs, currentJob);
+    }
+    currentJob->complete();
 }
 
 void ThreadPool::start()
@@ -166,7 +150,23 @@ void ThreadPool::stop()
 
     // Signal stop call.
     descriptor->stopSignalled = true;
-    descriptor->stopJobs();
+    {
+        GuardLock lock(descriptor->queueLock);
+
+        // Stop the queued jobs first.
+        for (auto& job : descriptor->jobs)
+        {
+            std::dynamic_pointer_cast<Job>(job)->stop();
+        }
+        descriptor->jobs.clear();
+
+        // Then stop the scheduled jobs.
+        for (auto& job : descriptor->scheduledJobs)
+        {
+            std::dynamic_pointer_cast<Job>(job)->stop();
+        }
+        descriptor->scheduledJobs.clear();
+    }
 
     // Notify all the threads to stop executing their jobs.
     descriptor->lockCondition.notify_all();
@@ -230,12 +230,13 @@ bool ThreadPool::tryScheduleJob(JobPtr job)
 
     {
         GuardLock lock(descriptor->queueLock);
-        if (!detail::JobPrivate::isNextStatusValid(*job, Job::Status::Queued))
+        auto baseJob = static_cast<BaseJob*>(job.get());
+        if (!baseJob->canQueue())
         {
             return false;
         }
         descriptor->jobs.push_back(job);
-        detail::JobPrivate::notifyJobQueued(*job);
+        baseJob->queue();
     }
 
     descriptor->lockCondition.notify_one();
@@ -256,10 +257,15 @@ std::size_t ThreadPool::tryScheduleJobs(std::vector<JobPtr> jobs)
     {
         GuardLock lock(descriptor->queueLock);
 
-        descriptor->jobs.insert(descriptor->jobs.end(), jobs.begin(), jobs.end());
         for (auto& job : jobs)
         {
-            detail::JobPrivate::notifyJobQueued(*job);
+            auto baseJob = static_cast<BaseJob*>(job.get());
+            if (!baseJob->canQueue())
+            {
+                continue;
+            }
+            descriptor->jobs.push_back(job);
+            baseJob->queue();
             ++result;
         }
     }
@@ -301,9 +307,11 @@ bool async(JobPtr job)
     }
     else
     {
-        detail::JobPrivate::setStatus(*job, Job::Status::Queued);
-        detail::JobPrivate::runJob(job);
-        detail::JobPrivate::completeJob(job);
+        auto baseJob = static_cast<ThreadPool::BaseJob*>(job.get());
+
+        baseJob->queue();
+        baseJob->schedule();
+        baseJob->complete();
         return true;
     }
 }

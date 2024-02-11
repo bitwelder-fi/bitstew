@@ -24,7 +24,7 @@
 #include <meta/object.hpp>
 #include <meta/library_config.hpp>
 
-#include <meta/metadata/invokable.hpp>
+#include <meta/object_extensions/invokable.hpp>
 
 #include "utils/domain_test_environment.hpp"
 

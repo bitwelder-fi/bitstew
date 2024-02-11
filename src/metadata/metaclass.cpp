@@ -20,7 +20,7 @@
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extension.hpp>
+#include <meta/object_extensions/object_extension.hpp>
 #include <utils/scope_value.hpp>
 
 namespace meta

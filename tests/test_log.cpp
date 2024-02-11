@@ -17,7 +17,7 @@
  */
 
 #include "test_log_fixtures.hpp"
-#include <meta/tasks/task_scheduler.hpp>
+#include <meta/tasks/thread_pool.hpp>
 
 using namespace meta_test;
 
@@ -147,5 +147,19 @@ TEST_P(MetaTraceTest, testMetaTracer)
     META_LOG_INFO("testMetaTracer");
     META_LOG_DEBUG("testMetaTracer");
     // Ensure the log happens.
-    meta::Library::instance().taskScheduler()->schedule(std::chrono::milliseconds(10));
+    meta::Library::instance().threadPool()->schedule(std::chrono::milliseconds(10));
+}
+
+TEST_F(MetaTraceStressTest, stressTrace)
+{
+    constexpr auto stressCount = 1000;
+    EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log(::testing::HasSubstr("stress #"))).Times(stressCount);
+
+    for (auto i = 0; i < stressCount; ++i)
+    {
+        META_LOG_INFO("stress #" << (i + 1));
+    }
+    meta::yield();
+    auto diag = m_tracer->getDiagnostics();
+    std::cerr << "number of push() retries: " << diag.bufferOverflowCount << std::endl;
 }

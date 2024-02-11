@@ -20,14 +20,16 @@
 #define META_TRACE_HPP
 
 #include <meta/meta.hpp>
-#include <meta/tasks/task.hpp>
-#include <meta/threading.hpp>
+#include <meta/tasks/job.hpp>
 #include <meta/log/trace_printer.hpp>
+#include <meta/safe_queue.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <memory>
-#include <queue>
+#include <mutex>
 #include <sstream>
+#include <thread>
 #include <vector>
 
 namespace meta
@@ -68,12 +70,12 @@ struct META_API TraceRecord
     /// The time when the trace got logged.
     TimeStamp time;
     /// The thread where the trace got logged
-    ThreadId threadId;
+    std::thread::id threadId;
     /// The logging level of the trace.
     LogLevel logLevel;
 
     /// Records a log now.
-    explicit TraceRecord(LogLevel level, ThreadId threadId, std::string_view function, std::string_view file, unsigned line, std::string_view message) :
+    explicit TraceRecord(LogLevel level, std::thread::id threadId, std::string_view function, std::string_view file, unsigned line, std::string_view message) :
         message(message),
         function(function),
         file(file),
@@ -98,11 +100,17 @@ public:
  };
 
 /// Trace manager.
-class META_API Tracer : public Task
+class META_API Tracer : public Job
 {
 public:
+
+    struct META_API Diagnostics
+    {
+        std::size_t bufferSize;
+        std::size_t bufferOverflowCount;
+    };
     /// Constructor.
-    explicit Tracer(TaskScheduler* taskScheduler);
+    explicit Tracer(ThreadPool* threadPool);
     /// Destructor.
     ~Tracer();
 
@@ -130,7 +138,7 @@ public:
     template <class PrinterClass>
     std::shared_ptr<PrinterClass> getPrinterAt(std::size_t index)
     {
-        UniqueLock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         auto printer = m_outputs.at(index);
         while (printer)
         {
@@ -151,13 +159,18 @@ public:
         return {};
     }
 
+    Diagnostics getDiagnostics() const
+    {
+        return {m_buffer.Capacity, m_bufferOverflowCount.load()};
+    }
+
 protected:
-    void runOverride() override;
-    void stopOverride() override;
+    void run() override;
+    void onCompleted() override;
 
     TracePrinterPtr getTracePrinterAt(std::size_t index)
     {
-        GuardLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         return m_outputs.at(index);
     }
     std::size_t getTracePrinterCount() const
@@ -168,12 +181,12 @@ protected:
 private:
     friend struct TracerPrivate;
 
-    Mutex m_mutex;
-    ConditionVariable m_signal;
+    std::mutex m_mutex;
     std::vector<TracePrinterPtr> m_outputs;
-    std::queue<TraceRecord> m_buffer;
-    TaskScheduler* m_taskScheduler = nullptr;
-    Atomic<LogLevel> m_logLevel = LogLevel::Debug;
+    CircularBuffer<std::shared_ptr<const TraceRecord>, 10u> m_buffer;
+    std::atomic_size_t m_bufferOverflowCount = 0u;
+    ThreadPool* m_threadPool = nullptr;
+    std::atomic<LogLevel> m_logLevel = LogLevel::Debug;
 };
 using TracerPtr = std::shared_ptr<Tracer>;
 

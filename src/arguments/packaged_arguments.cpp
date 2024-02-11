@@ -16,61 +16,11 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/arguments/argument_type.hpp>
-
-#include <cstdlib>
-#include <cstring>
-#include <cxxabi.h>
+#include <meta/arguments/argument.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 
 namespace meta
 {
-
-BadArgument::BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept :
-    message(nullptr, std::free)
-{
-    auto actual = ArgumentData::Type(actualType).getName();
-    auto expected = ArgumentData::Type(expectedType).getName();
-    auto msg = "Bad argument: actual type: " + actual + ", expected: " + expected;
-    message.reset(static_cast<char*>(std::calloc(msg.length(), sizeof(char))));
-    memcpy(message.get(), msg.c_str(), msg.length());
-}
-
-BadArgument::BadArgument(const BadArgument& other) noexcept :
-    message(nullptr, std::free)
-{
-    const auto* msg = other.what();
-    const auto msgLen = strlen(msg);
-    message.reset(static_cast<char*>(std::calloc(msgLen, sizeof(char))));
-    memcpy(message.get(), msg, msgLen);
-}
-
-const char* BadArgument::what() const noexcept
-{
-    if (!message)
-    {
-        return "Bad argument data.";
-    }
-    return message.get();
-}
-
-std::string ArgumentData::Type::getName() const
-{
-    int status = std::numeric_limits<int>::infinity();
-
-    std::unique_ptr<char, void(*)(void*)> res
-        {
-            abi::__cxa_demangle(type.name(), NULL, NULL, &status),
-            std::free
-        };
-
-    return (status == 0) ? res.get() : type.name();
-}
-
-ArgumentData::Type ArgumentData::getType() const
-{
-    return Type(type());
-}
-
 
 PackagedArguments::PackagedArguments(PackagedArguments&& other)
 {
@@ -99,7 +49,7 @@ PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
     return append(rhs);
 }
 
-PackagedArguments& PackagedArguments::operator+=(ArgumentData rhs)
+PackagedArguments& PackagedArguments::operator+=(Argument rhs)
 {
     m_pack.push_back(std::move(rhs));
     return *this;
@@ -111,7 +61,7 @@ PackagedArguments& PackagedArguments::append(const PackagedArguments& package)
     return *this;
 }
 
-ArgumentData PackagedArguments::get(std::size_t index) const
+Argument PackagedArguments::get(std::size_t index) const
 {
     return m_pack.at(index);
 }

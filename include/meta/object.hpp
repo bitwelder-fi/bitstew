@@ -16,12 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_METAOBJECT_HPP
-#define META_METAOBJECT_HPP
+#ifndef META_OBJECT_HPP
+#define META_OBJECT_HPP
 
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/metadata/meta_object.hpp>
 #include <pimpl.hpp>
 
@@ -31,8 +31,6 @@
 
 namespace meta
 {
-
-struct ObjectDescriptor;
 
 /// The base class of any object that defines a meta class.
 class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
@@ -54,12 +52,13 @@ public:
     /// fails if the extension is already added to the object.
     /// \param extension The extension to add to the object.
     /// \return If the extension gets added with success, returns \e true, otherwise \e false.
-    bool addExtension(ObjectExtensionPtr extension);
+    void addExtension(ObjectExtensionPtr extension);
 
     /// Removes an extension from the object. The extension gets destroyed if the object owns the
     /// extension. The method fails if the extension does not extend the object.
+    /// \param extension The extension to remove from the object.
     /// \return If the extension gets removed with success, returns \e true, otherwise \e false.
-    bool removeExtension(ObjectExtension& invokable);
+    bool removeExtension(ObjectExtension& extension);
 
     /// Tries to locate the extension with the name.
     /// \param name The extension name to locate.
@@ -72,9 +71,9 @@ public:
     /// \param args Optional, the arguments with which to invoke the extension.
     /// \return returns one of the following:
     ///         - If the extension is found, and has a return value, the return value of the extension.
-    ///         - If the extension is found, and has no return value, returns an invalid ArgumentData.
+    ///         - If the extension is found, and has no return value, returns an invalid Argument.
     ///         - If the extension is not found, returns nullopt.
-    std::optional<ArgumentData> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+    std::optional<Argument> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
 
 protected:
     /// Constructor.
@@ -84,8 +83,6 @@ private:
     using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
 
     ExtensionsMap m_extensions;
-    std::atomic_bool m_sealed = false;
-    friend struct ObjectDescriptor;
 };
 
 /// Invokes an extension of a object.
@@ -94,9 +91,9 @@ private:
 /// \param arguments The arguments with which to invoke the extension.
 /// \return returns one of the following:
 ///         - If the extension is found, and has a return value, the return value of the extension.
-///         - If the extension is found, and has no return value, returns an invalid ArgumentData.
+///         - If the extension is found, and has no return value, returns an invalid Argument.
 ///         - If the extension is not found, returns nullopt.
-META_API std::optional<ArgumentData> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
+META_API std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
 
 }
 

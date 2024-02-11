@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/object_extension.hpp>
+#include <meta/object_extensions/object_extension.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
 
@@ -28,12 +28,29 @@ ObjectExtension::ObjectExtension(std::string_view name) :
 {
 }
 
-ObjectPtr ObjectExtension::getOwner() const
+void ObjectExtension::attachToObject(Object& object)
 {
-    return m_owner.lock();
+    abortIfFail(!m_object.lock());
+
+    m_object = object.shared_from_this();
+    onAttached();
 }
 
-ArgumentData ObjectExtension::run(const PackagedArguments& arguments)
+void ObjectExtension::detachFromObject()
+{
+    abortIfFail(m_object.lock());
+    onDetached();
+
+    m_object.reset();
+}
+
+
+ObjectPtr ObjectExtension::getObject() const
+{
+    return m_object.lock();
+}
+
+Argument ObjectExtension::run(const PackagedArguments& arguments)
 {
     return runOverride(arguments);
 }

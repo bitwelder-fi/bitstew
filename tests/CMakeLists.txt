@@ -22,7 +22,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-
 # Now simply link against gtest or gtest_main as needed.
 add_executable(unittests ${SOURCES})
 target_link_libraries(unittests gtest_main gmock_main ${PROJECT_LIBRARY})

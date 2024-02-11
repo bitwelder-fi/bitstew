@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,8 +19,10 @@
 #include <assert.hpp>
 #include <meta/log/trace.hpp>
 #include <meta/log/trace_printer.hpp>
-#include <meta/tasks/task_scheduler.hpp>
-#include <meta/threading.hpp>
+#include <meta/tasks/thread_pool.hpp>
+
+#include <iostream>
+#include <thread>
 
 namespace meta
 {
@@ -34,26 +36,31 @@ struct TracerPrivate
             return;
         }
 
-        {
-            GuardLock lock(self.m_mutex);
-            self.m_buffer.push(trace);
-        }
-        self.m_signal.notify_one();
+        auto data = std::make_shared<const TraceRecord>(trace);
+        auto job = self.shared_from_this();
+        auto successfulReschedule = false;
 
-        if (self.m_taskScheduler)
+        while (!self.m_buffer.tryPush(data))
         {
-            const auto status = self.getStatus();
-            if (status == Task::Status::Deferred || status == Task::Status::Stopped)
+            if (self.m_threadPool)
             {
-                self.m_taskScheduler->tryQueueTask(self.shared_from_this());
+                successfulReschedule |= self.m_threadPool->tryScheduleJob(job);
             }
-            // self.m_taskScheduler->schedule();
-            return;
+            self.m_bufferOverflowCount++;
         }
 
-        // The thread pool is not active, run the task.
-        self.setStatus(Task::Status::Scheduled);
-        self.run();
+        if (self.m_threadPool)
+        {
+            if (!successfulReschedule)
+            {
+                self.m_threadPool->tryScheduleJob(job);
+            }
+        }
+        else
+        {
+            // The thread pool is not active, run the task.
+            async(job);
+        }
     }
 
     static void print(Tracer& self, const TraceRecord& trace)
@@ -67,8 +74,8 @@ struct TracerPrivate
 };
 
 
-Tracer::Tracer(TaskScheduler* taskScheduler) :
-    m_taskScheduler(taskScheduler)
+Tracer::Tracer(ThreadPool* threadPool) :
+    m_threadPool(threadPool)
 {
 }
 
@@ -77,25 +84,24 @@ Tracer::~Tracer()
 }
 
 // Consume the buffer when scheduled.
-void Tracer::runOverride()
+void Tracer::run()
 {
-    UniqueLock lock(m_mutex);
-    auto condition = [this]()
+    for (auto data = m_buffer.tryPop(); data; data = m_buffer.tryPop())
     {
-        return !this->m_buffer.empty() || isStopped();
-    };
-    m_signal.wait(lock, condition);
-    while (!m_buffer.empty())
-    {
-        auto trace = m_buffer.front();
-        m_buffer.pop();
-        TracerPrivate::print(*this, trace);
+        TracerPrivate::print(*this, *data);
     }
 }
 
-void Tracer::stopOverride()
+void Tracer::onCompleted()
 {
-    m_signal.notify_all();
+    if (m_buffer.wasEmpty())
+    {
+        return;
+    }
+    if (m_threadPool)
+    {
+        m_threadPool->tryScheduleJob(shared_from_this());
+    }
 }
 
 void Tracer::addTracePrinter(TracePrinterPtr output)
@@ -112,7 +118,7 @@ void Tracer::clearTracePrinters()
 
 
 LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const char* file, unsigned line) :
-    TraceRecord(level, ThisThread::get_id(), function, file, line, ""),
+    TraceRecord(level, std::this_thread::get_id(), function, file, line, ""),
     m_tracer(tracer)
 
 {

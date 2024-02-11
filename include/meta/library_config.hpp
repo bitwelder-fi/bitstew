@@ -20,7 +20,6 @@
 #define META_LIBRARY_CONFIG_HPP
 
 #include <meta/meta_api.hpp>
-#include <meta/threading.hpp>
 #include <meta/log/trace.hpp>
 
 namespace meta
@@ -30,11 +29,11 @@ namespace meta
 struct META_API LibraryArguments
 {
     /// The task scheduler arguments.
-    struct META_API TaskScheduler
+    struct META_API ThreadPool
     {
-        std::size_t threadCount = Thread::hardware_concurrency();
+        std::size_t threadCount = std::thread::hardware_concurrency();
         bool createThreadPool = true;
-    } taskScheduler;
+    } threadPool;
 
     struct META_API Tracer
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,87 +16,26 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_ARGUMENT_TYPE_HPP
-#define META_ARGUMENT_TYPE_HPP
+#ifndef META_PACKAGED_ARGUMENTS_HPP
+#define META_PACKAGED_ARGUMENTS_HPP
 
 #include <meta/meta_api.hpp>
+#include <meta/arguments/argument.hpp>
 #include <utils/function_traits.hpp>
 
-#include <any>
-#include <memory>
-#include <string>
+#include <array>
 #include <vector>
+
+#include <meta/detail/packaged_arguments.hpp>
 
 namespace meta
 {
-
-class META_API BadArgument : public std::exception
-{
-public:
-    BadArgument(const std::type_info& actualType, const std::type_info& expectedType) noexcept;
-    BadArgument(const BadArgument&) noexcept;
-    ~BadArgument() noexcept = default;
-    const char* what() const noexcept override;
-
-private:
-    std::unique_ptr<char, void(*)(void*)> message;
-};
-
-/// ArgumentData stores an argument passed on slot invocation.
-class META_API ArgumentData : public std::any
-{
-public:
-    /// Contains the type info of an argument.
-    struct META_API Type
-    {
-        Type(const std::type_info& tinfo) :
-            type(tinfo)
-        {
-        }
-        /// Returns the name of the type.
-        std::string getName() const;
-
-        /// Returns the type info of the type.
-        const std::type_info& getType() const
-        {
-            return type;
-        }
-
-    private:
-        const std::type_info& type;
-    };
-    /// Creates a default argument data, with no data stored.
-    ArgumentData() = default;
-
-    /// Creates an argument data with a value.
-    /// \tparam T The type of the value passed as argument.
-    /// \param value The value to store.
-    template <class T>
-    ArgumentData(T value) :
-        std::any(value),
-        m_isConst(std::is_const_v<T>)
-    {
-    }
-
-    /// Returns the type of the argument.
-    Type getType() const;
-
-    /// Cast operator, returns the data stored by an ArgumentData instance.
-    /// \tparam T The type of the casted value.
-    /// \return The value stored.
-    /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
-    template <class T>
-    operator T() const;
-
-private:
-    bool m_isConst = false;
-};
 
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {
     /// The argument container;
-    using Container = std::vector<ArgumentData>;
+    using Container = std::vector<Argument>;
     /// The iterator of the argument container.
     using Iterator = Container::const_iterator;
 
@@ -120,7 +59,7 @@ struct META_API PackagedArguments
     template <typename... Arguments>
     PackagedArguments(std::initializer_list<Arguments...> ilist)
     {
-        std::array<ArgumentData, sizeof... (Arguments)> aa = {ilist};
+        std::array<Argument, sizeof... (Arguments)> aa = {ilist};
         m_pack.reserve(aa.size());
         m_pack.insert(m_pack.end(), aa.begin(), aa.end());
     }
@@ -136,7 +75,7 @@ struct META_API PackagedArguments
     /// Adds an argument to a packaged arguments.
     /// \rhs The argument to add.
     /// \return The argument package.
-    PackagedArguments& operator+=(ArgumentData rhs);
+    PackagedArguments& operator+=(Argument rhs);
 
     /// Adds an argument to a packaged arguments.
     /// \tparam T The argument type to add.
@@ -145,7 +84,7 @@ struct META_API PackagedArguments
     template <typename T>
     PackagedArguments& operator+=(T&& rhs)
     {
-        *this += ArgumentData(std::forward<T>(rhs));
+        *this += Argument(std::forward<T>(rhs));
         return *this;
     }
 
@@ -157,7 +96,7 @@ struct META_API PackagedArguments
     /// Returns the argument data at index.
     /// \param index The index of the argument.
     /// \return The value of the argument at index.
-    ArgumentData get(std::size_t index) const;
+    Argument get(std::size_t index) const;
 
     /// Returns the size of the pack.
     std::size_t getSize() const;
@@ -199,8 +138,28 @@ private:
     Container m_pack;
 };
 
+template <typename... Arguments>
+PackagedArguments::PackagedArguments(Arguments&&... arguments)
+{
+    std::array<Argument, sizeof... (Arguments)> aa = {{Argument(arguments)...}};
+    m_pack.reserve(aa.size());
+    m_pack.insert(m_pack.end(), aa.begin(), aa.end());
+}
+
+template <typename T>
+T PackagedArguments::get(std::size_t index) const
+{
+    return m_pack.at(index);
+}
+
+
+template <class FunctionSignature>
+auto PackagedArguments::toTuple() const
+{
+    constexpr auto N = traits::function_traits<FunctionSignature>::signature::arity;
+    return detail::PackToTuple<FunctionSignature, PackagedArguments>::template convert<N, N>(*this);
+}
+
 } // namespace meta
 
-#include <meta/arguments/argument_type_impl.hpp>
-
-#endif // META_ARGUMENT_TYPE_HPP
+#endif // META_PACKAGED_ARGUMENTS_HPP

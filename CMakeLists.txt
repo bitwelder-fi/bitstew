@@ -7,7 +7,6 @@ set(PROJECT_LIBRARY meta_lib)
 
 option(BUILD_WITH_TESTS "Build unit tests." ON)
 option(BUILD_WITH_EXAMPLES "Build examples." OFF)
-option(BUILD_MULTI_THREADED "Build multi-threaded library." ON)
 option(CONFIG_ENABLE_LOGS "Build with tracing enabled." ON)
 
 set(CMAKE_CXX_STANDARD 20)

@@ -19,10 +19,11 @@
 #ifndef META_INVOKABLE_HPP
 #define META_INVOKABLE_HPP
 
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/forwards.hpp>
+#include <meta/log/trace.hpp>
 #include <meta/meta_api.hpp>
-#include <meta/object_extension.hpp>
+#include <meta/object_extensions/object_extension.hpp>
 
 #include <string_view>
 
@@ -39,7 +40,7 @@ namespace meta
 /// auto lambda = [](meta::ObjectExtension* self)
 /// {
 ///     // You can access the object through the extension.
-///     auto object = self->getOwner();
+///     auto object = self->getObject();
 /// };
 /// using LambdaExtension = meta::Invokable<decltype(lambda), lambda>;
 /// object->addExtension(LambdaExtension::create("lambda"));
@@ -55,7 +56,7 @@ protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    ArgumentData runOverride(const PackagedArguments& arguments);
+    Argument runOverride(const PackagedArguments& arguments);
 
     /// Constructor.
     explicit Invokable(std::string_view name);
@@ -73,8 +74,66 @@ public:
     }
 };
 
+
+// ----- Implementation -----
+template <class Function, Function function>
+Invokable<Function, function>::Invokable(std::string_view name) :
+    ObjectExtension(name)
+{
 }
 
-#include <meta/metadata/invokable_impl.hpp>
+template <class Function, Function function>
+PackagedArguments Invokable<Function, function>::repackageArguments(const PackagedArguments& arguments)
+{
+    auto result = PackagedArguments();
+    if constexpr (detail::enableRepack<Function>::packObject)
+    {
+        using ClassType = typename traits::function_traits<Function>::object;
+        if constexpr (std::is_base_of_v<MetaObject, ClassType>)
+        {
+            auto object = getObject();
+            if (object)
+            {
+                result += Argument(dynamic_cast<ClassType*>(object.get()));
+            }
+        }
+    }
+
+    if constexpr (detail::enableRepack<Function>::packSelf)
+    {
+        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
+        result += Argument(dynamic_cast<ZipType>(this));
+    }
+
+    result += arguments;
+    return result;
+}
+
+template <class Function, Function function>
+Argument Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
+{
+    try
+    {
+        auto args = repackageArguments(arguments);
+        auto pack = args.template toTuple<Function>();
+        if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
+        {
+            std::apply(function, pack);
+            return Argument();
+        }
+        else
+        {
+            auto result = std::apply(function, pack);
+            return Argument(result);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        META_LOG_ERROR(e.what());
+        return Argument();
+    }
+}
+
+}
 
 #endif // META_INVOKABLE_HPP

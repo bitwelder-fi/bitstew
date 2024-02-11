@@ -19,7 +19,7 @@
 #ifndef META_OBJECT_EXTENSION_HPP
 #define META_OBJECT_EXTENSION_HPP
 
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/metadata/meta_object.hpp>
@@ -47,13 +47,13 @@ public:
 
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
-    ObjectPtr getOwner() const;
+    ObjectPtr getObject() const;
 
     /// The entry point of an object extensions.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void ArgumentData.
-    ArgumentData run(const PackagedArguments& arguments = PackagedArguments());
+    ///         return a void Argument.
+    Argument run(const PackagedArguments& arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
     META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
@@ -72,8 +72,8 @@ protected:
     /// Override this to provide extension specific executor.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void ArgumentData.
-    virtual ArgumentData runOverride(const PackagedArguments& arguments) = 0;
+    ///         return a void Argument.
+    virtual Argument runOverride(const PackagedArguments& arguments) = 0;
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -90,8 +90,11 @@ private:
     DISABLE_COPY(ObjectExtension);
     DISABLE_MOVE(ObjectExtension);
 
-    ObjectWeakPtr m_owner;
-    friend struct ObjectDescriptor;
+    void attachToObject(Object& object);
+    void detachFromObject();
+
+    ObjectWeakPtr m_object;
+    friend class Object;
 };
 
 }

@@ -20,10 +20,11 @@
 #define META_METACLASS_HPP
 
 #include <assert.hpp>
-#include <meta/arguments/argument_type.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>

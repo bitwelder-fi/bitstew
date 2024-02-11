@@ -16,13 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_TRACE_OUTPUT_HPP
-#define META_TRACE_OUTPUT_HPP
+#ifndef META_TRACE_PRINTER_HPP
+#define META_TRACE_PRINTER_HPP
 
 #include <meta/meta.hpp>
 
 #include <memory>
-#include <string_view>
 
 namespace meta
 {
@@ -59,4 +58,4 @@ public:
 
 } // namespace meta
 
-#endif // META_TRACE_OUTPUT_HPP
+#endif // META_TRACE_PRINTER_HPP

@@ -21,7 +21,7 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extension.hpp>
+#include <meta/object_extensions/object_extension.hpp>
 
 namespace
 {
@@ -54,7 +54,7 @@ public:
     }
 
 protected:
-    meta::ArgumentData runOverride(const meta::PackagedArguments&) final
+    meta::Argument runOverride(const meta::PackagedArguments&) final
     {
         if (m_function)
         {
@@ -91,7 +91,7 @@ using ObjectExtensionTests = ObjectExtensionTestBase;
 
 TEST_F(ObjectExtensionTests, hasOwner)
 {
-    EXPECT_EQ(testObject, functor->getOwner());
+    EXPECT_EQ(testObject, functor->getObject());
     EXPECT_EQ(functor, testObject->findExtension("functor"));
 }
 
@@ -105,7 +105,7 @@ TEST_F(ObjectExtensionTests, changeFunction)
 {
     auto lambda = [](FunctionExtension& self)
     {
-        META_LOG_INFO(self.getOwner()->getName() << " " << self.getName() << " with custom lambda");
+        META_LOG_INFO(self.getObject()->getName() << " " << self.getName() << " with custom lambda");
     };
     functor->setFunction(lambda);
     EXPECT_CALL(*m_mockPrinter, log("test functor with custom lambda"));

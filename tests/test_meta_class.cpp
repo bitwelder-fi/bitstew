@@ -24,7 +24,7 @@
 #include <meta/object.hpp>
 #include <meta/library_config.hpp>
 
-#include <meta/metadata/invokable.hpp>
+#include <meta/object_extensions/invokable.hpp>
 
 #include "utils/domain_test_environment.hpp"
 
@@ -139,7 +139,7 @@ protected:
 
 void extendObjects(meta::ObjectExtension* self)
 {
-    META_LOG_INFO("extends " << self->getOwner()->getName());
+    META_LOG_INFO("extends " << self->getObject()->getName());
 }
 using ExtendObjectFunction = meta::Invokable<decltype(&extendObjects), extendObjects>;
 
@@ -394,7 +394,7 @@ TEST_F(ObjectFactoryTest, dynamicExtensions)
 
     auto lambda = [](meta::ObjectExtension* self)
     {
-        META_LOG_INFO(self->getOwner()->getName());
+        META_LOG_INFO(self->getObject()->getName());
     };
     using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
     dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass(), "lambda");

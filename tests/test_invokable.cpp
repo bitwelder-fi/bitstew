@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/metadata/invokable.hpp>
+#include <meta/object_extensions/invokable.hpp>
 #include <meta/object.hpp>
 
 namespace

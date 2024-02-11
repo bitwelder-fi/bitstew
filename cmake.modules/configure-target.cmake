@@ -7,10 +7,10 @@ macro(__common_config arg_target)
         target_compile_definitions(${arg_target} PUBLIC CONFIG_ENABLE_LOGS)
     endif()
 
-    if (BUILD_MULTI_THREADED)
-        target_compile_definitions(${arg_target} PUBLIC CONFIG_MULTI_THREADED)
-        target_compile_options(${arg_target} PUBLIC -pthread)
-    endif()
+    target_compile_options(${arg_target} PUBLIC -pthread)
+
+    find_package(Threads)
+    target_link_libraries(${arg_target} Threads::Threads)
 
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         target_compile_definitions(${arg_target} PUBLIC DEBUG)

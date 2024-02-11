@@ -136,7 +136,7 @@ public:
     void schedule(const std::chrono::nanoseconds& delay);
 
 private:
-    class Descriptor;
+    struct Descriptor;
     std::unique_ptr<Descriptor> descriptor;
 
     void runNextJob();

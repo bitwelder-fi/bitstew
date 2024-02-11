@@ -232,8 +232,8 @@ protected:
     void setStatus(Status status);
 
 private:
-    struct JobPrivate;
-    std::unique_ptr<JobPrivate> descriptor;
+    struct Descriptor;
+    std::unique_ptr<Descriptor> descriptor;
 };
 
 

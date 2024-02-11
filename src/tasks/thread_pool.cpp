@@ -30,9 +30,8 @@
 namespace meta
 {
 
-class ThreadPool::Descriptor
+struct ThreadPool::Descriptor
 {
-public:
     // The executor threads of the pool.
     std::vector<std::thread> threads;
     // The scheduled jobs.
@@ -138,11 +137,6 @@ void ThreadPool::start()
         descriptor->threads.push_back(std::thread(&Descriptor::threadMain, this));
     }
     descriptor->isRunning = true;
-    // Wait till the threads are all up and running.
-    while (descriptor->idleThreadCount < descriptor->threadCount)
-    {
-        schedule(std::chrono::milliseconds(10));
-    }
 }
 
 void ThreadPool::stop()

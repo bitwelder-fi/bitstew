@@ -24,7 +24,7 @@
 namespace meta
 {
 
-struct Job::JobPrivate
+struct Job::Descriptor
 {
     // The worker task.
     std::packaged_task<void(Job*)> worker;
@@ -46,8 +46,8 @@ struct Job::JobPrivate
         }
     }
 
-    explicit JobPrivate() :
-        worker(&JobPrivate::main)
+    explicit Descriptor() :
+        worker(&Descriptor::main)
     {
     }
 
@@ -87,7 +87,7 @@ struct Job::JobPrivate
 
 
 Job::Job() :
-    descriptor(std::make_unique<JobPrivate>())
+    descriptor(std::make_unique<Descriptor>())
 {
 }
 

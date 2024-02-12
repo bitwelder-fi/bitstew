@@ -70,12 +70,11 @@ public:
 
     /// Creates an object of the class to which the meta class is connected.
     /// \param name The name of the meta object created.
-    /// \param arguments The arguments with which to create the object.
     template <class ClassType = MetaObject>
-    std::shared_ptr<ClassType> create(std::string_view name, const PackagedArguments& arguments = PackagedArguments()) const
+    std::shared_ptr<ClassType> create(std::string_view name) const
     {
         abortIfFail(m_descriptor);
-        auto result = std::dynamic_pointer_cast<ClassType>(m_descriptor->create(name, arguments));
+        auto result = std::dynamic_pointer_cast<ClassType>(m_descriptor->create(name));
         if constexpr (std::is_base_of_v<Object, ClassType>)
         {
             initializeInstance(result);
@@ -188,7 +187,7 @@ protected:
         {
         }
         virtual ~DescriptorInterface() = default;
-        virtual MetaObjectPtr create(std::string_view /*name*/, const PackagedArguments& /*arguments*/) const
+        virtual MetaObjectPtr create(std::string_view /*name*/) const
         {
             return {};
         }

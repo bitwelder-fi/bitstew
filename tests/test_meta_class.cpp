@@ -103,7 +103,7 @@ public:
     {
     };
 
-    static std::shared_ptr<Object> create(std::string_view name, const meta::PackagedArguments&)
+    static std::shared_ptr<Object> create(std::string_view name)
     {
         return std::shared_ptr<Object>(new Object(name));
     }
@@ -125,7 +125,7 @@ public:
         META_NAMED_EXTENSION(MetaGetName, "getName");
     };
 
-    static std::shared_ptr<Object> create(std::string_view name, const meta::PackagedArguments&)
+    static std::shared_ptr<Object> create(std::string_view name)
     {
         return std::shared_ptr<Object>(new ExtendedObject(name));
     }

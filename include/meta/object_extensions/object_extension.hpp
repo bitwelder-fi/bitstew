@@ -60,11 +60,6 @@ public:
     {
     };
 
-    static ObjectExtensionPtr create(std::string_view, const PackagedArguments&)
-    {
-        return {};
-    }
-
 protected:
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);

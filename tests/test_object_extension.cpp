@@ -43,7 +43,7 @@ public:
     {
     };
 
-    static auto create(std::string_view name, const meta::PackagedArguments& = meta::PackagedArguments())
+    static auto create(std::string_view name)
     {
         return std::make_shared<FunctionExtension>(name);
     }

@@ -33,7 +33,7 @@ Object::~Object()
 }
 
 
-ObjectPtr Object::create(std::string_view name, const PackagedArguments&)
+ObjectPtr Object::create(std::string_view name)
 {
     return ObjectPtr(new Object(name));
 }

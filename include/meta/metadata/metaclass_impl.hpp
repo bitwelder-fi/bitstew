@@ -39,7 +39,7 @@ protected:
             sealed = true;
         }
 
-        MetaObjectPtr create(std::string_view name, const PackagedArguments& arguments) const override
+        MetaObjectPtr create(std::string_view name) const override
         {
             if constexpr (std::is_abstract_v<DeclaredClass>)
             {
@@ -47,7 +47,7 @@ protected:
             }
             else
             {
-                return DeclaredClass::create(name, arguments);
+                return DeclaredClass::create(name);
             }
         }
 

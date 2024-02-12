@@ -68,7 +68,7 @@ public:
 
     /// Creates an instance of the Invokable type.
     /// \param name The name of the invokable.
-    static auto create(std::string_view name, const PackagedArguments& = PackagedArguments())
+    static auto create(std::string_view name)
     {
         return std::shared_ptr<SelfType>(new SelfType(name));
     }

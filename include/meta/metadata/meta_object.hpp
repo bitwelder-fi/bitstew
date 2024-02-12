@@ -43,7 +43,7 @@ public:
     {
     };
 
-    static auto create(std::string_view name, const PackagedArguments&)
+    static auto create(std::string_view name)
     {
         return MetaObjectPtr(new MetaObject(name));
     }

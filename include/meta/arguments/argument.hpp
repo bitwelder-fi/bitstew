@@ -23,6 +23,7 @@
 
 #include <any>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace meta
@@ -91,6 +92,7 @@ private:
     bool m_isConst = false;
 };
 
+using ReturnValue = std::optional<Argument>;
 
 // ----- Implementation -----
 template <typename T>

@@ -54,7 +54,7 @@ public:
     }
 
 protected:
-    meta::Argument runOverride(const meta::PackagedArguments&) final
+    meta::ReturnValue runOverride(const meta::PackagedArguments&) final
     {
         if (m_function)
         {

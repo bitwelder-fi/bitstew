@@ -116,7 +116,7 @@ protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    Argument runOverride(const PackagedArguments& arguments) final;
+    ReturnValue runOverride(const PackagedArguments& arguments) final;
 
     /// Constructor.
     explicit Invokable(std::string_view name);
@@ -170,7 +170,7 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
 }
 
 template <class Function, Function function>
-Argument Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
+ReturnValue Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
 {
     try
     {
@@ -190,7 +190,7 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
     catch (const std::exception& e)
     {
         META_LOG_ERROR(e.what());
-        return Argument();
+        return std::nullopt;
     }
 }
 

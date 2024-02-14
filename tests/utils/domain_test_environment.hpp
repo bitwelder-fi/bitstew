@@ -45,6 +45,12 @@ protected:
 
     void TearDown() override
     {
+        // Ensure the trace logs are flushed.
+        auto tracer = meta::Library::instance().tracer();
+        if (tracer->isBusy())
+        {
+            tracer->wait();
+        }
         meta::Library::instance().uninitialize();
     }
 };

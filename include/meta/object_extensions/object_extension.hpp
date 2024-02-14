@@ -26,6 +26,8 @@
 
 #include <pimpl.hpp>
 
+#include <vector>
+
 namespace meta
 {
 
@@ -47,9 +49,6 @@ namespace meta
 class META_API ObjectExtension : public MetaObject, public std::enable_shared_from_this<ObjectExtension>
 {
 public:
-    /// Destructor.
-    virtual ~ObjectExtension() = default;
-
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
     ObjectPtr getObject() const;
@@ -57,23 +56,67 @@ public:
     /// The entry point of an object extensions.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void Argument.
-    Argument run(const PackagedArguments& arguments = PackagedArguments());
+    ///         return a void Argument. On failure, returns a \e nullopt
+    ReturnValue run(const PackagedArguments& arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
     META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
     {
     };
 
+    /// Adds a connection to an object extension. The method fails if the slot of the connection is
+    /// not the extension itself, or if the connection has already been added to the object extension.
+    /// \param connection The connectiomn to add to the extension.
+    void addConnection(const Connection& connection);
+
+    /// Removes a connection from an object extension. The method fails if the slot of the connection is
+    /// not the extension itself, or if the connection is not found in the object extension.
+    /// \param connection The connectiomn to add to the extension.
+    void removeConnection(const Connection& connection);
+
 protected:
+    /// The container of the connections.
+    using ConnectionContainer = std::vector<Connection>;
+
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
 
     /// Override this to provide extension specific executor.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void Argument.
-    virtual Argument runOverride(const PackagedArguments& arguments) = 0;
+    ///         return a void Argument. On failure, implementations are expected to return \e nullopt.
+    virtual ReturnValue runOverride(const PackagedArguments& arguments) = 0;
+
+    /// Returns the iterator to the connection.
+    /// \param connection The connection to look for.
+    /// \return If the connection is valid, and is found, returns the iterator to the connection. On
+    ///         failure, returns the end iterator of the connection container.
+    ConnectionContainer::iterator findConnection(const Connection& connecton);
+
+    /// Removes the invalid connections from the container.
+    void compactConnections();
+
+    /// Returns the begin iterator of the connections container.
+    /// \return The begin iterator of the connections container.
+    inline ConnectionContainer::iterator beginConnections()
+    {
+        return m_connections.begin();
+    }
+    inline ConnectionContainer::const_iterator beginConnections() const
+    {
+        return m_connections.begin();
+    }
+
+    /// Returns the begin iterator of the connections container.
+    /// \return The begin iterator of the connections container.
+    inline ConnectionContainer::iterator endConnections()
+    {
+        return m_connections.end();
+    }
+    inline ConnectionContainer::const_iterator endConnections() const
+    {
+        return m_connections.end();
+    }
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -93,8 +136,45 @@ private:
     void attachToObject(Object& object);
     void detachFromObject();
 
+    ConnectionContainer m_connections;
     ObjectWeakPtr m_object;
     friend class Object;
+};
+
+/// The %Connection defines a connection token between two object extensions. Signal uses this to
+/// identify a slot connected to a signal. The connection object is copyable-movable.
+struct META_API Connection
+{
+    /// Default constructor.
+    explicit Connection() = default;
+    /// Constructor, creates a connection with a source and a target.
+    explicit Connection(ObjectExtension& signal, ObjectExtension& slot);
+
+    /// Returns whether the connection is valid. A connection is valid if both source and target are
+    /// defined.
+    /// \return If the connection is valid, returns \e true, otherwise \e false.
+    bool isValid() const;
+
+    /// Returns the source object extension of the connection.
+    /// \return The source object extension of a valid connection, or an invalid object extension if
+    ///         the connection is invalid.
+    ObjectExtensionPtr getSource() const;
+
+    /// Returns the target object extension of the connection.
+    /// \return The target object extension of a valid connection, or an invalid object extension if
+    ///         the connection is invalid.
+    ObjectExtensionPtr getTarget() const;
+
+    /// Comparator operators.
+    friend bool operator==(const Connection& lhs, const Connection& rhs);
+    friend bool operator!=(const Connection& lhs, const Connection& rhs);
+    friend bool operator<(const Connection& lhs, const Connection& rhs);
+    friend bool operator>(const Connection& lhs, const Connection& rhs);
+
+private:
+    ObjectExtensionWeakPtr m_signal;
+    ObjectExtensionWeakPtr m_slot;
+    std::size_t m_id = 0;
 };
 
 }

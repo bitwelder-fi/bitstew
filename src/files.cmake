@@ -7,6 +7,7 @@ metadata/factory.cpp
 metadata/metaclass.cpp
 object.cpp
 object_extensions/object_extension.cpp
+object_extensions/signal.cpp
 tasks/job.cpp
 tasks/thread_pool.cpp
 template.cpp
@@ -28,6 +29,7 @@ template.cpp
 ../include/meta/object.hpp
 ../include/meta/object_extensions/invokable.hpp
 ../include/meta/object_extensions/object_extension.hpp
+../include/meta/object_extensions/signal.hpp
 ../include/meta/safe_queue.hpp
 ../include/meta/tasks/job.hpp
 ../include/meta/tasks/thread_pool.hpp

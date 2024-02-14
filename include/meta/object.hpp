@@ -26,7 +26,6 @@
 #include <pimpl.hpp>
 
 #include <memory>
-#include <optional>
 #include <unordered_map>
 
 namespace meta
@@ -72,7 +71,7 @@ public:
     ///         - If the extension is found, and has a return value, the return value of the extension.
     ///         - If the extension is found, and has no return value, returns an invalid Argument.
     ///         - If the extension is not found, returns nullopt.
-    std::optional<Argument> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+    ReturnValue invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
 
 protected:
     /// Constructor.
@@ -95,7 +94,7 @@ private:
 ///         - If the extension is found, and has a return value, the return value of the extension.
 ///         - If the extension is found, and has no return value, returns an invalid Argument.
 ///         - If the extension is not found, returns nullopt.
-META_API std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
+META_API ReturnValue invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
 
 }
 

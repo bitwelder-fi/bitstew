@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "test_meta_class_fixtures.hpp"
+#include "utils/domain_test_environment.hpp"
 
 namespace
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 bitWelder
+ * Copyright (C) 2023 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -24,12 +24,10 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
-#include <meta/object.hpp>
 #include <meta/library_config.hpp>
-
+#include <meta/object.hpp>
 #include <meta/object_extensions/invokable.hpp>
-
-#include "utils/domain_test_environment.hpp"
+#include <utils/scope_value.hpp>
 
 
 class AbstractClass : public meta::Object
@@ -116,6 +114,7 @@ protected:
     }
 };
 
+
 class ExtendedObject : public Object
 {
 public:
@@ -146,10 +145,9 @@ public:
 
     class DynamicExtendedObject : public DynamicObject::StaticMetaClass
     {
-        MetaName _name{*this, "DynamicExtendedObject"};
-
     public:
-        explicit DynamicExtendedObject()
+        explicit DynamicExtendedObject(std::string_view className) :
+            StaticMetaClass(className)
         {
             m_descriptor->sealed = false;
         }
@@ -166,7 +164,7 @@ public:
 
     static meta::MetaClass* getExtendableMetaClass()
     {
-        static DynamicExtendedObject dynamicClass;
+        static DynamicExtendedObject dynamicClass("DynamicExtendedObject");
         return &dynamicClass;
     }
 

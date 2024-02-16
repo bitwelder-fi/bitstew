@@ -25,17 +25,18 @@ namespace meta
 namespace detail
 {
 
-template <class DeclaredClass, class... SuperClasses>
+template <class MetaRegistrars, class DeclaredClass, class... SuperClasses>
 class META_TEMPLATE_API MetaClassImpl : public MetaClass
 {
-    using SelfType = MetaClassImpl<DeclaredClass, SuperClasses...>;
+    using SelfType = MetaClassImpl<MetaRegistrars, DeclaredClass, SuperClasses...>;
 
 protected:
     static constexpr auto arity = sizeof... (SuperClasses);
 
     struct META_API MetaClassDescriptor : DescriptorInterface
     {
-        explicit MetaClassDescriptor()
+        explicit MetaClassDescriptor(std::string_view metaClassName) :
+            DescriptorInterface(metaClassName)
         {
         }
 
@@ -109,10 +110,13 @@ protected:
     };
 
 public:
-    explicit MetaClassImpl() :
-        MetaClass(std::make_unique<MetaClassDescriptor>())
+    explicit MetaClassImpl(std::string_view metaClassName) :
+        MetaClass(std::make_unique<MetaClassDescriptor>(metaClassName))
     {
-        m_descriptor->sealed = true;
+        static_assert(std::is_base_of_v<Registrars, MetaRegistrars>, "MetaRegistrars template argument must derive from meta::Registrars.");
+        MetaRegistrars registrars;
+        registrars.apply(*this);
+        this->m_descriptor->sealed = true;
     }
 };
 

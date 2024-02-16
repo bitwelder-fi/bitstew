@@ -77,9 +77,8 @@ protected:
     explicit Invokable(std::string_view name);
 
 public:
-    AUTO_META_CLASS(SelfType, ObjectExtension)
+    AUTO_META_CLASS(Function, SelfType, ObjectExtension)
     {
-        MetaClass::MetaName _n{*this, Argument::Type(typeid(Function)).getName()};
     };
 
     /// Creates an instance of the Invokable type.
@@ -158,7 +157,7 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
 /// \param InvokableName The static name of the invokable.
 /// \param Funtion The address of the function, method or the lambda.
 #define DECLARE_INVOKABLE(InvokableClass, InvokableName, Function)                  \
-struct InvokableClass : public meta::Invokable<decltype(Function), Function>        \
+struct META_API InvokableClass : public meta::Invokable<decltype(Function), Function>        \
 {                                                                                   \
     using Base = meta::Invokable<decltype(Function), Function>;                     \
     META_CLASS(InvokableName, InvokableClass, Base)                                 \

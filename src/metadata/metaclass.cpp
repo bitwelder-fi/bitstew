@@ -37,16 +37,28 @@ MetaObject::~MetaObject()
 }
 
 
-MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta)
+Registrars::Extension::Extension(Registrars& self, const MetaClass* extension)
 {
-    utils::ScopeValue<bool> unlock(self.m_descriptor->sealed, false);
-    self.addMetaExtension(extensionMeta);
+    auto registrar = [extension](MetaClass& metaClass)
+    {
+        metaClass.addMetaExtension(*extension);
+    };
+    self.m_registrars.push_back(registrar);
 }
 
-MetaClass::MetaName::MetaName(MetaClass& self, std::string_view name)
+void Registrars::apply(MetaClass& metaClass)
 {
-    self.m_descriptor->name = ensureValidMetaName(std::string(name));
-    abortIfFail(isValidMetaName(self.m_descriptor->name));
+    for (auto& registrar : m_registrars)
+    {
+        registrar(metaClass);
+    }
+}
+
+
+MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta)
+{
+    // utils::ScopeValue<bool> unlock(self.m_descriptor->sealed, false);
+    self.addMetaExtension(extensionMeta);
 }
 
 

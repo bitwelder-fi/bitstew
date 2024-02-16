@@ -33,7 +33,52 @@
 namespace meta
 {
 
-/// Defines the metaclass of an associated class.
+/// Defines the metaclass of an associated class. The meta class provides type inspection mechanism
+/// for your classes. You can use the meta information of a class to provide dynamic behavior through
+/// scripting.
+///
+/// Use META_CLASS() macro in the public body of your class to declare the meta class. The macro declares
+/// methods for both static and dynamic meta class. The name of the meta class identifies the class
+/// in interoperability between scripting and native code.
+///
+/// Use STATIC_META_CLASS() macro in classes which do not derive from MetaObject. These classes only
+/// have static meta data.
+///
+/// Use AUTO_META_CLASS() macro declare meta classes whose meta name gets generated automatically at
+/// compile time. The name of the meta class is generated from the RTTI name of the type. Use these
+/// macros when you don't need to know the meta class name in your application.
+///
+/// Use META_EXTENSION() macro to add the meta class of object extensions. Use the macro inside the
+/// body of the meta class declaration. Example:
+/// \code
+///
+/// class RunMe : public meta::ObjectExtension
+/// {
+/// public:
+///     META_CLASS("runMe", RunMe, meta::ObjectExtension)
+///     {
+///     };
+///
+///     static auto create(stdL::string_view)
+///     {
+///         return std::make_shared<RunMe>();
+///     }
+/// protected:
+///     explicit RunMe() :
+///         meta::ObjectExtension(getStaticMetaClass()->getname())
+///     {
+///     }
+/// };
+/// class MyObject : public meta::Object
+/// {
+/// public:
+///     META_CLASS("MyObject", MyObject, meta::Object)
+///     {
+///         META_EXTENSION(RunMe);
+///     };
+/// };
+/// \endcode
+///
 class META_API MetaClass
 {
     DISABLE_COPY(MetaClass);
@@ -48,7 +93,14 @@ public:
     /// Registers an object extension metaclass to a static meta class.
     struct META_API MetaExtensionRegistrar
     {
-        explicit MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta, std::string_view name = std::string_view());
+        explicit MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta);
+    };
+
+    /// Sets a name for the metaclass.
+    struct META_API MetaName
+    {
+        /// Sets a name for the metaclass.
+        explicit MetaName(MetaClass& self, std::string_view name);
     };
 
     struct META_API EnableDynamic
@@ -130,12 +182,15 @@ public:
 
     /// Adds the meta class of an object extension to this meta class. The method fails if either this
     /// or the meta class of the object extension is invalid, the meta class is not a meta class of
-    /// an object extension, it is already registered, or the name specified is not a valid metaname,
-    /// or there is an object extension meta class registered with the name.
+    /// an object extension, or there is an object extension meta class registered with the same name.
     /// \param extensionMeta The meta class of the object extension to add.
-    /// \param name Optional, the metaname under which to register the meta class. You must specify
-    ///        a metaname for the stub meta classes.
-    void addMetaExtension(const MetaClass& extensionMeta, std::string_view name = std::string_view());
+    void addMetaExtension(const MetaClass& extensionMeta);
+
+    template <class ClassType>
+    void addMetaExtension()
+    {
+        addMetaExtension(ClassType::getStaticMetaClass());
+    }
 
     /// Tries to add the meta class of a registered object extension to this meta class. The meta class
     /// must be registered to Meta library under the metaname passed as argument.
@@ -182,10 +237,6 @@ protected:
         /// Whether the metaclass is sealed.
         bool sealed = false;
 
-        explicit DescriptorInterface(std::string_view name) :
-            name(name)
-        {
-        }
         virtual ~DescriptorInterface() = default;
         virtual MetaObjectPtr create(std::string_view /*name*/) const
         {
@@ -217,7 +268,6 @@ protected:
 
     /// The descriptor of the metaclass.
     DescriptorPtr m_descriptor;
-    friend class ObjectFactory;
 
 private:
     void initializeInstance(ObjectPtr instance) const;
@@ -231,26 +281,49 @@ private:
 /// Defines the metadata of a class. The first argument is the name of the metaclass, followed by the
 /// class for which you declare the meta data. The rest of the arguments should refer to the base
 /// classes, preferrably in the order of their declaration.
-#define META_CLASS(ClassName, ...)                                              \
-struct MetaClassType;                                                           \
-static const meta::MetaClass* getStaticMetaClass()                              \
-{                                                                               \
-    static MetaClassType metaClass;                                             \
-    return &metaClass;                                                          \
-}                                                                               \
-static inline constexpr char __MetaName[]{ClassName};                           \
-using MetaClassTypeBase = meta::detail::MetaClassImpl<__MetaName, __VA_ARGS__>; \
+#define META_CLASS(ClassName, ...)                                  \
+struct MetaClassType;                                               \
+static const meta::MetaClass* getStaticMetaClass()                  \
+{                                                                   \
+    static MetaClassType metaClass;                                 \
+    static MetaClassType::MetaName metaName(metaClass, ClassName);  \
+    return &metaClass;                                              \
+}                                                                   \
+virtual const meta::MetaClass* getDynamicMetaClass() const override \
+{                                                                   \
+    return getStaticMetaClass();                                    \
+}                                                                   \
+using MetaClassTypeBase = meta::detail::MetaClassImpl<__VA_ARGS__>; \
 struct META_API MetaClassType : MetaClassTypeBase
 
 
-#define STUB_META_CLASS(DeclaredClass, ...)                                         \
+/// Defines the static metadata of a class. The first argument is the name of the metaclass, followed
+/// by the class for which you declare the meta data. The rest of the arguments should refer to the
+/// base classes, preferrably in the order of their declaration. The metadata has no dynamic meta class.
+#define STATIC_META_CLASS(ClassName, ...)                           \
+struct MetaClassType;                                               \
+static const meta::MetaClass* getStaticMetaClass()                  \
+{                                                                   \
+    static MetaClassType metaClass;                                 \
+    static MetaClassType::MetaName metaName(metaClass, ClassName);  \
+    return &metaClass;                                              \
+}                                                                   \
+using MetaClassTypeBase = meta::detail::MetaClassImpl<__VA_ARGS__>; \
+struct META_API MetaClassType : MetaClassTypeBase
+
+
+#define AUTO_META_CLASS(DeclaredClass, ...)                                         \
 struct MetaClassType;                                                               \
 static const meta::MetaClass* getStaticMetaClass()                                  \
 {                                                                                   \
     static MetaClassType metaClass;                                                 \
     return &metaClass;                                                              \
 }                                                                                   \
-using MetaClassTypeBase = meta::detail::StubMetaClass<DeclaredClass, __VA_ARGS__>;  \
+virtual const meta::MetaClass* getDynamicMetaClass() const override                 \
+{                                                                                   \
+    return getStaticMetaClass();                                                    \
+}                                                                                   \
+using MetaClassTypeBase = meta::detail::MetaClassImpl<DeclaredClass, __VA_ARGS__>;  \
 struct META_API MetaClassType : MetaClassTypeBase
 
 /// Declares the meta class to have its dynamic copy.
@@ -258,8 +331,5 @@ struct META_API MetaClassType : MetaClassTypeBase
 
 #define META_EXTENSION(Extension) \
 MetaExtensionRegistrar __##Extension {*this, *(Extension::getStaticMetaClass())}
-
-#define META_NAMED_EXTENSION(Extension, Name) \
-MetaExtensionRegistrar __##Extension {*this, *(Extension::getStaticMetaClass()), Name}
 
 #endif // META_METACLASS_HPP

@@ -36,12 +36,26 @@ MetaObject::~MetaObject()
 {
 }
 
+const MetaClass* MetaObject::getStaticMetaClass()
+{
+    static detail::MetaClassImpl<MetaObject> metaClass;
+    static MetaClass::MetaName name(metaClass, "meta.MetaObject");
+    return &metaClass;
+}
 
-MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta, std::string_view name)
+
+MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta)
 {
     utils::ScopeValue<bool> unlock(self.m_descriptor->sealed, false);
-    self.addMetaExtension(extensionMeta, name);
+    self.addMetaExtension(extensionMeta);
 }
+
+MetaClass::MetaName::MetaName(MetaClass& self, std::string_view name)
+{
+    self.m_descriptor->name = ensureValidMetaName(std::string(name));
+    abortIfFail(isValidMetaName(self.m_descriptor->name));
+}
+
 
 
 void MetaClass::initializeInstance(ObjectPtr instance) const
@@ -99,24 +113,14 @@ bool MetaClass::isDerivedFrom(const MetaClass& metaClass) const
     return m_descriptor->hasSuperClass(metaClass);
 }
 
-void MetaClass::addMetaExtension(const MetaClass& extensionMeta, std::string_view name)
+void MetaClass::addMetaExtension(const MetaClass& extensionMeta)
 {
     abortIfFail(m_descriptor && !m_descriptor->sealed && extensionMeta.m_descriptor && extensionMeta.m_descriptor->isExtension());
 
-    if (name.empty())
-    {
-        // The metaExtension must have a name.
-        abortIfFail(!extensionMeta.getName().empty());
-        auto result = m_descriptor->extensions.insert({extensionMeta.getName(), &extensionMeta});
-        abortIfFail(result.second);
-    }
-    else
-    {
-        abortIfFail(isValidMetaName(name));
-        auto result = m_descriptor->extensions.insert({name, &extensionMeta});
-        abortIfFail(result.second);
-        extensionMeta.m_descriptor->name = name;
-    }
+    // The metaExtension must have a name.
+    abortIfFail(!extensionMeta.getName().empty());
+    auto result = m_descriptor->extensions.insert({extensionMeta.getName(), &extensionMeta});
+    abortIfFail(result.second);
 }
 
 bool MetaClass::tryAddExtension(std::string_view metaName)
@@ -140,7 +144,6 @@ bool MetaClass::tryAddExtension(std::string_view metaName)
 const MetaClass* MetaClass::findMetaExtension(std::string_view name) const
 {
     abortIfFail(isValidMetaName(name) && m_descriptor);
-
     auto it = m_descriptor->extensions.find(name);
     return it != m_descriptor->extensions.end() ? it->second : nullptr;
 }

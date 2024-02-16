@@ -80,45 +80,13 @@ bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
     return result.second;
 }
 
-bool ObjectFactory::registerMetaClass(std::string_view name, const MetaClass* metaClass)
+bool ObjectFactory::overrideMetaClass(const MetaClass* metaClass)
 {
     abortIfFail(metaClass);
-
-    if (!isValidMetaName(name))
-    {
-        META_LOG_ERROR("Invalid meta class name: " << metaClass->getName());
-        return false;
-    }
-
-    if (findMetaClass(name))
-    {
-        META_LOG_ERROR("Meta class with name found: " << name);
-        return false;
-    }
-
-    auto result = m_registry.insert(std::make_pair(name, metaClass));
-    ObjectFactoryPrivate::deepRegister(*this, metaClass);
-    if (result.second)
-    {
-        metaClass->m_descriptor->name = name;
-    }
-    return result.second;
-}
-
-
-bool ObjectFactory::overrideMetaClass(std::string_view name, const MetaClass* metaClass)
-{
-    abortIfFail(metaClass);
-    if (!isValidMetaName(name))
-    {
-        META_LOG_ERROR("Invalid meta class name: " << name);
-        return false;
-    }
-    auto it = m_registry.find(name);
+    auto it = m_registry.find(metaClass->getName());
     if (it != m_registry.end())
     {
         it->second = metaClass;
-        metaClass->m_descriptor->name = name;
         ObjectFactoryPrivate::deepOverride(*this, metaClass);
         return true;
     }

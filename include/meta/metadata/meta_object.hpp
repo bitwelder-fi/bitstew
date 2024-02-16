@@ -39,11 +39,16 @@ public:
         return m_name;
     }
 
-    META_CLASS("meta.MetaObject", MetaObject)
-    {
-    };
+    /// Returns the static meta class of the meta object.
+    static const MetaClass* getStaticMetaClass();
 
-    static auto create(std::string_view name)
+    /// Returns the dynamic meta class of the meta object.
+    virtual const MetaClass* getDynamicMetaClass() const
+    {
+        return getStaticMetaClass();
+    }
+
+    static MetaObjectPtr create(std::string_view name)
     {
         return MetaObjectPtr(new MetaObject(name));
     }

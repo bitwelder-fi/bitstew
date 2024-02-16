@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,28 +26,29 @@ namespace detail
 {
 
 template <class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API StubMetaClass : public MetaClass
+class META_TEMPLATE_API MetaClassImpl : public MetaClass
 {
+    using SelfType = MetaClassImpl<DeclaredClass, SuperClasses...>;
+
 protected:
     static constexpr auto arity = sizeof... (SuperClasses);
 
-    struct META_API StubDescriptor : DescriptorInterface
+    struct META_API MetaClassDescriptor : DescriptorInterface
     {
-        explicit StubDescriptor(std::string_view name) :
-            DescriptorInterface(name)
+        explicit MetaClassDescriptor()
         {
             sealed = true;
         }
 
         MetaObjectPtr create(std::string_view name) const override
         {
-            if constexpr (std::is_abstract_v<DeclaredClass>)
+            if constexpr (!std::is_abstract_v<DeclaredClass> && std::is_base_of_v<MetaObject, DeclaredClass>)
             {
-                return {};
+                return DeclaredClass::create(name);
             }
             else
             {
-                return DeclaredClass::create(name);
+                return {};
             }
         }
 
@@ -108,38 +109,13 @@ protected:
         }
     };
 
-    explicit StubMetaClass(DescriptorPtr descriptor) :
-        MetaClass(std::move(descriptor))
-    {
-    }
-
-public:
-    explicit StubMetaClass() :
-        StubMetaClass(std::make_unique<StubDescriptor>(""))
-    {        
-    }
-};
-
-template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API MetaClassImpl : public StubMetaClass<DeclaredClass, SuperClasses...>
-{
-    using BaseMetaClass = StubMetaClass<DeclaredClass, SuperClasses...>;
-
-protected:
-    struct META_API MetaDescriptor : BaseMetaClass::StubDescriptor
-    {
-        explicit MetaDescriptor(std::string_view name) :
-            BaseMetaClass::StubDescriptor(name)
-        {
-        }
-    };
-
 public:
     explicit MetaClassImpl() :
-        BaseMetaClass(std::make_unique<MetaDescriptor>(MetaClassName))
+        MetaClass(std::make_unique<MetaClassDescriptor>())
     {
     }
 };
+
 
 } // detail
 

@@ -53,7 +53,7 @@ public:
     virtual ~Interface() = default;
     virtual void text() = 0;
 
-    META_CLASS("Interface", Interface)
+    STATIC_META_CLASS("Interface", Interface)
     {
     };
 };
@@ -61,7 +61,7 @@ public:
 class OverrideClass : public meta::Object, public Interface
 {
 public:
-    META_CLASS("OverrideClass", OverrideClass, meta::Object, Interface)
+    META_CLASS("AbstractClass", OverrideClass, meta::Object, Interface)
     {
     };
 
@@ -118,11 +118,11 @@ protected:
 class ExtendedObject : public Object
 {
 public:
-    using MetaGetName = meta::Invokable<decltype(&ExtendedObject::getName), &ExtendedObject::getName>;
+    DECLARE_INVOKABLE(MetaGetName, "getName", &ExtendedObject::getName);
     META_CLASS("ExtendedObject", ExtendedObject, Object)
     {
         EnableDynamic _d{*this};
-        META_NAMED_EXTENSION(MetaGetName, "getName");
+        META_EXTENSION(MetaGetName);
     };
 
     static std::shared_ptr<Object> create(std::string_view name)
@@ -141,7 +141,10 @@ void extendObjects(meta::ObjectExtension* self)
 {
     META_LOG_INFO("extends " << self->getObject()->getName());
 }
-using ExtendObjectFunction = meta::Invokable<decltype(&extendObjects), extendObjects>;
+DECLARE_INVOKABLE(ExtendObjectFunction, "extendObjects", &extendObjects);
+
+auto globalLambda = [](){};
+DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
 
 
 class ObjectFactoryTest : public DomainTestEnvironment
@@ -182,6 +185,12 @@ protected:
     }
 };
 
+}
+
+TEST(MetaData, size)
+{
+    std::cerr << "MetaExtensionRegistrar size= " << sizeof(meta::MetaClass::MetaExtensionRegistrar) << std::endl;
+    std::cerr << "ExtendedObject::StaticMetaClass size= " << sizeof(*ExtendedObject::getStaticMetaClass()) << std::endl;
 }
 
 TEST(MetaClassTests, testMetaObject)
@@ -270,6 +279,11 @@ TEST_F(ObjectFactoryTest, testRegister)
     EXPECT_FALSE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
 }
 
+TEST_F(ObjectFactoryTest, registerObjectExtension)
+{
+    EXPECT_TRUE(m_factory->registerMetaClass<LambdaInvokable>());
+}
+
 TEST_F(ObjectFactoryTest, deepRegister)
 {
     m_factory->registerMetaClass(Object::getStaticMetaClass());
@@ -281,37 +295,19 @@ TEST_F(ObjectFactoryTest, deepRegister)
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 }
 
-TEST_F(ObjectFactoryTest, registerWithOtherName)
-{
-    m_factory->registerMetaClass("Object", Object::getStaticMetaClass());
-    EXPECT_EQ(m_registrySize + 4u, std::distance(m_factory->begin(), m_factory->end()));
-    EXPECT_EQ(nullptr, m_factory->findMetaClass("TestObject"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("Object"));
-}
-
-TEST_F(ObjectFactoryTest, registerStubMetaClassTheWrongWay)
-{
-    auto lambda = [](){};
-    using StubType = meta::Invokable<decltype(lambda), lambda>;
-    EXPECT_CALL(*m_mockPrinter, log("Attempt registering stub meta class."));
-    m_factory->registerMetaClass(StubType::getStaticMetaClass());
-    EXPECT_EQ(m_registrySize, std::distance(m_factory->begin(), m_factory->end()));
-}
-
 TEST_F(ObjectFactoryTest, registerStubMetaClassTheRightWay)
 {
     auto lambda = [](){};
     using StubType = meta::Invokable<decltype(lambda), lambda>;
-    m_factory->registerMetaClass("lambda", StubType::getStaticMetaClass());
+    m_factory->registerMetaClass(StubType::getStaticMetaClass());
     EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("lambda"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass(StubType::getStaticMetaClass()->getName()));
 }
 
 TEST_F(ObjectFactoryTest, testOverride)
 {
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
-    const auto metaname = AbstractClass::getStaticMetaClass()->getName();
-    EXPECT_TRUE(m_factory->overrideMetaClass(metaname, OverrideClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
 }
 
 TEST_F(ObjectFactoryTest, deepOverride)
@@ -321,7 +317,7 @@ TEST_F(ObjectFactoryTest, deepOverride)
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 
-    EXPECT_TRUE(m_factory->overrideMetaClass("AbstractClass", OverrideClass::getStaticMetaClass()));
+    EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
     EXPECT_EQ(m_registrySize + 2u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
@@ -383,8 +379,8 @@ TEST_F(ObjectFactoryTest, dynamicMetaExtension)
         META_LOG_INFO(self->getName());
     };
     using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
-    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass(), "test");
-    EXPECT_NE(nullptr, dynamic->findMetaExtension("test"));
+    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass());
+    EXPECT_NE(nullptr, dynamic->findMetaExtension(MetaLambda::getStaticMetaClass()->getName()));
 }
 
 TEST_F(ObjectFactoryTest, dynamicExtensions)
@@ -397,18 +393,18 @@ TEST_F(ObjectFactoryTest, dynamicExtensions)
         META_LOG_INFO(self->getObject()->getName());
     };
     using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
-    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass(), "lambda");
+    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass());
 
     auto dynObject = dynamic->create<ExtendedObject>("dynObject");
     ASSERT_NE(nullptr, dynObject);
 
     EXPECT_CALL(*m_mockPrinter, log("dynObject"));
-    dynObject->invoke("lambda");
+    dynObject->invoke(MetaLambda::getStaticMetaClass()->getName());
 }
 
 TEST_F(ObjectFactoryTest, addRegisteredExtensionToDynamicMetaClass)
 {
-    ASSERT_TRUE(m_factory->registerMetaClass("extendObjects", ExtendObjectFunction::getStaticMetaClass()));
+    ASSERT_TRUE(m_factory->registerMetaClass(ExtendObjectFunction::getStaticMetaClass()));
     auto dynamic = ExtendedObject::getStaticMetaClass()->getDynamicMetaClass();
     ASSERT_NE(nullptr, dynamic);
 
@@ -417,6 +413,23 @@ TEST_F(ObjectFactoryTest, addRegisteredExtensionToDynamicMetaClass)
 
     EXPECT_CALL(*m_mockPrinter, log("extends test"));
     meta::invoke(object, "extendObjects");
+}
+
+TEST_F(MetaLibraryTest, findMetaExtension)
+{
+    auto metaClass = ExtendedObject::getStaticMetaClass();
+    auto getName = metaClass->findMetaExtension("getName");
+    ASSERT_NE(nullptr, getName);
+}
+
+TEST_F(MetaLibraryTest, enumerateExtensions)
+{
+    auto metaClass = ExtendedObject::getStaticMetaClass();
+
+    for (auto it = metaClass->beginExtensions(), end = metaClass->endExtensions(); it != end; ++it)
+    {
+        META_LOG_INFO(it->second->getName());
+    }
 }
 
 TEST_F(MetaLibraryTest, testDomainHasObjectFactory)

@@ -46,21 +46,16 @@ public:
     /// \return If the meta class gets registered with success, returns \e true, otherwise \e false.
     bool registerMetaClass(const MetaClass* metaClass);
 
-    /// Registers a meta class with a metaname. The meta class gets updated with the metaname. The
-    /// registration fails if there is a meta class registered with the metaname, or if the metaname
-    /// is empty or invalid. On failure, an error is logged with the message.
-    /// \param name The metaname with which to register the meta class.
-    /// \param metaClass The meta class to register.
-    /// \return If the meta class gets registered with the metaname with success, returns \e true,
-    ///         otherwise \e false.
-    bool registerMetaClass(std::string_view name, const MetaClass* metaClass);
+    template <class ClassType>
+    bool registerMetaClass()
+    {
+        return registerMetaClass(ClassType::getStaticMetaClass());
+    }
 
-    /// Overrides a meta class registered under a name with an other meta class. The meta class which
-    /// overrides the previous registration is updated with the metaname passed as argument.
-    /// \param name The metaname under which a previous meta class is registered.
+    /// Overrides a meta class registered under the same name as the overriding metaclass.
     /// \param metaClass The meta class which overrides the previously registered meta class.
     /// \return If the meta class gets overridden with success, returns \e true, otherwise \e false.
-    bool overrideMetaClass(std::string_view name, const MetaClass* metaClass);
+    bool overrideMetaClass(const MetaClass* metaClass);
 
     /// Finds a meta class registered under \a className.
     /// \param className The name under which the metaclass is registered.

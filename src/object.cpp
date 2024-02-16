@@ -32,10 +32,16 @@ Object::~Object()
 {
 }
 
+void Object::initialize()
+{
+    MetaObject::initialize();
+}
 
 ObjectPtr Object::create(std::string_view name)
 {
-    return ObjectPtr(new Object(name));
+    auto object = ObjectPtr(new Object(name));
+    object->initialize();
+    return object;
 }
 
 void Object::addExtension(ObjectExtensionPtr extension)

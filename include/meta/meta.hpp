@@ -67,18 +67,18 @@ private:
     DECLARE_PRIVATE_PTR(MetaLibraryPrivate)
 };
 
-/// Checks whether the string passed as argument is a valid metaname. A metaname can only contain
+/// Checks whether the string passed as argument is a valid meta-name. A meta-name can only contain
 /// numeric and alphanumeric characters, dots, columns, dashes and underscores.
 /// \param text The string to check.
-/// \return If the string is a valid metaname, returns \e true, otherwise \e false.
+/// \return If the string is a valid meta-name, returns \e true, otherwise \e false.
 META_API bool isValidMetaName(std::string_view text);
 
-/// Ensures the string passed as argument is a valid metaname. A metaname can only contain
+/// Ensures the string passed as argument is a valid meta-name. A meta-name can only contain
 /// numeric and alphanumeric characters, dots, columns, dashes and underscores. Any invalid character
 /// is replaces with the hint character, which is also checked against validity.
 /// \param name The string to check.
 /// \param hint The character to replace every invalid character occurrence in the name
-/// \return If the string is a valid metaname, returns \e true, otherwise \e false.
+/// \return If the string is a valid meta-name, returns \e true, otherwise \e false.
 META_API std::string ensureValidMetaName(std::string name, char hint = '.');
 
 } // namespace meta

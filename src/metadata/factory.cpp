@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,6 +20,7 @@
 #include <meta/log/trace.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
+#include <meta/metadata/meta_object.hpp>
 
 namespace meta
 {
@@ -103,6 +104,16 @@ const MetaClass* ObjectFactory::findMetaClass(std::string_view className) const
     }
     auto it = m_registry.find(className);
     return it != m_registry.end() ? it->second : nullptr;
+}
+
+MetaObjectPtr ObjectFactory::create(std::string_view className, std::string_view instanceName)
+{
+    auto metaClass = findMetaClass(className);
+    if (!metaClass)
+    {
+        return {};
+    }
+    return metaClass->create(instanceName);
 }
 
 }

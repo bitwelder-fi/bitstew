@@ -36,13 +36,6 @@ MetaObject::~MetaObject()
 {
 }
 
-const MetaClass* MetaObject::getStaticMetaClass()
-{
-    static detail::MetaClassImpl<MetaObject> metaClass;
-    static MetaClass::MetaName name(metaClass, "meta.MetaObject");
-    return &metaClass;
-}
-
 
 MetaClass::MetaExtensionRegistrar::MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta)
 {
@@ -57,6 +50,21 @@ MetaClass::MetaName::MetaName(MetaClass& self, std::string_view name)
 }
 
 
+MetaObjectPtr MetaClass::create(std::string_view name) const
+{
+    abortIfFail(m_descriptor);
+    auto object = m_descriptor->create(name);
+    if (object)
+    {
+        object->m_factory = const_cast<MetaClass*>(this);
+    }
+    auto extendable = std::dynamic_pointer_cast<Object>(object);
+    if (extendable)
+    {
+        initializeInstance(extendable);
+    }
+    return object;
+}
 
 void MetaClass::initializeInstance(ObjectPtr instance) const
 {

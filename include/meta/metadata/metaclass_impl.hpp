@@ -37,7 +37,6 @@ protected:
     {
         explicit MetaClassDescriptor()
         {
-            sealed = true;
         }
 
         MetaObjectPtr create(std::string_view name) const override
@@ -113,6 +112,7 @@ public:
     explicit MetaClassImpl() :
         MetaClass(std::make_unique<MetaClassDescriptor>())
     {
+        m_descriptor->sealed = true;
     }
 };
 

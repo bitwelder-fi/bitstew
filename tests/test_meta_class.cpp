@@ -18,134 +18,10 @@
 
 #include <gtest/gtest.h>
 
-#include <meta/meta.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaclass.hpp>
-#include <meta/object.hpp>
-#include <meta/library_config.hpp>
-
-#include <meta/object_extensions/invokable.hpp>
-
-#include "utils/domain_test_environment.hpp"
+#include "test_meta_class_fixtures.hpp"
 
 namespace
 {
-
-class AbstractClass : public meta::Object
-{
-public:
-    META_CLASS("AbstractClass", AbstractClass, meta::Object)
-    {
-    };
-
-    virtual void func() = 0;
-
-protected:
-    explicit AbstractClass(std::string_view name) :
-        meta::Object(name)
-    {
-    }
-};
-
-class Interface
-{
-public:
-    virtual ~Interface() = default;
-    virtual void text() = 0;
-
-    STATIC_META_CLASS("Interface", Interface)
-    {
-    };
-};
-
-class OverrideClass : public meta::Object, public Interface
-{
-public:
-    META_CLASS("AbstractClass", OverrideClass, meta::Object, Interface)
-    {
-    };
-
-    virtual void func() = 0;
-
-protected:
-    explicit OverrideClass(std::string_view name) :
-        meta::Object(name)
-    {
-    }
-};
-
-class PreObject : public AbstractClass
-{
-public:
-    META_CLASS("PreObject", PreObject, AbstractClass)
-    {
-    };
-    virtual void func3() = 0;
-
-protected:
-    explicit PreObject(std::string_view name) :
-        AbstractClass(name)
-    {
-    }
-};
-
-class Object : public PreObject, public Interface
-{
-public:
-    void func() override
-    {}
-    void text() override
-    {}
-    void func3() final
-    {}
-
-    META_CLASS("TestObject", Object, PreObject, Interface)
-    {
-    };
-
-    static std::shared_ptr<Object> create(std::string_view name)
-    {
-        return std::shared_ptr<Object>(new Object(name));
-    }
-
-protected:
-    explicit Object(std::string_view name) :
-        PreObject(name)
-    {
-    }
-};
-
-class ExtendedObject : public Object
-{
-public:
-    DECLARE_INVOKABLE(MetaGetName, "getName", &ExtendedObject::getName);
-    META_CLASS("ExtendedObject", ExtendedObject, Object)
-    {
-        EnableDynamic _d{*this};
-        META_EXTENSION(MetaGetName);
-    };
-
-    static std::shared_ptr<Object> create(std::string_view name)
-    {
-        return std::shared_ptr<Object>(new ExtendedObject(name));
-    }
-
-protected:
-    explicit ExtendedObject(std::string_view name) :
-        Object(name)
-    {
-    }
-};
-
-void extendObjects(meta::ObjectExtension* self)
-{
-    META_LOG_INFO("extends " << self->getObject()->getName());
-}
-DECLARE_INVOKABLE(ExtendObjectFunction, "extendObjects", &extendObjects);
-
-auto globalLambda = [](){};
-DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
-
 
 class ObjectFactoryTest : public DomainTestEnvironment
 {
@@ -324,6 +200,17 @@ TEST_F(ObjectFactoryTest, deepOverride)
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
 }
 
+TEST_F(ObjectFactoryTest, registerDynamicMetaclass)
+{
+    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
+    EXPECT_NE(nullptr, m_factory->findMetaClass("DynamicExtendedObject"));
+    EXPECT_EQ(nullptr, m_factory->findMetaClass("DynamicObject"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("ExtendedObject"));
+
+    m_factory->registerMetaClass<DynamicObject>();
+    EXPECT_NE(nullptr, m_factory->findMetaClass("DynamicObject"));
+}
+
 TEST_F(ObjectFactoryTest, testFindMetaClass)
 {
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
@@ -368,13 +255,14 @@ TEST_F(ObjectFactoryTest, staticMetaExtension)
 
 TEST_F(ObjectFactoryTest, dynamicMetaExtension)
 {
-    m_factory->registerMetaClass(ExtendedObject::getStaticMetaClass());
+    m_factory->registerMetaClass(DynamicObject::getStaticMetaClass());
+    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
 
-    auto dynamic = ExtendedObject::getStaticMetaClass()->getDynamicMetaClass();
+    auto dynamic = DynamicObject::getExtendableMetaClass();
     ASSERT_NE(nullptr, dynamic);
     EXPECT_FALSE(dynamic->isSealed());
 
-    auto lambda = [](ExtendedObject* self)
+    auto lambda = [](DynamicObject* self)
     {
         META_LOG_INFO(self->getName());
     };
@@ -385,8 +273,7 @@ TEST_F(ObjectFactoryTest, dynamicMetaExtension)
 
 TEST_F(ObjectFactoryTest, dynamicExtensions)
 {
-    auto metaClass = ExtendedObject::getStaticMetaClass();
-    auto dynamic = metaClass->getDynamicMetaClass();
+    auto dynamic = DynamicObject::getExtendableMetaClass();
 
     auto lambda = [](meta::ObjectExtension* self)
     {
@@ -395,7 +282,7 @@ TEST_F(ObjectFactoryTest, dynamicExtensions)
     using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
     dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass());
 
-    auto dynObject = dynamic->create<ExtendedObject>("dynObject");
+    auto dynObject = dynamic->create<DynamicObject>("dynObject");
     ASSERT_NE(nullptr, dynObject);
 
     EXPECT_CALL(*m_mockPrinter, log("dynObject"));
@@ -405,14 +292,38 @@ TEST_F(ObjectFactoryTest, dynamicExtensions)
 TEST_F(ObjectFactoryTest, addRegisteredExtensionToDynamicMetaClass)
 {
     ASSERT_TRUE(m_factory->registerMetaClass(ExtendObjectFunction::getStaticMetaClass()));
-    auto dynamic = ExtendedObject::getStaticMetaClass()->getDynamicMetaClass();
+    auto dynamic = DynamicObject::getExtendableMetaClass();
     ASSERT_NE(nullptr, dynamic);
 
     ASSERT_TRUE(dynamic->tryAddExtension("extendObjects"));
-    auto object = dynamic->create<ExtendedObject>("test");
+    auto object = dynamic->create<DynamicObject>("test");
 
     EXPECT_CALL(*m_mockPrinter, log("extends test"));
     meta::invoke(object, "extendObjects");
+}
+
+TEST_F(ObjectFactoryTest, createThroughMetaClassAddsExtensionsFromAllLevels)
+{
+    m_factory->registerMetaClass<DynamicObject>();
+    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
+
+    // This creates an object using the sealed meta class.
+    auto sealed = m_factory->create<DynamicObject>("DynamicObject", "sealed");
+    ASSERT_NE(nullptr, sealed);
+    EXPECT_TRUE(sealed->getDynamicMetaClass()->isSealed());
+
+    auto unsealed = m_factory->create<DynamicObject>("DynamicExtendedObject", "unsealed");
+    ASSERT_NE(nullptr, unsealed);
+    EXPECT_FALSE(unsealed->getDynamicMetaClass()->isSealed());
+}
+
+TEST_F(ObjectFactoryTest, dynamicMetaClassCreatedInstancegetsMoreExtensions)
+{
+    m_factory->registerMetaClass<DynamicObject>();
+    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
+
+    auto unsealed = m_factory->create<DynamicObject>("DynamicExtendedObject", "unsealed");
+    EXPECT_NE(nullptr, unsealed->findExtension("getName"));
 }
 
 TEST_F(MetaLibraryTest, findMetaExtension)

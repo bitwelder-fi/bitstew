@@ -73,19 +73,26 @@ public:
         return m_registry.end();
     }
 
-    /// Creates an instance from the registered meta class of an ObjectType, with the passed Arguments.
+    /// Creates an instance from the registered meta class of an ObjectType
     /// \tparam ObjectType The object type whose meta class must be registered.
     /// \param instanceName The name with which to create the instance.
     /// \return On success, returns the instance created, or an invalid shared pointer on failure.
     template <class ObjectType>
     std::shared_ptr<ObjectType> create(std::string_view instanceName)
     {
-        auto metaClass = findMetaClass(ObjectType::getStaticMetaClass()->getName());
-        if (!metaClass)
-        {
-            return {};
-        }
-        return metaClass->template create<ObjectType>(instanceName);
+        return std::dynamic_pointer_cast<ObjectType>(create(ObjectType::getStaticMetaClass()->getName(), instanceName));
+    }
+
+    /// Creates an instance from the registered meta class identified by the className, with the passed Arguments.
+    /// \param className The name of the meta class.
+    /// \param instanceName The name with which to create the instance.
+    /// \return On success, returns the instance created, or an invalid shared pointer on failure.
+    MetaObjectPtr create(std::string_view className, std::string_view instanceName);
+
+    template <class ObjectType>
+    std::shared_ptr<ObjectType> create(std::string_view className, std::string_view instanceName)
+    {
+        return std::dynamic_pointer_cast<ObjectType>(create(className, instanceName));
     }
 };
 

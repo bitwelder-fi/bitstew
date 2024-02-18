@@ -320,6 +320,14 @@ TEST_F(ObjectFactoryTest, addDynamicMetaExtensionToMetaClass)
     EXPECT_NE(nullptr, dynamic->findMetaExtension("getName"));
 }
 
+TEST_F(ObjectFactoryTest, createWithoutFactoryIsMissingMetaExtensions)
+{
+    auto object = DynamicObject::create("test");
+
+    auto result = meta::invoke(object, "getName");
+    EXPECT_EQ(std::nullopt, result);
+}
+
 
 TEST_F(MetaLibraryTest, metaLibrarysHasObjectFactory)
 {

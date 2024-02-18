@@ -45,7 +45,7 @@ public:
     {
     };
 
-    /// Returns the dynamic meta class of the meta object.
+    /// Returns the dynamic meta-class of the meta object.
     virtual const MetaClass* getDynamicMetaClass() const
     {
         return getStaticMetaClass();
@@ -74,7 +74,7 @@ protected:
     }
 
 private:
-    /// Holds the meta class which created the object. The value of \e nullptr means the object was
+    /// Holds the meta-class which created the object. The value of \e nullptr means the object was
     /// not created through meta-class.
     MetaClass* m_factory = nullptr;
     /// The meta-name of the meta-object.

@@ -32,7 +32,7 @@
 namespace meta
 {
 
-/// The base class of any object that defines a meta class.
+/// The base class of any object that defines a meta-class.
 class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
 {
 public:

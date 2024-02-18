@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_TEST_META_CLASS_FICXTURES_HPP
-#define META_TEST_META_CLASS_FICXTURES_HPP
+#ifndef META_TEST_META_CLASS_FIXTURES_HPP
+#define META_TEST_META_CLASS_FIXTURES_HPP
 
 #include <gtest/gtest.h>
 
@@ -230,7 +230,7 @@ protected:
 };
 
 
-// Base Test fixture with a meta class and a parameter with arbitrar type.
+// Base Test fixture with a meta-class and a parameter with arbitrar type.
 template <typename Param>
 struct MetaClassParam
 {
@@ -306,4 +306,4 @@ protected:
     }
 };
 
-#endif // META_TEST_META_CLASS_FICXTURES_HPP
+#endif // META_TEST_META_CLASS_FIXTURES_HPP

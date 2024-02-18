@@ -42,11 +42,6 @@ protected:
 
 }
 
-TEST_F(ObjectTest, createWithoutFactoryAddsMetaExtensions)
-{
-    auto object = meta::Object::create("test");
-
-}
 
 TEST_F(ObjectTest, invoke_getName)
 {

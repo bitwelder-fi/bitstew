@@ -33,23 +33,23 @@
 namespace meta
 {
 
-/// Defines the metaclass of an associated class. The meta class provides type inspection mechanism
+/// Defines the metaclass of an associated class. The meta-class provides type inspection mechanism
 /// for your classes. You can use the meta information of a class to provide dynamic behavior through
 /// scripting.
 ///
-/// Use META_CLASS() macro in the public body of your class to declare the meta class. The macro declares
-/// methods for both static and dynamic meta class. The name of the meta class identifies the class
+/// Use META_CLASS() macro in the public body of your class to declare the meta-class. The macro declares
+/// methods for both static and dynamic meta-class. The name of the meta-class identifies the class
 /// in interoperability between scripting and native code.
 ///
 /// Use STATIC_META_CLASS() macro in classes which do not derive from MetaObject. These classes only
 /// have static meta data.
 ///
 /// Use AUTO_META_CLASS() macro declare meta classes whose meta name gets generated automatically at
-/// compile time. The name of the meta class is generated from the RTTI name of the type. Use these
-/// macros when you don't need to know the meta class name in your application.
+/// compile time. The name of the meta-class is generated from the RTTI name of the type. Use these
+/// macros when you don't need to know the meta-class name in your application.
 ///
-/// Use META_EXTENSION() macro to add the meta class of object extensions. Use the macro inside the
-/// body of the meta class declaration. Example:
+/// Use META_EXTENSION() macro to add the meta-class of object extensions. Use the macro inside the
+/// body of the meta-class declaration. Example:
 /// \code
 ///
 /// class RunMe : public meta::ObjectExtension
@@ -85,7 +85,7 @@ class META_API MetaClass
     DISABLE_MOVE(MetaClass);
 
 public:
-    /// Container with the meta classes of the object extensions added to a meta class.
+    /// Container with the meta classes of the object extensions added to a meta-class.
     using MetaExtensionContainer = std::unordered_map<std::string_view, const MetaClass*>;
     /// The iterator of the meta extensions.
     using MetaExtensionIterator = MetaExtensionContainer::const_iterator;
@@ -93,7 +93,7 @@ public:
     /// Destructor.
     virtual ~MetaClass() = default;
 
-    /// Creates an object of the class to which the meta class is connected.
+    /// Creates an object of the class to which the meta-class is connected.
     /// \param name The name of the meta object created.
     MetaObjectPtr create(std::string_view name) const;
 
@@ -103,15 +103,15 @@ public:
         return std::dynamic_pointer_cast<T>(MetaClass::create(name));
     }
 
-    /// Returns whether the meta class is sealed.
-    /// \return If the meta class is sealed, returns \e true, otherwise \e false.
+    /// Returns whether the meta-class is sealed.
+    /// \return If the meta-class is sealed, returns \e true, otherwise \e false.
     bool isSealed() const;
 
     /// Returns the name of the metaclass.
     std::string_view getName() const;
 
-    /// Returns whether the class to which the meta class is connected is abstract.
-    /// \return If the class to which the meta class is connected is abstract, returns \e true,
+    /// Returns whether the class to which the meta-class is connected is abstract.
+    /// \return If the class to which the meta-class is connected is abstract, returns \e true,
     ///         otherwise \e false.
     bool isAbstract() const;
 
@@ -148,7 +148,7 @@ public:
     /// \return The visit result.
     VisitResult visit(Visitor visitor) const;
 
-    /// Visits the super meta-classes of a meta class.
+    /// Visits the super meta-classes of a meta-class.
     /// \param visitor The visitor function.
     /// \return The visit result.
     VisitResult visitSuper(Visitor visitor) const;
@@ -156,14 +156,14 @@ public:
 
     /// \name Meta extensions
     /// \{
-    /// Meta extensions are meta classes of object extensions you can add to the meta class of an Object.
-    /// When you create an instance of an object through a meta class, Meta automatically attaches
+    /// Meta extensions are meta classes of object extensions you can add to the meta-class of an Object.
+    /// When you create an instance of an object through a meta-class, Meta automatically attaches
     /// the object extensions to the created instance.
 
-    /// Adds the meta class of an object extension to this meta class. The method fails if either this
-    /// or the meta class of the object extension is invalid, the meta class is not a meta class of
-    /// an object extension, or there is an object extension meta class registered with the same name.
-    /// \param extensionMeta The meta class of the object extension to add.
+    /// Adds the meta-class of an object extension to this meta-class. The method fails if either this
+    /// or the meta-class of the object extension is invalid, the meta-class is not a meta-class of
+    /// an object extension, or there is an object extension meta-class registered with the same name.
+    /// \param extensionMeta The meta-class of the object extension to add.
     void addMetaExtension(const MetaClass* extensionMeta);
 
     template <class ClassType>
@@ -172,22 +172,23 @@ public:
         addMetaExtension(ClassType::getStaticMetaClass());
     }
 
-    /// Tries to add the meta class of a registered object extension to this meta class. The meta class
+    /// Tries to add the meta-class of a registered object extension to this meta-class. The meta-class
     /// must be registered to Meta library under the meta-name passed as argument.
-    /// \param metaName The meta-name of teh meta class to register as extension.
-    /// \return If the meta class of the object extension was registered with success, returns \e true,
+    /// \param metaName The meta-name of teh meta-class to register as extension.
+    /// \return If the meta-class of the object extension was registered with success, returns \e true,
     ///         otherwise \e false.
     bool tryAddExtension(std::string_view metaName);
 
-    /// Finds the object extension meta class registered under a given name.
-    /// \param name The meta-name of the object extension meta class to find.
-    /// \return On success returns the meta class of the object extension, or \e nullptr on failure.
+    /// Tries to find the object extension meta-class registered under a given name. The look-up includes
+    /// the super meta-classes too.
+    /// \param name The meta-name of the object extension meta-class to find.
+    /// \return On success returns the meta-class of the object extension, or \e nullptr on failure.
     const MetaClass* findMetaExtension(std::string_view name) const;
 
-    /// Returns the begin iterator of the object extensions meta class register.
+    /// Returns the begin iterator of the object extensions meta-class register.
     MetaExtensionIterator beginExtensions() const;
 
-    /// Returns the end iterator of the object extensions meta class register.
+    /// Returns the end iterator of the object extensions meta-class register.
     MetaExtensionIterator endExtensions() const;
     /// \}
 
@@ -197,7 +198,7 @@ protected:
     {
         /// The container with the meta extensions.
         MetaExtensionContainer extensions;
-        /// The name of the meta class.
+        /// The name of the meta-class.
         const std::string name;
         /// Whether the metaclass is sealed.
         bool sealed = false;
@@ -243,7 +244,7 @@ struct META_API Registrars
         explicit Extension(Registrars& self, const MetaClass* extension);
     };
 
-    /// Applies the registrars on the meta class.
+    /// Applies the registrars on the meta-class.
     void apply(MetaClass& metaClass);
 
 private:
@@ -260,7 +261,7 @@ private:
 /// Defines the static metadata of a class. The first argument is the name of the metaclass, followed
 /// by the class for which you declare the meta data. The rest of the arguments should refer to the
 /// base classes, preferrably in the order of the derivate definition. The metadata has no dynamic
-/// meta class. Use this macro to declare the static meta class of both classes which derive from
+/// meta-class. Use this macro to declare the static meta-class of both classes which derive from
 /// MetaObject and for those which don't.
 #define STATIC_META_CLASS(ClassName, ...)                                       \
 struct StaticMetaClass;                                                         \

@@ -44,7 +44,7 @@ namespace meta
 ///
 /// // You can register the LambdaExtension to the factory.
 /// meta::Library()::instance()->factory()->registerMetaClass<LambdaExtension>();
-/// // You can also add the LambdaExtension to the meta class of the Object.
+/// // You can also add the LambdaExtension to the meta-class of the Object.
 /// Object::getDynamicMetaClass()->addMetaExtension<LambdaExtension>();
 /// \endcode
 /// To call invokable extensions on an Object, use the meta::invoke() function.
@@ -152,7 +152,7 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
 }
 
 /// Use this macro to declare a static name for your invokable function. The invokable object gets
-/// created with the meta name of the meta class.
+/// created with the meta name of the meta-class.
 /// \param InvokableClass The object extension class to define for the invokable function.
 /// \param InvokableName The static name of the invokable.
 /// \param Funtion The address of the function, method or the lambda.

@@ -30,12 +30,12 @@ bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
     abortIfFail(metaClass);
     if (metaClass->getName().empty())
     {
-        META_LOG_ERROR("Attempt registering stub meta class.");
+        META_LOG_ERROR("Attempt registering stub meta-class.");
         return false;
     }
     if (!isValidMetaName(metaClass->getName()))
     {
-        META_LOG_ERROR("Invalid meta class name: " << metaClass->getName());
+        META_LOG_ERROR("Invalid meta-class name: " << metaClass->getName());
         return false;
     }
 
@@ -75,7 +75,7 @@ const MetaClass* ObjectFactory::findMetaClass(std::string_view className) const
 {
     if (!isValidMetaName(className))
     {
-        META_LOG_ERROR("Invalid meta class name: " << className);
+        META_LOG_ERROR("Invalid meta-class name: " << className);
         return {};
     }
     auto it = m_registry.find(className);

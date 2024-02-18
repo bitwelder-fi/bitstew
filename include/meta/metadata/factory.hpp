@@ -40,9 +40,9 @@ public:
     /// Factory registry iterator.
     using MetaClassIterator = MetaClassMap::const_iterator;
 
-    /// Registers a meta class.
-    /// \param metaClass The meta class to register.
-    /// \return If the meta class gets registered with success, returns \e true, otherwise \e false.
+    /// Registers a meta-class.
+    /// \param metaClass The meta-class to register.
+    /// \return If the meta-class gets registered with success, returns \e true, otherwise \e false.
     bool registerMetaClass(const MetaClass* metaClass);
 
     template <class ClassType>
@@ -51,29 +51,29 @@ public:
         return registerMetaClass(ClassType::getStaticMetaClass());
     }
 
-    /// Overrides a meta class registered under the same name as the overriding metaclass.
-    /// \param metaClass The meta class which overrides the previously registered meta class.
-    /// \return If the meta class gets overridden with success, returns \e true, otherwise \e false.
+    /// Overrides a meta-class registered under the same name as the overriding metaclass.
+    /// \param metaClass The meta-class which overrides the previously registered meta-class.
+    /// \return If the meta-class gets overridden with success, returns \e true, otherwise \e false.
     bool overrideMetaClass(const MetaClass* metaClass);
 
-    /// Finds a meta class registered under \a className.
+    /// Finds a meta-class registered under \a className.
     /// \param className The name under which the metaclass is registered.
-    /// \return The meta class, or \e nullptr, if no meta class with name was found.
+    /// \return The meta-class, or \e nullptr, if no meta-class with name was found.
     const MetaClass* findMetaClass(std::string_view className) const;
 
-    /// Returns the front of the meta class registry.
+    /// Returns the front of the meta-class registry.
     MetaClassIterator begin() const
     {
         return m_registry.begin();
     }
-    /// Returns the end of the meta class registry.
+    /// Returns the end of the meta-class registry.
     MetaClassIterator end() const
     {
         return m_registry.end();
     }
 
-    /// Creates an instance from the registered meta class of an ObjectType
-    /// \tparam ObjectType The object type whose meta class must be registered.
+    /// Creates an instance from the registered meta-class of an ObjectType
+    /// \tparam ObjectType The object type whose meta-class must be registered.
     /// \param instanceName The name with which to create the instance.
     /// \return On success, returns the instance created, or an invalid shared pointer on failure.
     template <class ObjectType>
@@ -82,8 +82,8 @@ public:
         return std::dynamic_pointer_cast<ObjectType>(create(ObjectType::getStaticMetaClass()->getName(), instanceName));
     }
 
-    /// Creates an instance from the registered meta class identified by the className, with the passed Arguments.
-    /// \param className The name of the meta class.
+    /// Creates an instance from the registered meta-class identified by the className, with the passed Arguments.
+    /// \param className The name of the meta-class.
     /// \param instanceName The name with which to create the instance.
     /// \return On success, returns the instance created, or an invalid shared pointer on failure.
     MetaObjectPtr create(std::string_view className, std::string_view instanceName);

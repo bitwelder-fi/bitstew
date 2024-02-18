@@ -156,21 +156,21 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
 /// \param InvokableClass The object extension class to define for the invokable function.
 /// \param InvokableName The static name of the invokable.
 /// \param Funtion The address of the function, method or the lambda.
-#define DECLARE_INVOKABLE(InvokableClass, InvokableName, Function)                  \
-struct META_API InvokableClass : public meta::Invokable<decltype(Function), Function>        \
-{                                                                                   \
-    using Base = meta::Invokable<decltype(Function), Function>;                     \
-    META_CLASS(InvokableName, InvokableClass, Base)                                 \
-    {                                                                               \
-    };                                                                              \
-    static std::shared_ptr<InvokableClass> create(std::string_view)                 \
-    {                                                                               \
-        return std::make_shared<InvokableClass>(getStaticMetaClass()->getName());   \
-    }                                                                               \
-    explicit InvokableClass(std::string_view name) :                                \
-        Base(name)                                                                  \
-    {                                                                               \
-    }                                                                               \
+#define DECLARE_INVOKABLE(InvokableClass, InvokableName, Function)                      \
+struct META_API InvokableClass : public meta::Invokable<decltype(Function), Function>   \
+{                                                                                       \
+    using Base = meta::Invokable<decltype(Function), Function>;                         \
+    META_CLASS(InvokableName, InvokableClass, Base)                                     \
+    {                                                                                   \
+    };                                                                                  \
+    static std::shared_ptr<InvokableClass> create(std::string_view = std::string_view())\
+    {                                                                                   \
+        return std::make_shared<InvokableClass>(getStaticMetaClass()->getName());       \
+    }                                                                                   \
+    explicit InvokableClass(std::string_view name) :                                    \
+        Base(name)                                                                      \
+    {                                                                                   \
+    }                                                                                   \
 }
 
 #endif // META_INVOKABLE_HPP

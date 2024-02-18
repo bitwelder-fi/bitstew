@@ -28,7 +28,7 @@ namespace utils
 template <class Function, class... Arguments>
 void for_each_arg(Function f, Arguments&&... args)
 {
-    (void)(int[]){(f(std::forward<Arguments>(args)), 0)...};
+    (f(std::forward<Arguments>(args)),...);
 }
 
 }

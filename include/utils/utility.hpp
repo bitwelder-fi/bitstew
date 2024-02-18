@@ -22,12 +22,16 @@
 namespace utils
 {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+
 /// Template function to call a function \a f on an argument pack.
 template <class Function, class... Arguments>
 void for_each_arg(Function f, Arguments... args)
 {
     (f(args),...);
 }
+#pragma GCC diagnostic pop
 
 }
 

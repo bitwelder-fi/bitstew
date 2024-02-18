@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,6 +17,7 @@
  */
 
 #include <array>
+#include <utils/utility.hpp>
 #include <meta/metadata/metaclass.hpp>
 
 namespace meta
@@ -25,70 +26,48 @@ namespace meta
 namespace detail
 {
 
-template <class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API StubMetaClass : public MetaClass
+template <class MetaRegistrars, class DeclaredClass, class... SuperClasses>
+class META_TEMPLATE_API MetaClassImpl : public MetaClass
 {
+    using SelfType = MetaClassImpl<MetaRegistrars, DeclaredClass, SuperClasses...>;
+
 protected:
     static constexpr auto arity = sizeof... (SuperClasses);
 
-    struct META_API StubDescriptor : DescriptorInterface
+    struct META_API MetaClassDescriptor : DescriptorInterface
     {
-        explicit StubDescriptor(std::string_view name) :
-            DescriptorInterface(name)
+        explicit MetaClassDescriptor(std::string_view metaClassName) :
+            DescriptorInterface(metaClassName)
         {
-            sealed = true;
         }
 
         MetaObjectPtr create(std::string_view name) const override
         {
-            if constexpr (std::is_abstract_v<DeclaredClass>)
-            {
-                return {};
-            }
-            else
+            if constexpr (!std::is_abstract_v<DeclaredClass> && std::is_base_of_v<MetaObject, DeclaredClass>)
             {
                 return DeclaredClass::create(name);
             }
-        }
-
-        const MetaClass* getBaseClass(std::size_t index) const final
-        {
-            if constexpr (arity)
-            {
-                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
-                return superMetas[index];
-            }
             else
             {
                 return {};
             }
         }
-        std::size_t getBaseClassCount() const final
-        {
-            if constexpr (arity)
-            {
-                return arity;
-            }
-            else
-            {
-                return 0u;
-            }
-        }
-        bool hasSuperClass(const MetaClass& metaClass) const final
-        {
-            if constexpr (arity)
-            {
-                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
-                for (auto& meta : superMetas)
-                {
-                    if (meta->isDerivedFrom(metaClass))
-                    {
-                        return true;
-                    }
-                }
-            }
 
-            return false;
+        VisitResult visitSuper(Visitor visitor) const final
+        {
+            auto result = VisitResult::Continue;
+
+            auto predicate = [&visitor, &result](const MetaClass* metaClass)
+            {
+                if (result == VisitResult::Abort)
+                {
+                    return;
+                }
+                result = metaClass->visit(visitor);
+            };
+            utils::for_each_arg(predicate, SuperClasses::getStaticMetaClass()...);
+
+            return result;
         }
 
         bool isAbstract() const final
@@ -100,46 +79,19 @@ protected:
         {
             return std::is_base_of_v<ObjectExtension, DeclaredClass>;
         }
-
-        bool isMetaClassOf(const MetaObject& object) const final
-        {
-            auto address = dynamic_cast<const DeclaredClass*>(&object);
-            return address != nullptr;
-        }
-    };
-
-    explicit StubMetaClass(DescriptorPtr descriptor) :
-        MetaClass(std::move(descriptor))
-    {
-    }
-
-public:
-    explicit StubMetaClass() :
-        StubMetaClass(std::make_unique<StubDescriptor>(""))
-    {        
-    }
-};
-
-template <const char* MetaClassName, class DeclaredClass, class... SuperClasses>
-class META_TEMPLATE_API MetaClassImpl : public StubMetaClass<DeclaredClass, SuperClasses...>
-{
-    using BaseMetaClass = StubMetaClass<DeclaredClass, SuperClasses...>;
-
-protected:
-    struct META_API MetaDescriptor : BaseMetaClass::StubDescriptor
-    {
-        explicit MetaDescriptor(std::string_view name) :
-            BaseMetaClass::StubDescriptor(name)
-        {
-        }
     };
 
 public:
-    explicit MetaClassImpl() :
-        BaseMetaClass(std::make_unique<MetaDescriptor>(MetaClassName))
+    explicit MetaClassImpl(std::string_view metaClassName) :
+        MetaClass(std::make_unique<MetaClassDescriptor>(metaClassName))
     {
+        static_assert(std::is_base_of_v<Registrars, MetaRegistrars>, "MetaRegistrars template argument must derive from meta::Registrars.");
+        MetaRegistrars registrars;
+        registrars.apply(*this);
+        this->m_descriptor->sealed = true;
     }
 };
+
 
 } // detail
 

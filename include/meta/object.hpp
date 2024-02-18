@@ -32,7 +32,7 @@
 namespace meta
 {
 
-/// The base class of any object that defines a meta class.
+/// The base class of any object that defines a meta-class.
 class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
 {
 public:
@@ -45,7 +45,6 @@ public:
     /// The metadata of a meta object.
     META_CLASS("meta.Object", Object, MetaObject)
     {
-        DYNAMIC_META_CLASS();
     };
 
     /// Adds an extension to the object. The object takes ownership over the extension. The method
@@ -78,6 +77,9 @@ public:
 protected:
     /// Constructor.
     explicit Object(std::string_view name);
+
+    /// Second phase initializer.
+    void initialize();
 
 private:
     using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;

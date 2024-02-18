@@ -19,17 +19,19 @@
 #ifndef UTILS_UTILITY_HPP
 #define UTILS_UTILITY_HPP
 
-#include <utility>
-
 namespace utils
 {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+
 /// Template function to call a function \a f on an argument pack.
 template <class Function, class... Arguments>
-void for_each_arg(Function f, Arguments&&... args)
+void for_each_arg(Function f, Arguments... args)
 {
-    (void)(int[]){(f(std::forward<Arguments>(args)), 0)...};
+    (f(args),...);
 }
+#pragma GCC diagnostic pop
 
 }
 

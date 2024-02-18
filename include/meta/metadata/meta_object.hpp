@@ -28,32 +28,56 @@ namespace meta
 /// The base class of objects whith metadata.
 class META_API MetaObject
 {
+    friend class MetaClass;
+
 public:
     /// Destructor.
     virtual ~MetaObject();
 
-    /// Returns the name of the metaobject.
-    /// \return The name of the metaobject.
+    /// Returns the name of the meta-object.
+    /// \return The name of the meta-object.
     std::string_view getName() const
     {
         return m_name;
     }
 
-    META_CLASS("meta.MetaObject", MetaObject)
+    STATIC_META_CLASS("meta.MetaObject", MetaObject)
     {
     };
 
-    static auto create(std::string_view name)
+    /// Returns the dynamic meta-class of the meta object.
+    virtual const MetaClass* getDynamicMetaClass() const
+    {
+        return getStaticMetaClass();
+    }
+
+    static MetaObjectPtr create(std::string_view name)
     {
         return MetaObjectPtr(new MetaObject(name));
     }
 
+    /// Returns the factory meta-class which created the object. By default this is the dynamic meta-class.
+    /// \return The factory meta-class which created the object. If the object was not creasted by
+    ///         a meta-class, returns nullptr;
+    const MetaClass* getFactory() const
+    {
+        return m_factory;
+    }
+
 protected:
-    /// Constructor. Fails if the metaname passed as argument is invalid.
+    /// Constructor. Fails if the meta-name passed as argument is invalid.
     explicit MetaObject(std::string_view metaName);
 
+    /// Second phase initializer of the object.
+    void initialize()
+    {
+    }
+
 private:
-    /// The metaname of the metaobject.
+    /// Holds the meta-class which created the object. The value of \e nullptr means the object was
+    /// not created through meta-class.
+    MetaClass* m_factory = nullptr;
+    /// The meta-name of the meta-object.
     std::string m_name;
 };
 

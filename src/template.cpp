@@ -39,6 +39,13 @@
 namespace meta
 {
 
+namespace
+{
+
+const std::string_view c_invalidMetaNameCharacters{"~`!@#$%^&*()+={[}]|\\;\"'<,>?/ "};
+
+}
+
 class MetaLibraryPrivate
 {
 public:
@@ -135,7 +142,23 @@ ObjectFactory* Library::objectFactory() const
 
 bool isValidMetaName(std::string_view name)
 {
-    return !name.empty() && name.find_first_of("~`!@#$%^&*()+={[}]|\\;\"'<,>?/ ") == std::string_view::npos;
+    return !name.empty() && name.find_first_of(c_invalidMetaNameCharacters) == std::string_view::npos;
 }
+
+std::string ensureValidMetaName(std::string name, char hint)
+{
+    abortIfFail(!name.empty());
+
+    auto hintIt = c_invalidMetaNameCharacters.find_first_of(hint);
+    abortIfFail(hintIt == std::string_view::npos);
+
+    std::size_t it = 0;
+    while ( (it = name.find_first_of(c_invalidMetaNameCharacters)) != std::string::npos)
+    {
+        name.at(it) = hint;
+    }
+    return name;
+}
+
 
 }

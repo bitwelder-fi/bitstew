@@ -30,9 +30,24 @@
 namespace meta
 {
 
-/// %Invokable represents an invokable extension of an Object, which can be applied on an instance
-/// at runtime. To add an invokable to an instance of an Object, call Object::addExtension(). You can
-/// call invokable extensions by calling the meta::invoke() function.
+/// %Invokable represents an object extension to a callable object, which you can apply on an Object
+/// at runtime. To add an invokable to an Object, call Object::addExtension() method.
+///
+/// Invokables have meta names generated from the RTTI type name of the callable object. This makes
+/// the invokation by name inconvenient. To overcome this, Meta provides a macro, which you can use
+/// to provide a static name for your Invokable. An example of how to provide a static name for your
+/// global lambda:
+/// \code
+/// // The global lambda for which to register an invokable extension.
+/// auto globalLambda = [](){};
+/// DECLARE_INVOKABLE(LambdaExtension, "lambda", globalLambda);
+///
+/// // You can register the LambdaExtension to the factory.
+/// meta::Library()::instance()->factory()->registerMetaClass<LambdaExtension>();
+/// // You can also add the LambdaExtension to the meta-class of the Object.
+/// Object::getDynamicMetaClass()->addMetaExtension<LambdaExtension>();
+/// \endcode
+/// To call invokable extensions on an Object, use the meta::invoke() function.
 ///
 /// In most cases, the invokable needs to access the instance it extends. To do that, the first argument
 /// of the invokable function should be a pionter to ObjectExtension:
@@ -48,7 +63,7 @@ namespace meta
 ///
 /// The invokable arguments can hold any type, except reference types.
 template <class Function, Function function>
-class Invokable final : public ObjectExtension
+class Invokable : public ObjectExtension
 {
     using SelfType = Invokable<Function, function>;
 
@@ -56,13 +71,13 @@ protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(const PackagedArguments& arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    Argument runOverride(const PackagedArguments& arguments);
+    Argument runOverride(const PackagedArguments& arguments) final;
 
     /// Constructor.
     explicit Invokable(std::string_view name);
 
 public:
-    STUB_META_CLASS(SelfType, ObjectExtension)
+    AUTO_META_CLASS(Function, SelfType, ObjectExtension)
     {
     };
 
@@ -134,6 +149,28 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
     }
 }
 
+}
+
+/// Use this macro to declare a static name for your invokable function. The invokable object gets
+/// created with the meta name of the meta-class.
+/// \param InvokableClass The object extension class to define for the invokable function.
+/// \param InvokableName The static name of the invokable.
+/// \param Funtion The address of the function, method or the lambda.
+#define DECLARE_INVOKABLE(InvokableClass, InvokableName, Function)                      \
+struct META_API InvokableClass : public meta::Invokable<decltype(Function), Function>   \
+{                                                                                       \
+    using Base = meta::Invokable<decltype(Function), Function>;                         \
+    META_CLASS(InvokableName, InvokableClass, Base)                                     \
+    {                                                                                   \
+    };                                                                                  \
+    static std::shared_ptr<InvokableClass> create(std::string_view = std::string_view())\
+    {                                                                                   \
+        return std::make_shared<InvokableClass>(getStaticMetaClass()->getName());       \
+    }                                                                                   \
+    explicit InvokableClass(std::string_view name) :                                    \
+        Base(name)                                                                      \
+    {                                                                                   \
+    }                                                                                   \
 }
 
 #endif // META_INVOKABLE_HPP

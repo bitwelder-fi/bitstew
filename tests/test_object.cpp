@@ -38,21 +38,71 @@ protected:
     {
         DomainTestEnvironment::initializeDomain(true, true);
     }
+    void TearDown() override
+    {
+        // Ensure tracer completes its job.
+        auto tracer = meta::Library::instance().tracer();
+        if (tracer->isBusy())
+        {
+            tracer->wait();
+        }
+        DomainTestEnvironment::TearDown();
+    }
 };
+
+DECLARE_INVOKABLE(GetName, "getName", &meta::Object::getName);
 
 }
 
 
-TEST_F(ObjectTest, invoke_getName)
+TEST_F(ObjectTest, addExtension)
 {
-    auto metaClass = meta::Object::getStaticMetaClass();
-    auto object = metaClass->create<meta::Object>("object");
-    ASSERT_NE(nullptr, object);
+    auto object = meta::Object::create("test");
+    auto getName = GetName::create();
+    object->addExtension(getName);
 
-    using Invokable = meta::Invokable<decltype(&meta::Object::getName), &meta::Object::getName>;
-    auto metaGetName = Invokable::create("getName");
-    object->addExtension(metaGetName);
+    EXPECT_CALL(*m_mockPrinter, log("Extension 'getName' already extends the object."));
+    object->addExtension(getName);
+}
+
+TEST_F(ObjectTest, findExtension)
+{
+    auto object = meta::Object::create("test");
+    auto getName = GetName::create();
+    object->addExtension(getName);
+
+    EXPECT_EQ(getName, object->findExtension("getName"));
+}
+
+TEST_F(ObjectTest, removeExtension)
+{
+    auto object = meta::Object::create("test");
+    auto getName = GetName::create();
+    object->addExtension(getName);
+    EXPECT_EQ(object, getName->getObject());
+
+    object->removeExtension(*getName);
+    EXPECT_EQ(nullptr, getName->getObject());
+}
+
+TEST_F(ObjectTest, objectInvoke_getName)
+{
+    auto object = meta::Object::create("test");
+    auto getName = GetName::create();
+    object->addExtension(getName);
+
+    auto result = object->invoke("getName");
+    ASSERT_NE(std::nullopt, result);
+    EXPECT_EQ(std::string_view("test"), static_cast<std::string_view>(*result));
+}
+
+TEST_F(ObjectTest, metaInvoke_getName)
+{
+    auto object = meta::Object::create("test");
+    auto getName = GetName::create();
+    object->addExtension(getName);
+
     auto result = meta::invoke(object, "getName");
     ASSERT_NE(std::nullopt, result);
-    EXPECT_EQ(std::string_view("object"), static_cast<std::string_view>(*result));
+    EXPECT_EQ(std::string_view("test"), static_cast<std::string_view>(*result));
 }

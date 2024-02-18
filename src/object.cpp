@@ -32,19 +32,23 @@ Object::~Object()
 {
 }
 
+void Object::initialize()
+{
+    MetaObject::initialize();
+}
 
 ObjectPtr Object::create(std::string_view name)
 {
-    return ObjectPtr(new Object(name));
+    auto object = ObjectPtr(new Object(name));
+    object->initialize();
+    return object;
 }
 
 void Object::addExtension(ObjectExtensionPtr extension)
 {
-    abortIfFail(!extension->getObject());
-
     if (extension->getObject().get() == this)
     {
-        META_LOG_ERROR("Extension " << extension->getName() <<" already extends the object.");
+        META_LOG_ERROR("Extension '" << extension->getName() <<"' already extends the object.");
         return;
     }
 
@@ -53,7 +57,6 @@ void Object::addExtension(ObjectExtensionPtr extension)
     {
         extension->attachToObject(*this);
     }
-    // return it.second;
 }
 
 bool Object::removeExtension(ObjectExtension& extension)

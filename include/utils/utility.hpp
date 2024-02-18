@@ -19,16 +19,14 @@
 #ifndef UTILS_UTILITY_HPP
 #define UTILS_UTILITY_HPP
 
-#include <utility>
-
 namespace utils
 {
 
 /// Template function to call a function \a f on an argument pack.
 template <class Function, class... Arguments>
-void for_each_arg(Function f, Arguments&&... args)
+void for_each_arg(Function f, Arguments... args)
 {
-    (f(std::forward<Arguments>(args)),...);
+    (f(args),...);
 }
 
 }

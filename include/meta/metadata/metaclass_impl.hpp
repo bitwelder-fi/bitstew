@@ -17,6 +17,7 @@
  */
 
 #include <array>
+#include <utils/utility.hpp>
 #include <meta/metadata/metaclass.hpp>
 
 namespace meta
@@ -52,44 +53,21 @@ protected:
             }
         }
 
-        const MetaClass* getBaseClass(std::size_t index) const final
+        VisitResult visitSuper(Visitor visitor) const final
         {
-            if constexpr (arity)
-            {
-                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
-                return superMetas[index];
-            }
-            else
-            {
-                return {};
-            }
-        }
-        std::size_t getBaseClassCount() const final
-        {
-            if constexpr (arity)
-            {
-                return arity;
-            }
-            else
-            {
-                return 0u;
-            }
-        }
-        bool hasSuperClass(const MetaClass& metaClass) const final
-        {
-            if constexpr (arity)
-            {
-                auto superMetas = std::array<const MetaClass*, arity>({{SuperClasses::getStaticMetaClass()...}});
-                for (auto& meta : superMetas)
-                {
-                    if (meta->isDerivedFrom(metaClass))
-                    {
-                        return true;
-                    }
-                }
-            }
+            auto result = VisitResult::Continue;
 
-            return false;
+            auto predicate = [&visitor, &result](auto metaClass)
+            {
+                if (result == VisitResult::Abort)
+                {
+                    return;
+                }
+                result = metaClass->visit(visitor);
+            };
+            utils::for_each_arg(predicate, SuperClasses::getStaticMetaClass()...);
+
+            return result;
         }
 
         bool isAbstract() const final
@@ -100,12 +78,6 @@ protected:
         bool isExtension() const final
         {
             return std::is_base_of_v<ObjectExtension, DeclaredClass>;
-        }
-
-        bool isMetaClassOf(const MetaObject& object) const final
-        {
-            auto address = dynamic_cast<const DeclaredClass*>(&object);
-            return address != nullptr;
         }
     };
 

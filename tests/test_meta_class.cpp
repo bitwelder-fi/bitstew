@@ -19,147 +19,196 @@
 #include <gtest/gtest.h>
 
 #include "test_meta_class_fixtures.hpp"
-#include "utils/domain_test_environment.hpp"
 
 namespace
 {
 
-class ObjectFactoryTest : public DomainTestEnvironment
+// {TMetaClass, bool-value}
+template <typename TClass, bool value>
+struct BoolParam
 {
-protected:
-    meta::ObjectFactory* m_factory = nullptr;
-    std::size_t m_registrySize = 0u;
-
-    void SetUp() override
-    {
-        initializeDomain(false, true);
-        m_factory = meta::Library::instance().objectFactory();
-        m_registrySize = std::distance(m_factory->begin(), m_factory->end());
-    }
+    const meta::MetaClass* metaClass = TClass::getStaticMetaClass();
+    bool test = value;
 };
 
-using MetaNameParam = std::tuple<std::string, bool>;
-class MetaNameValidityTest : public ::testing::Test, public ::testing::WithParamInterface<MetaNameParam>
+template <typename TBaseClass, typename TDerivedClass, bool Result>
+struct TwoTypesRelationTest
 {
-protected:
-    std::string metaClassName;
-    bool isValid;
+    using BaseClass = TBaseClass;
+    using DerivedClass = TDerivedClass;
 
-    void SetUp() override
-    {
-        auto args = GetParam();
-        metaClassName = std::get<std::string>(args);
-        isValid = std::get<bool>(args);
-    }
+    const meta::MetaClass* baseClass = TBaseClass::getStaticMetaClass();
+    const meta::MetaClass* derivedClass = TDerivedClass::getStaticMetaClass();
+    bool test = Result;
 };
 
-class MetaLibraryTest : public DomainTestEnvironment
-{
-protected:
-    void SetUp() override
-    {
-        DomainTestEnvironment::initializeDomain(true, true);
-    }
-};
+
+template <typename Traits>
+using MetaClassTestsGetStaticMetaClass = TypedMetaClassTests<Traits>;
+
+using GetNameParam = MetaClassParam<std::string_view>;
+using MetaClass_GetName = BaseParamMetaClassTest<std::string_view, MetaClassTests>;
+
+using FindExtensionParam = MetaClassParam<std::vector<std::string_view>>;
+using MetaClass_FindExtension = BaseParamMetaClassTest<std::vector<std::string_view>, MetaClassTests>;
+
+template <typename Traits>
+using MetaClassTestsIsAbstractMetaClass = BaseTypedMetaClassTests<Traits>;
+
+template <typename Traits>
+using MetaClassTestsIsDerivedFrom = BaseTypedMetaClassTests<Traits>;
 
 }
 
-TEST(MetaData, size)
-{
-    std::cerr << "MetaExtensionRegistrar size= " << sizeof(meta::MetaClass::MetaExtensionRegistrar) << std::endl;
-    std::cerr << "ExtendedObject::StaticMetaClass size= " << sizeof(*ExtendedObject::getStaticMetaClass()) << std::endl;
-}
-
-TEST(MetaClassTests, testMetaObject)
-{
-    ASSERT_NE(nullptr, meta::MetaObject::getStaticMetaClass());
-    EXPECT_FALSE(meta::MetaObject::getStaticMetaClass()->isAbstract());
-    EXPECT_EQ(0u, meta::MetaObject::getStaticMetaClass()->getBaseClassCount());
-}
-
-TEST(MetaClassTests, testAbstractMetaClass)
-{
-    ASSERT_NE(nullptr, AbstractClass::getStaticMetaClass());
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isAbstract());
-    ASSERT_EQ(1u, AbstractClass::getStaticMetaClass()->getBaseClassCount());
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFromClass<meta::Object>());
-    EXPECT_FALSE(AbstractClass::getStaticMetaClass()->isDerivedFromClass<AbstractClass>());
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFrom(*meta::Object::getStaticMetaClass()));
-    EXPECT_TRUE(AbstractClass::getStaticMetaClass()->isDerivedFrom(*AbstractClass::getStaticMetaClass()));
-}
-
-TEST(MetaClassTests, testInterface)
-{
-    ASSERT_NE(nullptr, Interface::getStaticMetaClass());
-    EXPECT_TRUE(Interface::getStaticMetaClass()->isAbstract());
-    ASSERT_EQ(0u, Interface::getStaticMetaClass()->getBaseClassCount());
-}
-
-TEST(MetaClassTests, testObject)
-{
-    ASSERT_NE(nullptr, Object::getStaticMetaClass());
-    EXPECT_FALSE(Object::getStaticMetaClass()->isAbstract());
-    ASSERT_EQ(2u, Object::getStaticMetaClass()->getBaseClassCount());
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<meta::Object>());
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<AbstractClass>());
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFromClass<Interface>());
-
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*meta::Object::getStaticMetaClass()));
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*AbstractClass::getStaticMetaClass()));
-    EXPECT_TRUE(Object::getStaticMetaClass()->isDerivedFrom(*Interface::getStaticMetaClass()));
-}
-
-INSTANTIATE_TEST_SUITE_P(NameValidity, MetaNameValidityTest,
+INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaNameValidityTest,
                          ::testing::Values(
-                            MetaNameParam("meta.Object", true),
-                            MetaNameParam("meta:Object", true),
-                            MetaNameParam("meta-Object", true),
-                            MetaNameParam("meta_Object", true),
-                            MetaNameParam("meta~Object", false),
-                            MetaNameParam("meta`Object", false),
-                            MetaNameParam("meta!Object", false),
-                            MetaNameParam("meta@Object", false),
-                            MetaNameParam("meta#Object", false),
-                            MetaNameParam("meta$Object", false),
-                            MetaNameParam("meta$Object", false),
-                            MetaNameParam("meta%Object", false),
-                            MetaNameParam("meta^Object", false),
-                            MetaNameParam("meta&Object", false),
-                            MetaNameParam("meta*Object", false),
-                            MetaNameParam("meta(Object", false),
-                            MetaNameParam("meta)Object", false),
-                            MetaNameParam("meta+Object", false),
-                            MetaNameParam("meta=Object", false),
-                            MetaNameParam("meta{Object", false),
-                            MetaNameParam("meta[Object", false),
-                            MetaNameParam("meta}Object", false),
-                            MetaNameParam("meta]Object", false),
-                            MetaNameParam("meta|Object", false),
-                            MetaNameParam("meta\\Object", false),
-                            MetaNameParam("meta;Object", false),
-                            MetaNameParam("meta\"Object", false),
-                            MetaNameParam("meta'Object", false),
-                            MetaNameParam("meta<Object", false),
-                            MetaNameParam("meta,Object", false),
-                            MetaNameParam("meta>Object", false),
-                            MetaNameParam("meta?Object", false),
-                            MetaNameParam("meta/Object", false),
-                            MetaNameParam("meta Object", false)));
+                             MetaNameParam("meta.Object", true),
+                             MetaNameParam("meta:Object", true),
+                             MetaNameParam("meta-Object", true),
+                             MetaNameParam("meta_Object", true),
+                             MetaNameParam("meta~Object", false),
+                             MetaNameParam("meta`Object", false),
+                             MetaNameParam("meta!Object", false),
+                             MetaNameParam("meta@Object", false),
+                             MetaNameParam("meta#Object", false),
+                             MetaNameParam("meta$Object", false),
+                             MetaNameParam("meta$Object", false),
+                             MetaNameParam("meta%Object", false),
+                             MetaNameParam("meta^Object", false),
+                             MetaNameParam("meta&Object", false),
+                             MetaNameParam("meta*Object", false),
+                             MetaNameParam("meta(Object", false),
+                             MetaNameParam("meta)Object", false),
+                             MetaNameParam("meta+Object", false),
+                             MetaNameParam("meta=Object", false),
+                             MetaNameParam("meta{Object", false),
+                             MetaNameParam("meta[Object", false),
+                             MetaNameParam("meta}Object", false),
+                             MetaNameParam("meta]Object", false),
+                             MetaNameParam("meta|Object", false),
+                             MetaNameParam("meta\\Object", false),
+                             MetaNameParam("meta;Object", false),
+                             MetaNameParam("meta\"Object", false),
+                             MetaNameParam("meta'Object", false),
+                             MetaNameParam("meta<Object", false),
+                             MetaNameParam("meta,Object", false),
+                             MetaNameParam("meta>Object", false),
+                             MetaNameParam("meta?Object", false),
+                             MetaNameParam("meta/Object", false),
+                             MetaNameParam("meta Object", false)));
 TEST_P(MetaNameValidityTest, testMetaClassName)
 {
     EXPECT_EQ(isValid, meta::isValidMetaName(this->metaClassName));
 }
 
-TEST_F(ObjectFactoryTest, testRegister)
+
+using GetStaticMetaClassTypes = ::testing::Types<meta::MetaObject,
+                                                 meta::Object,
+                                                 meta::ObjectExtension,
+                                                 AbstractClass,
+                                                 Interface,
+                                                 OverrideClass,
+                                                 PreObject,
+                                                 Object,
+                                                 ExtendedObject,
+                                                 DynamicObject,
+                                                 ExtendObjectFunction,
+                                                 LambdaInvokable>;
+TYPED_TEST_SUITE(MetaClassTestsGetStaticMetaClass, GetStaticMetaClassTypes);
+TYPED_TEST(MetaClassTestsGetStaticMetaClass, getStaticMetaClass)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
-    EXPECT_FALSE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
+    using MetaClassType = TestFixture::Traits;
+    auto metaClass = MetaClassType::getStaticMetaClass();
+    ASSERT_NE(nullptr, metaClass);
+}
+TYPED_TEST(MetaClassTestsGetStaticMetaClass, isSealed)
+{
+    using MetaClassType = TestFixture::Traits;
+    auto metaClass = MetaClassType::getStaticMetaClass();
+    EXPECT_TRUE(metaClass->isSealed());
+}
+TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClass)
+{
+    meta::ObjectFactory factory;
+    using MetaClassType = TestFixture::Traits;
+    auto metaClass = MetaClassType::getStaticMetaClass();
+
+    EXPECT_TRUE(factory.registerMetaClass(metaClass));
+    EXPECT_FALSE(factory.registerMetaClass(metaClass));
+}
+TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClassWithTemplate)
+{
+    meta::ObjectFactory factory;
+    using MetaClassType = TestFixture::Traits;
+
+    EXPECT_TRUE(factory.registerMetaClass<MetaClassType>());
+    EXPECT_FALSE(factory.registerMetaClass<MetaClassType>());
 }
 
-TEST_F(ObjectFactoryTest, registerObjectExtension)
+INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaClass_GetName,
+                         ::testing::Values(
+                             GetNameParam{meta::MetaObject::getStaticMetaClass(), "meta.MetaObject"},
+                             GetNameParam{meta::Object::getStaticMetaClass(), "meta.Object"},
+                             GetNameParam{AbstractClass::getStaticMetaClass(), "AbstractClass"},
+                             GetNameParam{Interface::getStaticMetaClass(), "Interface"},
+                             GetNameParam{OverrideClass::getStaticMetaClass(), "AbstractClass"},
+                             GetNameParam{PreObject::getStaticMetaClass(), "PreObject"},
+                             GetNameParam{Object::getStaticMetaClass(), "TestObject"},
+                             GetNameParam{ExtendedObject::getStaticMetaClass(), "ExtendedObject"},
+                             GetNameParam{DynamicObject::getStaticMetaClass(), "DynamicObject"},
+                             GetNameParam{ExtendObjectFunction::getStaticMetaClass(), "extendObjects"},
+                             GetNameParam{LambdaInvokable::getStaticMetaClass(), "lambda"}));
+TEST_P(MetaClass_GetName, metaClass_getName)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass<LambdaInvokable>());
+    EXPECT_EQ(this->param.param, this->param.metaClass->getName());
 }
+
+using IsAbstractMetaClassTypes = ::testing::Types<BoolParam<meta::MetaObject, false>,
+                                                  BoolParam<meta::Object, false>,
+                                                  BoolParam<Interface, true>,
+                                                  BoolParam<AbstractClass, true>,
+                                                  BoolParam<Object, false>>;
+TYPED_TEST_SUITE(MetaClassTestsIsAbstractMetaClass, IsAbstractMetaClassTypes);
+TYPED_TEST(MetaClassTestsIsAbstractMetaClass, staticMetaClass_isAbstract)
+{
+    EXPECT_EQ(this->traits.test, this->traits.metaClass->isAbstract());
+}
+
+using IsDerivedFromTypes = ::testing::Types<TwoTypesRelationTest<meta::MetaObject, meta::MetaObject, false>,
+                                            TwoTypesRelationTest<meta::Object, meta::MetaObject, false>,
+                                            TwoTypesRelationTest<meta::MetaObject, meta::Object, true>,
+                                            TwoTypesRelationTest<meta::MetaObject, Object, true>,
+                                            TwoTypesRelationTest<Interface, AbstractClass, false>,
+                                            TwoTypesRelationTest<meta::MetaObject, AbstractClass, true>,
+                                            TwoTypesRelationTest<Interface, Object, true>>;
+TYPED_TEST_SUITE(MetaClassTestsIsDerivedFrom, IsDerivedFromTypes);
+TYPED_TEST(MetaClassTestsIsDerivedFrom, staticMetaClass_isDerivedFrom)
+{
+    using BaseClass = TestFixture::Traits::BaseClass;
+    EXPECT_EQ(this->traits.test, this->traits.derivedClass->isDerivedFrom(*this->traits.baseClass));
+    EXPECT_EQ(this->traits.test, this->traits.derivedClass->template isDerivedFromClass<BaseClass>());
+}
+
+INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaClass_FindExtension,
+                         ::testing::Values(
+                             FindExtensionParam{meta::MetaObject::getStaticMetaClass(), {}},
+                             FindExtensionParam{meta::Object::getStaticMetaClass(), {}},
+                             FindExtensionParam{AbstractClass::getStaticMetaClass(), {}},
+                             FindExtensionParam{Interface::getStaticMetaClass(), {}},
+                             FindExtensionParam{OverrideClass::getStaticMetaClass(), {}},
+                             FindExtensionParam{PreObject::getStaticMetaClass(), {}},
+                             FindExtensionParam{Object::getStaticMetaClass(), {}},
+                             FindExtensionParam{ExtendedObject::getStaticMetaClass(), {"getName"}},
+                             FindExtensionParam{DynamicObject::getStaticMetaClass(), {"getName"}}));
+TEST_P(MetaClass_FindExtension, findMetaExtension)
+{
+    for (auto& extensionName : this->param.param)
+    {
+        auto extension = this->param.metaClass->findMetaExtension(extensionName);
+        EXPECT_NE(nullptr, extension);
+    }
+}
+
 
 TEST_F(ObjectFactoryTest, deepRegister)
 {
@@ -172,27 +221,28 @@ TEST_F(ObjectFactoryTest, deepRegister)
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
 }
 
-TEST_F(ObjectFactoryTest, registerStubMetaClassTheRightWay)
+TEST_F(ObjectFactoryTest, registerAutoMetaClass)
 {
     auto lambda = [](){};
-    using StubType = meta::Invokable<decltype(lambda), lambda>;
-    m_factory->registerMetaClass(StubType::getStaticMetaClass());
+    using AutoType = meta::Invokable<decltype(lambda), lambda>;
+    m_factory->registerMetaClass(AutoType::getStaticMetaClass());
     EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
-    EXPECT_NE(nullptr, m_factory->findMetaClass(StubType::getStaticMetaClass()->getName()));
+    EXPECT_NE(nullptr, m_factory->findMetaClass(AutoType::getStaticMetaClass()->getName()));
 }
 
-TEST_F(ObjectFactoryTest, testOverride)
+TEST_F(ObjectFactoryTest, registerOverride)
 {
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
     EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
 }
 
-TEST_F(ObjectFactoryTest, deepOverride)
+TEST_F(ObjectFactoryTest, deepRegisterOverride)
 {
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
     EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
+    EXPECT_EQ(nullptr, m_factory->findMetaClass("Interface"));
 
     EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
     EXPECT_EQ(m_registrySize + 2u, std::distance(m_factory->begin(), m_factory->end()));
@@ -212,39 +262,30 @@ TEST_F(ObjectFactoryTest, registerDynamicMetaclass)
     EXPECT_NE(nullptr, m_factory->findMetaClass("DynamicObject"));
 }
 
-TEST_F(ObjectFactoryTest, testFindMetaClass)
+TEST_F(ObjectFactoryTest, findMetaClass)
 {
-    EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
-    EXPECT_TRUE(m_factory->registerMetaClass(Interface::getStaticMetaClass()));
-    EXPECT_TRUE(m_factory->registerMetaClass(Object::getStaticMetaClass()));
+    registerTestClasses();
 
     EXPECT_EQ(Interface::getStaticMetaClass(), m_factory->findMetaClass("Interface"));
 }
 
-TEST_F(ObjectFactoryTest, testMetaClassCreate)
+TEST_F(ObjectFactoryTest, create)
 {
-    m_factory->registerMetaClass(Object::getStaticMetaClass());
+    registerTestClasses();
 
-    auto metaClass = m_factory->findMetaClass(Object::getStaticMetaClass()->getName());
-    ASSERT_EQ(Object::getStaticMetaClass(), metaClass);
-    ASSERT_NE(nullptr, metaClass->create("doing"));
-    auto castedObject = metaClass->create<Object>("next");
-    ASSERT_NE(nullptr, castedObject);
+    ASSERT_NE(nullptr, m_factory->create("TestObject", "doing"));
 }
 
-TEST_F(ObjectFactoryTest, testMetaClassCastedCreate)
+TEST_F(ObjectFactoryTest, create_template)
 {
-    m_factory->registerMetaClass(Object::getStaticMetaClass());
-    auto metaClass = m_factory->findMetaClass(Object::getStaticMetaClass()->getName());
-    ASSERT_NE(nullptr, metaClass);
-    auto castedObject = metaClass->create<Object>("next");
-    EXPECT_NE(nullptr, castedObject);
+    registerTestClasses();
+
+    ASSERT_NE(nullptr, m_factory->create<Object>("doing"));
 }
 
-TEST_F(ObjectFactoryTest, staticMetaExtension)
+TEST_F(ObjectFactoryTest, createWithMetaExtension)
 {    
-    ASSERT_TRUE(ExtendedObject::getStaticMetaClass()->isSealed());
-    m_factory->registerMetaClass(ExtendedObject::getStaticMetaClass());
+    registerTestClasses();
 
     auto object = m_factory->create<ExtendedObject>("test");
     ASSERT_NE(nullptr, object);
@@ -254,103 +295,44 @@ TEST_F(ObjectFactoryTest, staticMetaExtension)
     EXPECT_EQ("test", std::string_view(*result));
 }
 
-TEST_F(ObjectFactoryTest, dynamicMetaExtension)
+TEST_F(ObjectFactoryTest, createWithMetaExtensionInSuper)
 {
-    m_factory->registerMetaClass(DynamicObject::getStaticMetaClass());
-    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
+    registerTestClasses();
+
+    auto object = m_factory->create<DynamicObject>("test");
+    ASSERT_NE(nullptr, object);
+
+    auto result = object->invoke("getName");
+    ASSERT_TRUE(result);
+    EXPECT_EQ("test", std::string_view(*result));
+}
+
+TEST_F(ObjectFactoryTest, addDynamicMetaExtensionToMetaClass)
+{
+    registerTestClasses();
 
     auto dynamic = DynamicObject::getExtendableMetaClass();
     ASSERT_NE(nullptr, dynamic);
     EXPECT_FALSE(dynamic->isSealed());
 
-    auto lambda = [](DynamicObject* self)
-    {
-        META_LOG_INFO(self->getName());
-    };
-    using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
-    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass());
-    EXPECT_NE(nullptr, dynamic->findMetaExtension(MetaLambda::getStaticMetaClass()->getName()));
+    dynamic->addMetaExtension(LambdaInvokable::getStaticMetaClass());
+    EXPECT_NE(nullptr, dynamic->findMetaExtension("lambda"));
+    EXPECT_NE(nullptr, dynamic->findMetaExtension("getName"));
 }
 
-TEST_F(ObjectFactoryTest, dynamicExtensions)
+
+TEST_F(MetaLibraryTest, metaLibrarysHasObjectFactory)
 {
-    auto dynamic = DynamicObject::getExtendableMetaClass();
-
-    auto lambda = [](meta::ObjectExtension* self)
-    {
-        META_LOG_INFO(self->getObject()->getName());
-    };
-    using MetaLambda = meta::Invokable<decltype(lambda), lambda>;
-    dynamic->addMetaExtension(*MetaLambda::getStaticMetaClass());
-
-    auto dynObject = dynamic->create<DynamicObject>("dynObject");
-    ASSERT_NE(nullptr, dynObject);
-
-    EXPECT_CALL(*m_mockPrinter, log("dynObject"));
-    dynObject->invoke(MetaLambda::getStaticMetaClass()->getName());
+    auto factory = meta::Library::instance().objectFactory();
+    EXPECT_NE(nullptr, factory);
 }
 
-TEST_F(ObjectFactoryTest, addRegisteredExtensionToDynamicMetaClass)
+TEST_F(MetaLibraryTest, metaLibraryObjectFactoryRegistryDefaultContent)
 {
-    ASSERT_TRUE(m_factory->registerMetaClass(ExtendObjectFunction::getStaticMetaClass()));
-    auto dynamic = DynamicObject::getExtendableMetaClass();
-    ASSERT_NE(nullptr, dynamic);
+    auto factory = meta::Library::instance().objectFactory();
+    EXPECT_EQ(3u, std::distance(factory->begin(), factory->end()));
 
-    ASSERT_TRUE(dynamic->tryAddExtension("extendObjects"));
-    auto object = dynamic->create<DynamicObject>("test");
-
-    EXPECT_CALL(*m_mockPrinter, log("extends test"));
-    meta::invoke(object, "extendObjects");
-}
-
-TEST_F(ObjectFactoryTest, createThroughMetaClassAddsExtensionsFromAllLevels)
-{
-    m_factory->registerMetaClass<DynamicObject>();
-    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
-
-    // This creates an object using the sealed meta class.
-    auto sealed = m_factory->create<DynamicObject>("DynamicObject", "sealed");
-    ASSERT_NE(nullptr, sealed);
-    EXPECT_TRUE(sealed->getDynamicMetaClass()->isSealed());
-
-    auto unsealed = m_factory->create<DynamicObject>("DynamicExtendedObject", "unsealed");
-    ASSERT_NE(nullptr, unsealed);
-    EXPECT_FALSE(unsealed->getDynamicMetaClass()->isSealed());
-}
-
-TEST_F(ObjectFactoryTest, dynamicMetaClassCreatedInstancegetsMoreExtensions)
-{
-    m_factory->registerMetaClass<DynamicObject>();
-    m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
-
-    auto unsealed = m_factory->create<DynamicObject>("DynamicExtendedObject", "unsealed");
-    EXPECT_NE(nullptr, unsealed->findExtension("getName"));
-}
-
-TEST_F(MetaLibraryTest, findMetaExtension)
-{
-    auto metaClass = ExtendedObject::getStaticMetaClass();
-    auto getName = metaClass->findMetaExtension("getName");
-    ASSERT_NE(nullptr, getName);
-}
-
-TEST_F(MetaLibraryTest, enumerateExtensions)
-{
-    auto metaClass = ExtendedObject::getStaticMetaClass();
-
-    for (auto it = metaClass->beginExtensions(), end = metaClass->endExtensions(); it != end; ++it)
-    {
-        META_LOG_INFO(it->second->getName());
-    }
-}
-
-TEST_F(MetaLibraryTest, testDomainHasObjectFactory)
-{
-    EXPECT_NE(nullptr, meta::Library::instance().objectFactory());
-}
-
-TEST_F(MetaLibraryTest, testDomainObjectFactoryRegistryContent)
-{
-    ASSERT_NE(nullptr, meta::Library::instance().objectFactory());
-    EXPECT_NE(nullptr, meta::Library::instance().objectFactory()->findMetaClass("meta.Object"));
+    EXPECT_NE(nullptr, factory->findMetaClass("meta.MetaObject"));
+    EXPECT_NE(nullptr, factory->findMetaClass("meta.Object"));
+    EXPECT_NE(nullptr, factory->findMetaClass("meta.ObjectExtension"));
 }

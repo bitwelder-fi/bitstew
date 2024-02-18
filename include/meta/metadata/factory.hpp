@@ -33,7 +33,6 @@ class MetaClass;
 /// Object factory. Keeps a registry of meta classes of an application.
 class META_API ObjectFactory
 {
-    friend struct ObjectFactoryPrivate;
     using MetaClassMap = std::unordered_map<std::string_view, const MetaClass*>;
     MetaClassMap m_registry;
 

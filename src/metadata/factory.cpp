@@ -25,44 +25,6 @@
 namespace meta
 {
 
-struct ObjectFactoryPrivate
-{
-    static void deepRegister(ObjectFactory& self, const MetaClass* metaClass)
-    {
-        for (std::size_t i = 0u; i < metaClass->getBaseClassCount(); ++i)
-        {
-            const auto baseClass = metaClass->getBaseClass(i);
-            // Check if the base class is registered
-            if (!self.findMetaClass(baseClass->getName()))
-            {
-                // registering will do deep register of base metaclasses.
-                self.registerMetaClass(baseClass);
-            }
-        }
-    }
-
-    static void deepOverride(ObjectFactory& self, const MetaClass* metaClass)
-    {
-        for (std::size_t i = 0u; i < metaClass->getBaseClassCount(); ++i)
-        {
-            const auto baseClass = metaClass->getBaseClass(i);
-            // Check if the base class is registered. If it is, override with the new metaclass.
-            // If it is not yet registered, register.
-            auto it = self.m_registry.find(baseClass->getName());
-            if (it != self.m_registry.end())
-            {
-                it->second = metaClass;
-            }
-            else
-            {
-                // Register this metaclass only. Deep register may cause failure.
-                self.m_registry.insert(std::make_pair(baseClass->getName(), metaClass));
-            }
-            deepOverride(self, baseClass);
-        }
-    }
-};
-
 bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
 {
     abortIfFail(metaClass);
@@ -76,9 +38,18 @@ bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
         META_LOG_ERROR("Invalid meta class name: " << metaClass->getName());
         return false;
     }
-    auto result = m_registry.insert(std::make_pair(metaClass->getName(), metaClass));
-    ObjectFactoryPrivate::deepRegister(*this, metaClass);
-    return result.second;
+
+    // Deep register also any unregistered super class.
+    auto result = false;
+    auto deepRegister = [this, &result](auto metaClass)
+    {
+        auto it = m_registry.insert(std::make_pair(metaClass->getName(), metaClass));
+        result |= it.second;
+        return MetaClass::VisitResult::Continue;
+    };
+    metaClass->visit(deepRegister);
+
+    return result;
 }
 
 bool ObjectFactory::overrideMetaClass(const MetaClass* metaClass)
@@ -88,7 +59,12 @@ bool ObjectFactory::overrideMetaClass(const MetaClass* metaClass)
     if (it != m_registry.end())
     {
         it->second = metaClass;
-        ObjectFactoryPrivate::deepOverride(*this, metaClass);
+        auto deepRegister = [this](auto super)
+        {
+            m_registry.insert(std::make_pair(super->getName(), super));
+            return MetaClass::VisitResult::Continue;
+        };
+        metaClass->visitSuper(deepRegister);
         return true;
     }
 

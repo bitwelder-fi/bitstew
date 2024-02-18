@@ -29,6 +29,8 @@
 #include <meta/object_extensions/invokable.hpp>
 #include <utils/scope_value.hpp>
 
+#include "utils/domain_test_environment.hpp"
+
 
 class AbstractClass : public meta::Object
 {
@@ -114,7 +116,6 @@ protected:
     }
 };
 
-
 class ExtendedObject : public Object
 {
 public:
@@ -186,7 +187,123 @@ void extendObjects(meta::ObjectExtension* self)
 }
 DECLARE_INVOKABLE(ExtendObjectFunction, "extendObjects", &extendObjects);
 
-auto globalLambda = [](){};
+auto globalLambda = [](meta::ObjectExtension* self)
+{
+    META_LOG_INFO(self->getObject()->getName());
+};
 DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
+
+
+// -------------------------------------------------------------------------------------------------
+// Test fixtures.
+struct MetaClassTestHelpers
+{
+    std::size_t getBaseClassCount(const meta::MetaClass* metaClass) const
+    {
+        auto count = std::size_t(0);
+        auto visitor = [&count](auto)
+        {
+            ++count;
+            return meta::MetaClass::VisitResult::Continue;
+        };
+        metaClass->visitSuper(visitor);
+        return count;
+    }
+};
+
+class MetaClassTests : public ::testing::Test, public MetaClassTestHelpers
+{
+};
+
+template <typename TestTraits>
+class TypedMetaClassTests : public MetaClassTests
+{
+protected:
+    using Traits = TestTraits;
+};
+
+template <typename TestTraits>
+class BaseTypedMetaClassTests : public TypedMetaClassTests<TestTraits>
+{
+protected:
+    TestTraits traits;
+};
+
+
+// Base Test fixture with a meta class and a parameter with arbitrar type.
+template <typename Param>
+struct MetaClassParam
+{
+    const meta::MetaClass* metaClass;
+    Param param;
+};
+template <typename Param, typename TestBase>
+class BaseParamMetaClassTest : public TestBase, public ::testing::WithParamInterface<MetaClassParam<Param>>
+{
+public:
+    using ParamType = MetaClassParam<Param>;
+
+protected:
+    ParamType param;
+    void SetUp() override
+    {
+        TestBase::SetUp();
+        param = this->GetParam();
+    }
+};
+
+class ObjectFactoryTest : public DomainTestEnvironment, public MetaClassTestHelpers
+{
+protected:
+    meta::ObjectFactory* m_factory = nullptr;
+    std::size_t m_registrySize = 0u;
+
+    void SetUp() override
+    {
+        initializeDomain(false, true);
+        m_factory = meta::Library::instance().objectFactory();
+        m_registrySize = std::distance(m_factory->begin(), m_factory->end());
+    }
+
+    void registerTestClasses()
+    {
+        m_factory->registerMetaClass<AbstractClass>();
+        m_factory->registerMetaClass<Interface>();
+        m_factory->registerMetaClass<PreObject>();
+        m_factory->registerMetaClass<Object>();
+        m_factory->registerMetaClass<ExtendedObject>();
+        m_factory->registerMetaClass<DynamicObject>();
+        m_factory->registerMetaClass(DynamicObject::getExtendableMetaClass());
+
+        m_factory->registerMetaClass<ExtendObjectFunction>();
+        m_factory->registerMetaClass<LambdaInvokable>();
+    }
+};
+
+using MetaNameParam = std::tuple<std::string, bool>;
+class MetaNameValidityTest : public ::testing::Test,
+                             public MetaClassTestHelpers,
+                             public ::testing::WithParamInterface<MetaNameParam>
+{
+protected:
+    std::string metaClassName;
+    bool isValid;
+
+    void SetUp() override
+    {
+        auto args = GetParam();
+        metaClassName = std::get<std::string>(args);
+        isValid = std::get<bool>(args);
+    }
+};
+
+class MetaLibraryTest : public DomainTestEnvironment, public MetaClassTestHelpers
+{
+protected:
+    void SetUp() override
+    {
+        DomainTestEnvironment::initializeDomain(true, true);
+    }
+};
 
 #endif // META_TEST_META_CLASS_FICXTURES_HPP

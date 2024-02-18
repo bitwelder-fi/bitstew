@@ -90,12 +90,6 @@ public:
     /// The iterator of the meta extensions.
     using MetaExtensionIterator = MetaExtensionContainer::const_iterator;
 
-    /// Registers an object extension metaclass to a static meta class.
-    struct META_API MetaExtensionRegistrar
-    {
-        explicit MetaExtensionRegistrar(MetaClass& self, const MetaClass& extensionMeta);
-    };
-
     /// Destructor.
     virtual ~MetaClass() = default;
 
@@ -116,25 +110,10 @@ public:
     /// Returns the name of the metaclass.
     std::string_view getName() const;
 
-    /// Returns the meta class of the base class at index.
-    /// \param index The base class index.
-    /// \return The meta class of the base class at index.
-    const MetaClass* getBaseClass(std::size_t index) const;
-
-    /// Returns the number of base classes with meta data.
-    /// \return The number of base classes with meta data.
-    std::size_t getBaseClassCount() const;
-
     /// Returns whether the class to which the meta class is connected is abstract.
     /// \return If the class to which the meta class is connected is abstract, returns \e true,
     ///         otherwise \e false.
     bool isAbstract() const;
-
-    /// Returns whether this meta class is the meta class of the meta object.
-    /// \param The meta object to check.
-    /// \return If this meta class is the meta class of the meta object, returns \e true, otherwise
-    ///         \e false.
-    bool isMetaClassOf(const MetaObject& object) const;
 
     /// Returns whether this MetaClass is or is derived from the \a metaClass.
     /// \param metaClass The metaClass instance to check.
@@ -145,9 +124,35 @@ public:
     template <class TDerivedClass>
     bool isDerivedFromClass() const
     {
-        abortIfFail(m_descriptor);
-        return m_descriptor->hasSuperClass(*TDerivedClass::getStaticMetaClass());
+        return isDerivedFrom(*TDerivedClass::getStaticMetaClass());
     }
+
+    /// \name Meta-class visiting.
+    /// \{
+    /// Meta-class visiting allows you to walk through the meta-class and its super meta-classes for
+    /// various purposes.
+
+    /// The visit result.
+    enum class VisitResult
+    {
+        /// Abort the visiting.
+        Abort,
+        /// Continue visiting.
+        Continue
+    };
+    /// The visitor function type.
+    using Visitor = std::function<VisitResult(const MetaClass*)>;
+
+    /// Visits the meta-class and its super meta-classes.
+    /// \param visitor The visitor function.
+    /// \return The visit result.
+    VisitResult visit(Visitor visitor) const;
+
+    /// Visits the super meta-classes of a meta class.
+    /// \param visitor The visitor function.
+    /// \return The visit result.
+    VisitResult visitSuper(Visitor visitor) const;
+    /// \}
 
     /// \name Meta extensions
     /// \{
@@ -159,7 +164,7 @@ public:
     /// or the meta class of the object extension is invalid, the meta class is not a meta class of
     /// an object extension, or there is an object extension meta class registered with the same name.
     /// \param extensionMeta The meta class of the object extension to add.
-    void addMetaExtension(const MetaClass& extensionMeta);
+    void addMetaExtension(const MetaClass* extensionMeta);
 
     template <class ClassType>
     void addMetaExtension()
@@ -180,18 +185,10 @@ public:
     const MetaClass* findMetaExtension(std::string_view name) const;
 
     /// Returns the begin iterator of the object extensions meta class register.
-    inline MetaExtensionIterator beginExtensions() const
-    {
-        abortIfFail(m_descriptor);
-        return m_descriptor->extensions.begin();
-    }
+    MetaExtensionIterator beginExtensions() const;
 
     /// Returns the end iterator of the object extensions meta class register.
-    inline MetaExtensionIterator endExtensions() const
-    {
-        abortIfFail(m_descriptor);
-        return m_descriptor->extensions.end();
-    }
+    MetaExtensionIterator endExtensions() const;
     /// \}
 
 protected:
@@ -214,21 +211,9 @@ protected:
         {
             return {};
         }
-        virtual const MetaClass* getBaseClass(std::size_t /*index*/) const
-        {
-            return {};
-        }
-        virtual std::size_t getBaseClassCount() const
-        {
-            return 0u;
-        }
-        virtual bool hasSuperClass(const MetaClass& /*metaClass*/) const
-        {
-            return false;
-        }
+        virtual VisitResult visitSuper(Visitor visitor) const = 0;
         virtual bool isAbstract() const = 0;
         virtual bool isExtension() const = 0;
-        virtual bool isMetaClassOf(const MetaObject& object) const = 0;
     };
     using DescriptorPtr = std::unique_ptr<DescriptorInterface>;
 

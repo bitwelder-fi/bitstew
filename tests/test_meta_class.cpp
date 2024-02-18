@@ -117,20 +117,20 @@ using GetStaticMetaClassTypes = ::testing::Types<meta::MetaObject,
 TYPED_TEST_SUITE(MetaClassTestsGetStaticMetaClass, GetStaticMetaClassTypes);
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, getStaticMetaClass)
 {
-    using MetaClassType = TestFixture::Traits;
+    using MetaClassType = typename TestFixture::Traits;
     auto metaClass = MetaClassType::getStaticMetaClass();
     ASSERT_NE(nullptr, metaClass);
 }
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, isSealed)
 {
-    using MetaClassType = TestFixture::Traits;
+    using MetaClassType = typename TestFixture::Traits;
     auto metaClass = MetaClassType::getStaticMetaClass();
     EXPECT_TRUE(metaClass->isSealed());
 }
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClass)
 {
     meta::ObjectFactory factory;
-    using MetaClassType = TestFixture::Traits;
+    using MetaClassType = typename TestFixture::Traits;
     auto metaClass = MetaClassType::getStaticMetaClass();
 
     EXPECT_TRUE(factory.registerMetaClass(metaClass));
@@ -139,7 +139,7 @@ TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClass)
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClassWithTemplate)
 {
     meta::ObjectFactory factory;
-    using MetaClassType = TestFixture::Traits;
+    using MetaClassType = typename TestFixture::Traits;
 
     EXPECT_TRUE(factory.registerMetaClass<MetaClassType>());
     EXPECT_FALSE(factory.registerMetaClass<MetaClassType>());
@@ -184,7 +184,7 @@ using IsDerivedFromTypes = ::testing::Types<TwoTypesRelationTest<meta::MetaObjec
 TYPED_TEST_SUITE(MetaClassTestsIsDerivedFrom, IsDerivedFromTypes);
 TYPED_TEST(MetaClassTestsIsDerivedFrom, staticMetaClass_isDerivedFrom)
 {
-    using BaseClass = TestFixture::Traits::BaseClass;
+    using BaseClass = typename TestFixture::Traits::BaseClass;
     EXPECT_EQ(this->traits.test, this->traits.derivedClass->isDerivedFrom(*this->traits.baseClass));
     EXPECT_EQ(this->traits.test, this->traits.derivedClass->template isDerivedFromClass<BaseClass>());
 }

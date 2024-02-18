@@ -57,7 +57,7 @@ protected:
         {
             auto result = VisitResult::Continue;
 
-            auto predicate = [&visitor, &result](auto metaClass)
+            auto predicate = [&visitor, &result](const MetaClass* metaClass)
             {
                 if (result == VisitResult::Abort)
                 {

@@ -34,6 +34,9 @@ class MetaLibraryPrivate;
 class ObjectFactory;
 
 /// The class holds the library elements configured for a use case.
+///
+/// To configure the library, call the initialize() method with a configuration.
+/// \see LibraryArguments.
 class META_API Library
 {
 public:

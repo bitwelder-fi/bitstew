@@ -114,9 +114,9 @@ class Invokable : public ObjectExtension
 
 protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
-    PackagedArguments repackageArguments(const PackagedArguments& arguments);
+    PackagedArguments repackageArguments(PackagedArguments arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    ReturnValue runOverride(const PackagedArguments& arguments) final;
+    ReturnValue runOverride(PackagedArguments arguments) final;
 
     /// Constructor.
     explicit Invokable(std::string_view name);
@@ -143,9 +143,14 @@ Invokable<Function, function>::Invokable(std::string_view name) :
 }
 
 template <class Function, Function function>
-PackagedArguments Invokable<Function, function>::repackageArguments(const PackagedArguments& arguments)
+PackagedArguments Invokable<Function, function>::repackageArguments(PackagedArguments arguments)
 {
-    auto result = PackagedArguments();
+    if constexpr (detail::enableRepack<Function>::packSelf)
+    {
+        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
+        arguments.addFront(dynamic_cast<ZipType>(this));
+    }
+
     if constexpr (detail::enableRepack<Function>::packObject)
     {
         using ClassType = typename traits::function_traits<Function>::object;
@@ -154,23 +159,15 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
             auto object = getObject();
             if (object)
             {
-                result += Argument(dynamic_cast<ClassType*>(object.get()));
+                arguments.addFront(dynamic_cast<ClassType*>(object.get()));
             }
         }
     }
-
-    if constexpr (detail::enableRepack<Function>::packSelf)
-    {
-        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
-        result += Argument(dynamic_cast<ZipType>(this));
-    }
-
-    result += arguments;
-    return result;
+    return arguments;
 }
 
 template <class Function, Function function>
-ReturnValue Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
+ReturnValue Invokable<Function, function>::runOverride(PackagedArguments arguments)
 {
     try
     {

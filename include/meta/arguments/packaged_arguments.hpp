@@ -52,9 +52,6 @@ struct META_API PackagedArguments
     template <typename... Arguments>
     explicit PackagedArguments(Arguments&&... arguments);
 
-    /// Creates packaged arguments from a subset of an other packaged arguments.
-    explicit PackagedArguments(Iterator begin, Iterator end);
-
     /// Move constructor.
     PackagedArguments(PackagedArguments&& other);
     /// Move operator.
@@ -160,13 +157,13 @@ private:
         std::unique_ptr<CallContext> callContext;
 
         template <typename... Arguments>
-        Descriptor(Arguments&&... args) :
+        explicit Descriptor(Arguments&&... args) :
             pack{std::forward<Arguments>(args)...}
         {
         }
 
         explicit Descriptor() = default;
-        explicit Descriptor(Iterator begin, Iterator end);
+        std::shared_ptr<Descriptor> clone();
     };
     std::shared_ptr<Descriptor> m_descriptor;
 };

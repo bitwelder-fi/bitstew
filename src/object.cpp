@@ -80,7 +80,7 @@ ObjectExtensionPtr Object::findExtension(std::string_view name) const
     return (it != m_extensions.end()) ? it->second : ObjectExtensionPtr();
 }
 
-ReturnValue Object::invoke(std::string_view name, const PackagedArguments& arguments)
+ReturnValue Object::invoke(std::string_view name, PackagedArguments arguments)
 {
     abortIfFail(!name.empty());
 
@@ -93,7 +93,7 @@ ReturnValue Object::invoke(std::string_view name, const PackagedArguments& argum
 }
 
 
-ReturnValue invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
+ReturnValue invoke(ObjectPtr object, std::string_view name, PackagedArguments arguments)
 {
     abortIfFail(object && !name.empty());
     return object->invoke(name, arguments);

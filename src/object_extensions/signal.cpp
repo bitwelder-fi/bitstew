@@ -34,7 +34,7 @@ SignalExtension::~SignalExtension()
     disconnect();
 }
 
-ReturnValue SignalExtension::runOverride(const PackagedArguments& arguments)
+ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
 {
     if (!verifySignature(arguments))
     {

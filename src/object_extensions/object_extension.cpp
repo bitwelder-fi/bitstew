@@ -86,7 +86,7 @@ ObjectPtr ObjectExtension::getObject() const
     return m_object.lock();
 }
 
-ReturnValue ObjectExtension::run(const PackagedArguments& arguments)
+ReturnValue ObjectExtension::run(PackagedArguments arguments)
 {
     if (m_runGuard)
     {

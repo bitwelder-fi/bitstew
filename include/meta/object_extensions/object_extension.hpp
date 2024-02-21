@@ -58,7 +58,7 @@ public:
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
     ///         return a void Argument. On failure, returns a \e nullopt
-    ReturnValue run(const PackagedArguments& arguments = PackagedArguments());
+    ReturnValue run(PackagedArguments arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
     META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
@@ -79,7 +79,7 @@ protected:
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
     ///         return a void Argument. On failure, implementations are expected to return \e nullopt.
-    virtual ReturnValue runOverride(const PackagedArguments& arguments) = 0;
+    virtual ReturnValue runOverride(PackagedArguments arguments) = 0;
 
     /// Returns the iterator to the connection.
     /// \param connection The connection to look for.

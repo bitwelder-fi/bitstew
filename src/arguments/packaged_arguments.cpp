@@ -22,16 +22,18 @@
 namespace meta
 {
 
-PackagedArguments::Descriptor::Descriptor(Iterator begin, Iterator end) :
-    pack(begin, end)
+std::shared_ptr<PackagedArguments::Descriptor> PackagedArguments::Descriptor::clone()
 {
+    auto clonePack = std::make_shared<Descriptor>();
+    clonePack->pack = pack;
+    return clonePack;
 }
 
 void PackagedArguments::deepCopyIfRequired()
 {
     if (!m_descriptor.unique())
     {
-        m_descriptor = std::make_shared<Descriptor>(m_descriptor->pack.begin(), m_descriptor->pack.end());
+        m_descriptor = m_descriptor->clone();
     }
 }
 
@@ -47,11 +49,6 @@ PackagedArguments::PackagedArguments(PackagedArguments&& other) :
 }
 PackagedArguments::PackagedArguments(const PackagedArguments& other) :
     m_descriptor(other.m_descriptor)
-{
-}
-
-PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
-    m_descriptor(std::make_shared<Descriptor>(begin, end))
 {
 }
 
@@ -100,14 +97,14 @@ PackagedArguments& PackagedArguments::prepend(const PackagedArguments& package)
 PackagedArguments& PackagedArguments::addBack(Argument argument)
 {
     deepCopyIfRequired();
-    m_descriptor->pack.push_back(argument);
+    m_descriptor->pack.push_back(std::move(argument));
     return *this;
 }
 
 PackagedArguments& PackagedArguments::addFront(Argument argument)
 {
     deepCopyIfRequired();
-    m_descriptor->pack.insert(m_descriptor->pack.begin(), argument);
+    m_descriptor->pack.insert(m_descriptor->pack.begin(), std::move(argument));
     return *this;
 }
 

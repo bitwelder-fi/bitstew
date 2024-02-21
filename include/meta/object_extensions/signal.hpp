@@ -82,8 +82,7 @@ public:
     template <typename... Arguments>
     int trigger(Arguments... args)
     {
-        PackagedArguments pack{args...};
-        auto result = run(pack);
+        auto result = run(PackagedArguments(args...));
         return result != std::nullopt ? static_cast<int>(*result) : -1;
     }
 
@@ -94,13 +93,13 @@ protected:
     /// Overrides ObjectExtension::runOverride() to activate the slots of the signal.
     /// \param arguments The packaged arguments to pass as signal arguments.
     /// \return The number of activated slots.
-    ReturnValue runOverride(const PackagedArguments& arguments) final;
+    ReturnValue runOverride(PackagedArguments arguments) final;
 
     /// Verifies the packaged arguments against the signature of the signal.
     /// \param arguments The packaged arguments to verify against the signature.
     /// \return If the packaged arguments match the signature of the signal, returns \e true, otherwise
     ///         \e false.
-    virtual bool verifySignature(const PackagedArguments& arguments) const = 0;
+    virtual bool verifySignature(PackagedArguments arguments) const = 0;
 };
 
 template <class... Arguments>
@@ -125,7 +124,7 @@ protected:
     }
 
     /// Overrides SignalExtension::verifySignature().
-    bool verifySignature(const PackagedArguments& arguments) const final
+    bool verifySignature(PackagedArguments arguments) const final
     {
         constexpr auto arity = sizeof...(Arguments);
         if (arguments.getSize() < arity)

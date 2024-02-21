@@ -71,7 +71,7 @@ public:
     ///         - If the extension is found, and has a return value, the return value of the extension.
     ///         - If the extension is found, and has no return value, returns an invalid Argument.
     ///         - If the extension is not found, returns nullopt.
-    ReturnValue invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+    ReturnValue invoke(std::string_view name, PackagedArguments args = PackagedArguments());
 
     template <typename... Arguments>
     ReturnValue invoke(std::string_view name, Arguments... arguments)
@@ -100,7 +100,7 @@ private:
 ///         - If the extension is found, and has a return value, the return value of the extension.
 ///         - If the extension is found, and has no return value, returns an invalid Argument.
 ///         - If the extension is not found, returns nullopt.
-META_API ReturnValue invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
+META_API ReturnValue invoke(ObjectPtr object, std::string_view name, PackagedArguments arguments = PackagedArguments());
 
 }
 

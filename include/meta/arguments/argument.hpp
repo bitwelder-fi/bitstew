@@ -104,7 +104,7 @@ Argument::operator T() const
     }
     catch (std::bad_any_cast&)
     {
-        throw BadArgumentException(type(), m_isConst ? typeid(const T) : typeid(T));
+        throw BadArgumentException(type(), typeid(T));
     }
 }
 

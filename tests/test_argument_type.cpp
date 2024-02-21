@@ -119,6 +119,16 @@ TEST_F(PackagedArguments, testPackArguments)
     EXPECT_EQ(3.3f, pack.get<float>(2u));
 }
 
+TEST_F(PackagedArguments, deepCopy)
+{
+    auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);
+    auto pack2 = pack;
+
+    EXPECT_EQ(pack, pack2);
+    pack2 += 7;
+    EXPECT_NE(pack, pack2);
+}
+
 TEST_F(PackagedArguments, unpackUsingLambdaSignature)
 {
     auto pack = meta::PackagedArguments(std::string("one"), 2, 3.3f);

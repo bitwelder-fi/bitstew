@@ -22,9 +22,37 @@
 namespace meta
 {
 
-PackagedArguments::PackagedArguments(PackagedArguments&& other)
+PackagedArguments::Descriptor::Descriptor(Iterator begin, Iterator end) :
+    pack(begin, end)
+{
+}
+
+void PackagedArguments::deepCopyIfRequired()
+{
+    if (!m_descriptor.unique())
+    {
+        m_descriptor = std::make_shared<Descriptor>(m_descriptor->pack.begin(), m_descriptor->pack.end());
+    }
+}
+
+PackagedArguments::PackagedArguments() :
+    m_descriptor(std::make_shared<Descriptor>())
+{
+}
+
+PackagedArguments::PackagedArguments(PackagedArguments&& other) :
+    m_descriptor(std::make_shared<Descriptor>())
 {
     swap(other);
+}
+PackagedArguments::PackagedArguments(const PackagedArguments& other) :
+    m_descriptor(other.m_descriptor)
+{
+}
+
+PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
+    m_descriptor(std::make_shared<Descriptor>(begin, end))
+{
 }
 
 PackagedArguments& PackagedArguments::operator=(PackagedArguments&& other)
@@ -34,46 +62,79 @@ PackagedArguments& PackagedArguments::operator=(PackagedArguments&& other)
     return *this;
 }
 
-void PackagedArguments::swap(PackagedArguments& other)
+PackagedArguments& PackagedArguments::operator=(const PackagedArguments& other)
 {
-    m_pack.swap(other.m_pack);
+    m_descriptor = other.m_descriptor;
+    return *this;
 }
 
-PackagedArguments::PackagedArguments(Iterator begin, Iterator end) :
-    m_pack(begin, end)
+void PackagedArguments::swap(PackagedArguments& other)
 {
+    std::swap(m_descriptor, other.m_descriptor);
 }
 
 PackagedArguments& PackagedArguments::operator+=(const PackagedArguments& rhs)
 {
-    return append(rhs);
+    return cat(rhs);
 }
 
 PackagedArguments& PackagedArguments::operator+=(Argument rhs)
 {
-    m_pack.push_back(std::move(rhs));
+    return addBack(rhs);
+}
+
+PackagedArguments& PackagedArguments::cat(const PackagedArguments& package)
+{
+    deepCopyIfRequired();
+    m_descriptor->pack.insert(m_descriptor->pack.end(), package.m_descriptor->pack.begin(), package.m_descriptor->pack.end());
     return *this;
 }
 
-PackagedArguments& PackagedArguments::append(const PackagedArguments& package)
+PackagedArguments& PackagedArguments::prepend(const PackagedArguments& package)
 {
-    m_pack.insert(m_pack.end(), package.m_pack.begin(), package.m_pack.end());
+    deepCopyIfRequired();
+    m_descriptor->pack.insert(m_descriptor->pack.begin(), package.m_descriptor->pack.begin(), package.m_descriptor->pack.end());
+    return *this;
+}
+
+PackagedArguments& PackagedArguments::addBack(Argument argument)
+{
+    deepCopyIfRequired();
+    m_descriptor->pack.push_back(argument);
+    return *this;
+}
+
+PackagedArguments& PackagedArguments::addFront(Argument argument)
+{
+    deepCopyIfRequired();
+    m_descriptor->pack.insert(m_descriptor->pack.begin(), argument);
     return *this;
 }
 
 Argument PackagedArguments::get(std::size_t index) const
 {
-    return m_pack.at(index);
+    return m_descriptor->pack.at(index);
 }
 
 std::size_t PackagedArguments::getSize() const
 {
-    return m_pack.size();
+    return m_descriptor->pack.size();
 }
 
 bool PackagedArguments::isEmpty() const
 {
-    return m_pack.empty();
+    return m_descriptor->pack.empty();
 }
+
+bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs)
+{
+    return lhs.m_descriptor == rhs.m_descriptor;
+}
+
+bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs)
+{
+    return lhs.m_descriptor != rhs.m_descriptor;
+}
+
 
 }

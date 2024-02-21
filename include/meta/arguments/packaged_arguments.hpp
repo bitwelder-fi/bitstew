@@ -23,7 +23,7 @@
 #include <meta/arguments/argument.hpp>
 #include <utils/function_traits.hpp>
 
-#include <array>
+#include <memory>
 #include <vector>
 
 #include <meta/detail/packaged_arguments.hpp>
@@ -34,13 +34,27 @@ namespace meta
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {
+    struct META_API CallContext
+    {
+    };
+
     /// The argument container;
     using Container = std::vector<Argument>;
     /// The iterator of the argument container.
     using Iterator = Container::const_iterator;
 
     /// Default constructor.
-    explicit PackagedArguments() = default;
+    explicit PackagedArguments();
+
+    /// Creates an argument pack with the \a arguments.
+    /// \tparam Arguments Variadic number of arguments to pack.
+    /// \param arguments The variadic argument values to pack.
+    template <typename... Arguments>
+    explicit PackagedArguments(Arguments&&... arguments);
+
+    /// Creates packaged arguments from a subset of an other packaged arguments.
+    explicit PackagedArguments(Iterator begin, Iterator end);
+
     /// Move constructor.
     PackagedArguments(PackagedArguments&& other);
     /// Move operator.
@@ -48,24 +62,11 @@ struct META_API PackagedArguments
     /// Swaps this packaged arguments with \a other.
     void swap(PackagedArguments& other);
 
-    DISABLE_COPY(PackagedArguments);
-
-    /// Creates an argument pack with the \a arguments.
-    /// \tparam Arguments Variadic number of arguments to pack.
-    /// \param arguments The variadic argument values to pack.
-    template <typename... Arguments>
-    PackagedArguments(Arguments&&... arguments);
-
-    template <typename... Arguments>
-    PackagedArguments(std::initializer_list<Arguments...> ilist)
-    {
-        std::array<Argument, sizeof... (Arguments)> aa = {ilist};
-        m_pack.reserve(aa.size());
-        m_pack.insert(m_pack.end(), aa.begin(), aa.end());
-    }
-
-    /// Creates packaged arguments from a subset of an other packaged arguments.
-    explicit PackagedArguments(Iterator begin, Iterator end);
+    /// Copy constructor. Copies of a pack share the same content. a Deep copy is executed when the
+    /// copies change the content.
+    PackagedArguments(const PackagedArguments& other);
+    /// Copy operator.
+    PackagedArguments& operator=(const PackagedArguments& other);
 
     /// Catenates two packaged arguments.
     /// \rhs The argument package to append.
@@ -84,14 +85,28 @@ struct META_API PackagedArguments
     template <typename T>
     PackagedArguments& operator+=(T&& rhs)
     {
-        *this += Argument(std::forward<T>(rhs));
-        return *this;
+        return addBack(std::forward<T>(rhs));
     }
 
     /// Appends \a package arguments to this.
-    /// \param package The packaged arguiments to append to this package.
+    /// \param package The packaged arguments to append to this package.
     /// \return Returns this packaged arguments object.
-    PackagedArguments& append(const PackagedArguments& package);
+    PackagedArguments& cat(const PackagedArguments& package);
+
+    /// Prepends \a package arguments to this.
+    /// \param package The packaged arguments to prepend to this package.
+    /// \return Returns this packaged arguments object.
+    PackagedArguments& prepend(const PackagedArguments& package);
+
+    /// Adds an argument to the end of the packaged arguments.
+    /// \param argument The argument to add.
+    /// \return Returns this packaged arguments object.
+    PackagedArguments& addBack(Argument value);
+
+    /// Adds an argument to the front of the packaged arguments.
+    /// \param argument The argument to prepend.
+    /// \return Returns this packaged arguments object.
+    PackagedArguments& addFront(Argument value);
 
     /// Returns the argument data at index.
     /// \param index The index of the argument.
@@ -107,12 +122,12 @@ struct META_API PackagedArguments
     /// Returns an iterator to the beginning of the pack.
     Iterator begin() const
     {
-        return m_pack.begin();
+        return m_descriptor->pack.begin();
     }
     /// Returns an iterator to the end of the pack.
     Iterator end() const
     {
-        return m_pack.end();
+        return m_descriptor->pack.end();
     }
 
     /// Returns the value of an argument at a given \a index.
@@ -134,22 +149,38 @@ struct META_API PackagedArguments
     template <class FunctionSignature>
     auto toTuple() const;
 
+    friend bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
+    friend bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
+
 private:
-    Container m_pack;
+    void deepCopyIfRequired();
+    struct META_API Descriptor
+    {
+        Container pack;
+        std::unique_ptr<CallContext> callContext;
+
+        template <typename... Arguments>
+        Descriptor(Arguments&&... args) :
+            pack{std::forward<Arguments>(args)...}
+        {
+        }
+
+        explicit Descriptor() = default;
+        explicit Descriptor(Iterator begin, Iterator end);
+    };
+    std::shared_ptr<Descriptor> m_descriptor;
 };
 
 template <typename... Arguments>
-PackagedArguments::PackagedArguments(Arguments&&... arguments)
+PackagedArguments::PackagedArguments(Arguments&&... arguments) :
+    m_descriptor(std::make_shared<Descriptor>(std::forward<Arguments>(arguments)...))
 {
-    std::array<Argument, sizeof... (Arguments)> aa = {{Argument(arguments)...}};
-    m_pack.reserve(aa.size());
-    m_pack.insert(m_pack.end(), aa.begin(), aa.end());
 }
 
 template <typename T>
 T PackagedArguments::get(std::size_t index) const
 {
-    return m_pack.at(index);
+    return m_descriptor->pack.at(index);
 }
 
 

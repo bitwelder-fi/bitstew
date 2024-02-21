@@ -73,6 +73,12 @@ public:
     ///         - If the extension is not found, returns nullopt.
     ReturnValue invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
 
+    template <typename... Arguments>
+    ReturnValue invoke(std::string_view name, Arguments... arguments)
+    {
+        return Object::invoke(name, PackagedArguments(arguments...));
+    }
+
 protected:
     /// Constructor.
     explicit Object(std::string_view name);

@@ -306,7 +306,7 @@ sigVoid.disconnect(*connection);
 
 However, you may not always have the connection toklen at your disposal. There may be cases when your object extension is descroyed while teh connection is still alive. Or the opposite case, when the signal gets destroyed while the slots are still alive.
 
-To disconnect a slot from a all its connected signals, call `ObjectExtension::disconnectTarget()`. This call will disconnect all the connections where the slot is set as target. The opposite is handled by the `SignalExtension`, which is the core of the **Meta** signals.
+To disconnect a slot from all the signals it is connected, call `ObjectExtension::disconnectTarget()`. This call will disconnect all the connections where the slot is set as target. The opposite is handled by the `SignalExtension`, which is the core of the **Meta** signals.
 ```cpp
 auto selfDisconnect = [](meta::ObjectExtension* self)
 {
@@ -331,7 +331,7 @@ if (sigVoid.trigger() == 0)
 You can connect slots in an activated slot. Those slots will only be executed after the current triger is over.
 
 ## Properties
-*TBA*
+*NEXT*
 
 ## Scripting
 *Future, consider LUA*

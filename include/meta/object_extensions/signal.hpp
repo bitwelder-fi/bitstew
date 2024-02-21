@@ -44,6 +44,9 @@ public:
     {
     };
 
+    /// Destructor.
+    ~SignalExtension();
+
     /// Returns whether the signal is processing its connections.
     inline bool isTriggering() const
     {
@@ -58,6 +61,9 @@ public:
     /// Disconnects a connection. The signal of the connection token must be the signal itself.
     /// \param connection The connection to disconnect. On return, the connection is reset.
     void disconnect(Connection& connection);
+
+    /// Disconnect all signal connections.
+    void disconnect();
 
     /// Tries to reset the signal extension, disconnecting the connections. The method fails if
     /// the reset is called during signal activation.
@@ -186,6 +192,7 @@ public:
     /// Destructor.
     ~Signal()
     {
+        m_extension->disconnect();
         if (m_extension->getObject())
         {
             m_extension->getObject()->removeExtension(*m_extension);
@@ -205,6 +212,12 @@ public:
     inline void disconnect(Connection& slot)
     {
         m_extension->disconnect(slot);
+    }
+
+    /// Disconnect all signal connections.
+    void disconnect()
+    {
+        m_extension->disconnect();
     }
 
     /// Returns the number of valid connections.

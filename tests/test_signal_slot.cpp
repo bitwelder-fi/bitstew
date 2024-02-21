@@ -149,8 +149,8 @@ TEST_F(GenericSignalTests, disconnect)
 
 TEST_F(GenericSignalTests, connectToSignal)
 {
-    IntSignal signal;
-    VoidSignal signal2;
+    IntSignal signal("sigInt");
+    VoidSignal signal2("sigVoid");
 
     auto connection = signal.connect(signal2);
     EXPECT_TRUE(connection->isValid());

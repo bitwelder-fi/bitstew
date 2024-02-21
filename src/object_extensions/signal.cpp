@@ -29,6 +29,11 @@ SignalExtension::SignalExtension(std::string_view name) :
 {
 }
 
+SignalExtension::~SignalExtension()
+{
+    disconnect();
+}
+
 ReturnValue SignalExtension::runOverride(const PackagedArguments& arguments)
 {
     if (!verifySignature(arguments))
@@ -81,6 +86,30 @@ void SignalExtension::disconnect(Connection& connection)
 {
     auto connectionPtr = connection.shared_from_this();
     removeConnection(connectionPtr);
+}
+
+void SignalExtension::disconnect()
+{
+    {
+        utils::ScopeValue<bool> guard(m_runGuard, true);
+        for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
+        {
+            auto connection = *it;
+            if (!connection)
+            {
+                continue;
+            }
+            if (connection->getSource().get() == this)
+            {
+                removeConnection(connection);
+            }
+            else
+            {
+                connection->getSource<SignalExtension>()->removeConnection(connection);
+            }
+        }
+    }
+    tryCompactConnections();
 }
 
 bool SignalExtension::tryReset()

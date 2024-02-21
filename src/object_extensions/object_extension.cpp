@@ -119,9 +119,11 @@ void ObjectExtension::addConnection(ConnectionPtr connection)
 
 void ObjectExtension::removeConnection(ConnectionPtr connection)
 {
-    // Remove the connection from both source and target. It should be called on source!
+    // Remove the connection from both source and target.
     auto it = findConnection(*connection);
     abortIfFail(it != m_connections.end());
+    // The method should be called on source!
+    abortIfFail((*it)->getSource().get() == this);
 
     if (m_runGuard)
     {

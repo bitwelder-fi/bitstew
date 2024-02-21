@@ -39,12 +39,12 @@ struct META_API InvokableClass : public meta::Invokable<decltype(Function), Func
     META_CLASS(InvokableName, InvokableClass, Base)                                     \
     {                                                                                   \
     };                                                                                  \
-    static std::shared_ptr<InvokableClass> create(std::string_view = std::string_view())\
+    static std::shared_ptr<InvokableClass> create(std::string_view name = std::string_view())\
     {                                                                                   \
-        return std::make_shared<InvokableClass>(getStaticMetaClass()->getName());       \
+        return std::make_shared<InvokableClass>(name);                                  \
     }                                                                                   \
     explicit InvokableClass(std::string_view name) :                                    \
-        Base(name)                                                                      \
+        Base(name.empty() ? getStaticMetaClass()->getName() : name)                     \
     {                                                                                   \
     }                                                                                   \
 }

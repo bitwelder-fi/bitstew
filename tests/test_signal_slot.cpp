@@ -20,7 +20,11 @@
 
 #include <meta/object.hpp>
 #include <meta/object_extensions/invokable.hpp>
+#include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/signal.hpp>
+
+#include <sstream>
+#include <chrono>
 
 namespace
 {
@@ -35,9 +39,9 @@ void function(int i)
     META_LOG_INFO(__FUNCTION__ << "(" << i << ")");
 }
 
-void selfDisconnect(meta::Connection* connection)
+void selfDisconnect(meta::ObjectExtension* self)
 {
-    std::dynamic_pointer_cast<meta::SignalExtension>(connection->getSource())->disconnect(*connection);
+    self->disconnectTarget();
 }
 
 using VoidSignal = meta::Signal<void()>;
@@ -53,10 +57,20 @@ public:
     VoidSignal sigVoid{*this, "sigVoid"};
     IntSignal sigInt{*this, "sigInt"};
 
+    void connectInSlot(meta::ConnectionPtr connection)
+    {
+        auto innerSlot = ConnectInSlot::create(generateName());
+        connection->getTarget()->getObject()->addExtension(innerSlot);
+        connection->getSource<meta::SignalExtension>()->connect(innerSlot);
+    }
+
+    DECLARE_INVOKABLE(ConnectInSlot, "connectInSlot", &Object::connectInSlot);
+
     META_CLASS("Object", Object, meta::Object)
     {
         META_EXTENSION(VoidSignal);
         META_EXTENSION(IntSignal);
+        META_EXTENSION(ConnectInSlot);
     };
 
     static auto create(std::string_view name)
@@ -70,6 +84,13 @@ protected:
     explicit Object(std::string_view name) :
         meta::Object(name)
     {
+    }
+
+    static std::string generateName()
+    {
+        std::stringstream ss;
+        ss << "slot_" << std::chrono::steady_clock().now().time_since_epoch().count();
+        return ss.str();
     }
 };
 
@@ -105,13 +126,13 @@ TEST_F(GenericSignalTests, connect)
     VoidSignal signal;
     auto slot = VoidSlot::create();
     auto connection = signal.connect(slot);
-    EXPECT_TRUE(connection.isValid());
-    EXPECT_EQ(static_cast<meta::ObjectExtensionPtr>(signal), connection.getSource());
-    EXPECT_EQ(slot, connection.getTarget());
+    EXPECT_TRUE(connection->isValid());
+    EXPECT_EQ(static_cast<meta::ObjectExtensionPtr>(signal), connection->getSource());
+    EXPECT_EQ(slot, connection->getTarget());
 
     auto slot2 = IntSlot::create();
     connection = signal.connect(slot2);
-    EXPECT_TRUE(connection.isValid());
+    EXPECT_TRUE(connection->isValid());
 
     EXPECT_EQ(2u, signal.getConnectionCount());
 }
@@ -122,8 +143,8 @@ TEST_F(GenericSignalTests, disconnect)
     auto slot = VoidSlot::create();
     auto connection = signal.connect(slot);
 
-    signal.disconnect(connection);
-    EXPECT_FALSE(connection.isValid());
+    signal.disconnect(*connection);
+    EXPECT_FALSE(connection->isValid());
 }
 
 TEST_F(GenericSignalTests, connectToSignal)
@@ -132,7 +153,7 @@ TEST_F(GenericSignalTests, connectToSignal)
     VoidSignal signal2;
 
     auto connection = signal.connect(signal2);
-    EXPECT_TRUE(connection.isValid());
+    EXPECT_TRUE(connection->isValid());
 }
 
 TEST_F(GenericSignalTests, trigger)
@@ -209,7 +230,7 @@ TEST_F(GenericSignalTests, triggerSigIntConnectedToSigVoidFails)
     EXPECT_EQ(0, sigVoid.trigger());
 }
 
-TEST_F(GenericSignalTests, triggerConnectionToLambnda)
+TEST_F(GenericSignalTests, triggerConnectionToLambda)
 {
     VoidSignal signal;
     auto lambda = []()
@@ -220,7 +241,7 @@ TEST_F(GenericSignalTests, triggerConnectionToLambnda)
     auto invokable = Lambda::create("slot");
 
     auto connection = signal.connect(invokable);
-    ASSERT_TRUE(connection.isValid());
+    ASSERT_TRUE(connection->isValid());
 
     EXPECT_CALL(*m_mockPrinter, log("lambda"));
     EXPECT_EQ(1, signal.trigger());
@@ -233,5 +254,17 @@ TEST_F(GenericSignalTests, disconnectInSlot)
     auto connection = signal.connect(slot);
 
     EXPECT_EQ(1, signal.trigger());
-    EXPECT_FALSE(connection.isValid());
+    EXPECT_FALSE(connection->isValid());
+}
+
+TEST_F(GenericSignalTests, connectInSlot)
+{
+    VoidSignal signal;
+    auto object = Object::getStaticMetaClass()->create<Object>("test");
+    signal.connect(object->findExtension("connectInSlot"));
+
+    // Each trigger should result in an extra connection.
+    EXPECT_EQ(1, signal.trigger());
+    EXPECT_EQ(2, signal.trigger());
+    EXPECT_EQ(3, signal.trigger());
 }

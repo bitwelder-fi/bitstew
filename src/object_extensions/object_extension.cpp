@@ -16,51 +16,46 @@
  * <http://www.gnu.org/licenses/>
  */
 
+#include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/object_extension.hpp>
 #include <meta/object_extensions/signal.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
-
-#include <chrono>
+#include <utils/scope_value.hpp>
 
 namespace meta
 {
 
-Connection::Connection(ObjectExtension& signal, ObjectExtension& slot) :
-    m_signal(signal.weak_from_this()),
-    m_slot(slot.weak_from_this()),
-    m_id(std::chrono::steady_clock::now().time_since_epoch().count())
+Connection::Connection(ObjectExtension& source, ObjectExtension& target) :
+    m_source(source.weak_from_this()),
+    m_target(target.weak_from_this())
 {
+}
+
+ConnectionPtr Connection::create(ObjectExtension& source, ObjectExtension& target)
+{
+    return ConnectionPtr(new Connection(source, target));
 }
 
 bool Connection::isValid() const
 {
-    return m_signal.lock() && m_slot.lock();
+    return m_source.lock() && m_target.lock();
 }
 
 ObjectExtensionPtr Connection::getSource() const
 {
-    return m_signal.lock();
+    return m_source.lock();
 }
 
 ObjectExtensionPtr Connection::getTarget() const
 {
-    return m_slot.lock();
+    return m_target.lock();
 }
 
-bool operator==(const Connection& lhs, const Connection& rhs)
+void Connection::reset()
 {
-    return lhs.m_id == rhs.m_id;
-}
-
-bool operator<(const Connection& lhs, const Connection& rhs)
-{
-    return lhs.m_id < rhs.m_id;
-}
-
-bool operator>(const Connection& lhs, const Connection& rhs)
-{
-    return lhs.m_id > rhs.m_id;
+    m_target.reset();
+    m_source.reset();
 }
 
 
@@ -93,32 +88,102 @@ ObjectPtr ObjectExtension::getObject() const
 
 ReturnValue ObjectExtension::run(const PackagedArguments& arguments)
 {
-    return runOverride(arguments);
+    if (m_runGuard)
+    {
+        return {};
+    }
+
+    // Make sure the extension is alive till it is running.
+    auto keepAlive = shared_from_this();
+    ReturnValue result;
+
+    {
+        utils::ScopeValue<bool> guard(m_runGuard, true);
+        result = runOverride(arguments);
+    }
+
+    // Compact disconnected connections.
+    tryCompactConnections();
+    return result;
 }
 
-void ObjectExtension::addConnection(const Connection& connection)
+void ObjectExtension::addConnection(ConnectionPtr connection)
 {
-    abortIfFail(findConnection(connection) == m_connections.end());
+    // Add the connection to both source and target. It should be called on source!
+    abortIfFail(connection->getSource().get() == this);
+    abortIfFail(findConnection(*connection) == m_connections.end());
 
     m_connections.push_back(connection);
+    connection->getTarget()->m_connections.push_back(connection);
 }
 
-void ObjectExtension::removeConnection(const Connection& connection)
+void ObjectExtension::removeConnection(ConnectionPtr connection)
 {
-    auto it = findConnection(connection);
+    // Remove the connection from both source and target. It should be called on source!
+    auto it = findConnection(*connection);
     abortIfFail(it != m_connections.end());
 
-    m_connections.erase(it);
+    if (m_runGuard)
+    {
+        it->reset();
+    }
+    else
+    {
+        m_connections.erase(it);
+    }
+
+    auto target = connection->getTarget();
+    if (!target)
+    {
+        return;
+    }
+
+    it = target->findConnection(*connection);
+    abortIfFail(it != target->m_connections.end());
+    if (target->m_runGuard)
+    {
+        it->reset();
+    }
+    else
+    {
+        target->m_connections.erase(it);
+    }
+
+    connection->reset();
+}
+
+void ObjectExtension::disconnectTarget()
+{
+    utils::ScopeValue<bool> guard(m_runGuard, true);
+    auto self = shared_from_this();
+    for (auto connection : m_connections)
+    {
+        if (connection->getTarget() == self)
+        {
+            auto source = connection->getSource();
+            if (!source)
+            {
+                continue;
+            }
+
+            source->removeConnection(connection);
+        }
+    }
 }
 
 ObjectExtension::ConnectionContainer::iterator ObjectExtension::findConnection(const Connection& connection)
 {
-    return std::find(m_connections.begin(), m_connections.end(), connection);
+    return std::find(m_connections.begin(), m_connections.end(), connection.shared_from_this());
 }
 
-void ObjectExtension::compactConnections()
+void ObjectExtension::tryCompactConnections()
 {
-    std::erase_if(m_connections, [](auto& connection) { return !connection.isValid(); });
+    if (m_runGuard)
+    {
+        // Cannot compact!
+        return;
+    }
+    std::erase_if(m_connections, [](auto& connection) { return !connection || !connection->isValid(); });
 }
 
 }

@@ -17,6 +17,7 @@
  */
 
 #include <meta/object.hpp>
+#include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/signal.hpp>
 #include <utils/scope_value.hpp>
 
@@ -35,59 +36,42 @@ ReturnValue SignalExtension::runOverride(const PackagedArguments& arguments)
         return {};
     }
 
-    if (isTriggering())
-    {
-        // A running signal should not trigger, so return with zero execution count.
-        return 0u;
-    }
-
-    // Keep the signal alive for the time of activation.
-    auto keepAlive = shared_from_this();
-
     auto result = 0;
-    {        
-        // Guard running state to avoid re-triggering.
-        utils::ScopeValue<bool> triggerGuard(m_triggering, true);
-        // Loop through the connections, excluding eventual new connections which may occur during
-        // slot activations.
-        for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
+    // Loop through the connections, excluding eventual new connections which may occur during
+    // slot activations.
+    for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
+    {
+        auto connection = *it;
+        if (!connection || !connection->isValid())
         {
-            auto connection = *it;
-            if (!connection.isValid())
-            {
-                // Skip disconnected connections.
-                continue;
-            }
-            // Consider only those connections, where this signal is the source. Other connections are
-            // those, where this signal is the slot.
-            if (connection.getSource() != keepAlive)
-            {
-                continue;
-            }
+            // Skip disconnected connections.
+            continue;
+        }
+        // Consider only those connections, where this signal is the source. Other connections are
+        // those, where this signal is the slot.
+        if (connection->getSource().get() != this)
+        {
+            continue;
+        }
 
-            // Keep the slot alive while running.
-            auto slot = connection.getTarget();
-            if (slot && slot->run(arguments))
-            {
-                ++result;
-            }
+        // Keep the slot alive while running.
+        auto slot = connection->getTarget();
+        if (slot && slot->run(arguments))
+        {
+            ++result;
         }
     }
-
-    // Compact disconnected connections.
-    compactConnections();
 
     return result;
 }
 
-Connection SignalExtension::connect(ObjectExtensionPtr slot)
+ConnectionPtr SignalExtension::connect(ObjectExtensionPtr slot)
 {
     abortIfFail(slot);
 
     // Create a connection token and add to both this and slot object extensions.
-    Connection connection{*this, *slot};
+    auto connection = Connection::create(*this, *slot);
 
-    slot->addConnection(connection);
     addConnection(connection);
 
     return connection;
@@ -95,29 +79,8 @@ Connection SignalExtension::connect(ObjectExtensionPtr slot)
 
 void SignalExtension::disconnect(Connection& connection)
 {
-    auto it = findConnection(connection);
-    abortIfFail(it != endConnections());
-
-    auto slot = connection.getTarget();
-    if (slot)
-    {
-        // The slot is still alive, remove the connection from it.
-        slot->removeConnection(connection);
-    }
-
-    if (isTriggering())
-    {
-        // Reset the connection, the signal is still active.
-        *it = Connection();
-    }
-    else
-    {
-        // We can safely remove the connection.
-        removeConnection(connection);
-    }
-
-    // Finally return a clear connection.
-    connection = Connection();
+    auto connectionPtr = connection.shared_from_this();
+    removeConnection(connectionPtr);
 }
 
 bool SignalExtension::tryReset()
@@ -127,10 +90,11 @@ bool SignalExtension::tryReset()
         return false;
     }
 
+
     while (beginConnections() != endConnections())
     {
         auto connection(*beginConnections());
-        disconnect(connection);
+        disconnect(*connection);
     }
 
     return true;
@@ -143,7 +107,7 @@ std::size_t SignalExtension::getConnectionCount() const
         auto result = std::size_t(0u);
         for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
         {
-            if (it->isValid())
+            if (*it && (*it)->isValid())
             {
                 ++result;
             }

@@ -27,6 +27,7 @@ template.cpp
 ../include/meta/metadata/metaclass.hpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp
+../include/meta/object_extensions/connection.hpp
 ../include/meta/object_extensions/invokable.hpp
 ../include/meta/object_extensions/object_extension.hpp
 ../include/meta/object_extensions/signal.hpp

@@ -53,7 +53,8 @@ public:
     /// \return The object which owns the object extension.
     ObjectPtr getObject() const;
 
-    /// The entry point of an object extensions.
+    /// The entry point of an object extensions. The method is not re-entrant, a recoursive call of
+    /// run returns with failure.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
     ///         return a void Argument. On failure, returns a \e nullopt
@@ -64,19 +65,12 @@ public:
     {
     };
 
-    /// Adds a connection to an object extension. The method fails if the slot of the connection is
-    /// not the extension itself, or if the connection has already been added to the object extension.
-    /// \param connection The connectiomn to add to the extension.
-    void addConnection(const Connection& connection);
-
-    /// Removes a connection from an object extension. The method fails if the slot of the connection is
-    /// not the extension itself, or if the connection is not found in the object extension.
-    /// \param connection The connectiomn to add to the extension.
-    void removeConnection(const Connection& connection);
+    /// Disconnects all connections where this object extension is set as target.
+    void disconnectTarget();
 
 protected:
     /// The container of the connections.
-    using ConnectionContainer = std::vector<Connection>;
+    using ConnectionContainer = std::vector<ConnectionPtr>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
@@ -93,8 +87,18 @@ protected:
     ///         failure, returns the end iterator of the connection container.
     ConnectionContainer::iterator findConnection(const Connection& connecton);
 
-    /// Removes the invalid connections from the container.
-    void compactConnections();
+    /// Adds a connection to both source and target object extensions. The method fails if the connection
+    /// has already been added to the object extensions. The method must be called on source extension.
+    /// \param connection The connectiomn to add to the extension.
+    void addConnection(ConnectionPtr connection);
+
+    /// Removes a connection from both source and target object extensions. The method fails if the
+    /// connection is not found in the object extensions. The method must be called on source extension.
+    /// \param connection The connectiomn to add to the extension.
+    void removeConnection(ConnectionPtr connection);
+
+    /// Tries to remove the invalid connections from the extension.
+    void tryCompactConnections();
 
     /// Returns the begin iterator of the connections container.
     /// \return The begin iterator of the connections container.
@@ -129,6 +133,9 @@ protected:
     {
     }
 
+    /// Guards running state of the object extension.
+    bool m_runGuard = false;
+
 private:
     DISABLE_COPY(ObjectExtension);
     DISABLE_MOVE(ObjectExtension);
@@ -139,42 +146,6 @@ private:
     ConnectionContainer m_connections;
     ObjectWeakPtr m_object;
     friend class Object;
-};
-
-/// The %Connection defines a connection token between two object extensions. Signal uses this to
-/// identify a slot connected to a signal. The connection object is copyable-movable.
-struct META_API Connection
-{
-    /// Default constructor.
-    explicit Connection() = default;
-    /// Constructor, creates a connection with a source and a target.
-    explicit Connection(ObjectExtension& signal, ObjectExtension& slot);
-
-    /// Returns whether the connection is valid. A connection is valid if both source and target are
-    /// defined.
-    /// \return If the connection is valid, returns \e true, otherwise \e false.
-    bool isValid() const;
-
-    /// Returns the source object extension of the connection.
-    /// \return The source object extension of a valid connection, or an invalid object extension if
-    ///         the connection is invalid.
-    ObjectExtensionPtr getSource() const;
-
-    /// Returns the target object extension of the connection.
-    /// \return The target object extension of a valid connection, or an invalid object extension if
-    ///         the connection is invalid.
-    ObjectExtensionPtr getTarget() const;
-
-    /// Comparator operators.
-    friend bool operator==(const Connection& lhs, const Connection& rhs);
-    friend bool operator!=(const Connection& lhs, const Connection& rhs);
-    friend bool operator<(const Connection& lhs, const Connection& rhs);
-    friend bool operator>(const Connection& lhs, const Connection& rhs);
-
-private:
-    ObjectExtensionWeakPtr m_signal;
-    ObjectExtensionWeakPtr m_slot;
-    std::size_t m_id = 0;
 };
 
 }

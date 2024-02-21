@@ -30,6 +30,7 @@ class Object;
 class ObjectExtension;
 class SignalExtension;
 
+using ConnectionPtr = std::shared_ptr<Connection>;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 using ObjectPtr = std::shared_ptr<Object>;
 using ObjectWeakPtr = std::weak_ptr<Object>;

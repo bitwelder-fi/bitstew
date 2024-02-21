@@ -47,13 +47,13 @@ public:
     /// Returns whether the signal is processing its connections.
     inline bool isTriggering() const
     {
-        return m_triggering;
+        return m_runGuard;
     }
 
     /// Connects an object extension to the signal, and returns the connection token.
     /// \param slot The object extension as the slot of the connection.
     /// \return The connection token.
-    Connection connect(ObjectExtensionPtr slot);
+    ConnectionPtr connect(ObjectExtensionPtr slot);
 
     /// Disconnects a connection. The signal of the connection token must be the signal itself.
     /// \param connection The connection to disconnect. On return, the connection is reset.
@@ -95,9 +95,6 @@ protected:
     /// \return If the packaged arguments match the signature of the signal, returns \e true, otherwise
     ///         \e false.
     virtual bool verifySignature(const PackagedArguments& arguments) const = 0;
-
-    /// Whether the signal is activating its connections.
-    bool m_triggering = false;
 };
 
 template <class... Arguments>
@@ -198,7 +195,7 @@ public:
     /// Connects an object extension to the signal, and returns the connection token.
     /// \param slot The object extension as the slot of the connection.
     /// \return The connection token.
-    inline Connection connect(ObjectExtensionPtr slot)
+    inline ConnectionPtr connect(ObjectExtensionPtr slot)
     {
         return m_extension->connect(slot);
     }

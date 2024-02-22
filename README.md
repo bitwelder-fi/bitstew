@@ -157,7 +157,9 @@ public:
 
     static auto create(std::string_view name)
     {
-        return std::shared_ptr<MyObject>(new MyObject(name));
+        auto object = std::shared_ptr<MyObject>(new MyObject(name));
+        object->initialize();
+        return object;
     }
 
 protected:
@@ -226,7 +228,9 @@ public:
 
     static auto create(std::string_view name)
     {
-        return std::shared_ptr<Object>(new DynamicObject(name));
+        auto object = std::shared_ptr<DynamicObject>(new DynamicObject(name));
+        object->initialize();
+        return object;
     }
 
 protected:

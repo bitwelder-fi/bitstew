@@ -31,11 +31,22 @@
 namespace meta
 {
 
+/// Stub call context.
+struct META_API CallContext {};
+using CallContextPtr = std::shared_ptr<CallContext>;
+
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {
-    struct META_API CallContext
+    /// The scope under which the packaged arguments get passed as arguments of a call.
+    struct META_API CallScope
     {
+        explicit CallScope(PackagedArguments& pack, CallContextPtr context);
+        ~CallScope();
+
+    private:
+        PackagedArguments& pack;
+        CallContextPtr previousContext;
     };
 
     /// The argument container;
@@ -116,6 +127,11 @@ struct META_API PackagedArguments
     /// Returns whether the pack is empty.
     bool isEmpty() const;
 
+    CallContextPtr getContext() const
+    {
+        return m_descriptor->callContext;
+    }
+
     /// Returns an iterator to the beginning of the pack.
     Iterator begin() const
     {
@@ -154,7 +170,7 @@ private:
     struct META_API Descriptor
     {
         Container pack;
-        std::unique_ptr<CallContext> callContext;
+        CallContextPtr callContext;
 
         template <typename... Arguments>
         explicit Descriptor(Arguments&&... args) :

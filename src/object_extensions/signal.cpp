@@ -61,7 +61,12 @@ ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
 
         // Keep the slot alive while running.
         auto slot = connection->getTarget();
-        if (slot && slot->run(arguments))
+        if (!slot)
+        {
+            continue;
+        }
+        PackagedArguments::CallScope scope(arguments, connection);
+        if (slot->run(arguments))
         {
             ++result;
         }
@@ -80,6 +85,19 @@ ConnectionPtr SignalExtension::connect(ObjectExtensionPtr slot)
     addConnection(connection);
 
     return connection;
+}
+
+ConnectionPtr SignalExtension::connect(std::string_view extensionName)
+{
+    auto object = getObject();
+    abortIfFail(object);
+
+    auto extension = object->findExtension(extensionName);
+    if (!extension)
+    {
+        return {};
+    }
+    return connect(extension);
 }
 
 void SignalExtension::disconnect(Connection& connection)

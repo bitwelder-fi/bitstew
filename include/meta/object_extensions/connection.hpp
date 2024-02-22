@@ -19,15 +19,16 @@
 #ifndef META_CONNECTION_HPP
 #define META_CONNECTION_HPP
 
-#include <meta/meta_api.hpp>
+#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/forwards.hpp>
+#include <meta/meta_api.hpp>
 
 namespace meta
 {
 
 /// The %Connection defines a connection token between two object extensions. Signal uses this to
 /// identify a slot connected to a signal.
-struct META_API Connection : public std::enable_shared_from_this<Connection>
+struct META_API Connection : public CallContext, public std::enable_shared_from_this<Connection>
 {
     /// Creates a connection with a source and a target.
     static ConnectionPtr create(ObjectExtension& source, ObjectExtension& target);

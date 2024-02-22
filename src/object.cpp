@@ -35,6 +35,15 @@ Object::~Object()
 void Object::initialize()
 {
     MetaObject::initialize();
+
+    // Attach all un-attached extensions.
+    for (auto it = m_extensions.begin(), end = m_extensions.end(); it != end; ++it)
+    {
+        if (!it->second->getObject())
+        {
+            it->second->attachToObject(*this);
+        }
+    }
 }
 
 ObjectPtr Object::create(std::string_view name)

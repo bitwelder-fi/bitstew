@@ -58,6 +58,12 @@ public:
     /// \return The connection token.
     ConnectionPtr connect(ObjectExtensionPtr slot);
 
+    /// Connects an object extension identified by the extensionName to the signal, and returns the
+    /// connection token. The method is only applicable when the signal is attached to an object.
+    /// \param extensionName The name of the object extension as the slot of the connection.
+    /// \return The connection token.
+    ConnectionPtr connect(std::string_view extensionName);
+
     /// Disconnects a connection. The signal of the connection token must be the signal itself.
     /// \param connection The connection to disconnect. On return, the connection is reset.
     void disconnect(Connection& connection);
@@ -204,6 +210,15 @@ public:
     inline ConnectionPtr connect(ObjectExtensionPtr slot)
     {
         return m_extension->connect(slot);
+    }
+
+    /// Connects an object extension identified by the extensionName to the signal, and returns the
+    /// connection token. The method is only applicable when the signal is attached to an object.
+    /// \param extensionName The name of the object extension as the slot of the connection.
+    /// \return The connection token.
+    ConnectionPtr connect(std::string_view extensionName)
+    {
+        return m_extension->connect(extensionName);
     }
 
     /// Disconnects a connection. The signal of the connection token must be the signal itself.

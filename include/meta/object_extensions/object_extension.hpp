@@ -26,7 +26,7 @@
 
 #include <pimpl.hpp>
 
-#include <vector>
+#include <deque>
 
 namespace meta
 {
@@ -70,7 +70,7 @@ public:
 
 protected:
     /// The container of the connections.
-    using ConnectionContainer = std::vector<ConnectionPtr>;
+    using ConnectionContainer = std::deque<ConnectionPtr>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);

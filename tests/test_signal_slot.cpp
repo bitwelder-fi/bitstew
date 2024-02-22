@@ -57,10 +57,11 @@ public:
     VoidSignal sigVoid{*this, "sigVoid"};
     IntSignal sigInt{*this, "sigInt"};
 
-    void connectInSlot(meta::ConnectionPtr connection)
+    void connectInSlot(meta::CallContextPtr context)
     {
+        auto connection = std::static_pointer_cast<meta::Connection>(context);
         auto innerSlot = ConnectInSlot::create(generateName());
-        connection->getTarget()->getObject()->addExtension(innerSlot);
+        addExtension(innerSlot);
         connection->getSource<meta::SignalExtension>()->connect(innerSlot);
     }
 
@@ -155,6 +156,14 @@ TEST_F(GenericSignalTests, connectToSignal)
     auto connection = signal.connect(signal2);
     EXPECT_TRUE(connection->isValid());
 }
+
+TEST_F(GenericSignalTests, connectByName)
+{
+    auto object = Object::getStaticMetaClass()->create<Object>("test");
+    auto connection = object->sigVoid.connect("connectInSlot");
+    ASSERT_NE(nullptr, connection);
+}
+
 
 TEST_F(GenericSignalTests, trigger)
 {
@@ -259,12 +268,12 @@ TEST_F(GenericSignalTests, disconnectInSlot)
 
 TEST_F(GenericSignalTests, connectInSlot)
 {
-    VoidSignal signal;
     auto object = Object::getStaticMetaClass()->create<Object>("test");
-    signal.connect(object->findExtension("connectInSlot"));
+    object->sigVoid.connect(object->findExtension("connectInSlot"));
 
-    // Each trigger should result in an extra connection.
-    EXPECT_EQ(1, signal.trigger());
-    EXPECT_EQ(2, signal.trigger());
-    EXPECT_EQ(3, signal.trigger());
+    // Each trigger doubles the connection.
+    EXPECT_EQ(1, object->sigVoid.trigger());
+    EXPECT_EQ(2, object->sigVoid.trigger());
+    EXPECT_EQ(4, object->sigVoid.trigger());
+    EXPECT_EQ(8, object->sigVoid.trigger());
 }

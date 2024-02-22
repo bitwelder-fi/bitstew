@@ -270,7 +270,9 @@ public:
 
     static auto create(std::string_view name)
     {
-        return std::shared_ptr<MyObject>(new MyObject(name));
+        auto object = std::shared_ptr<MyObject>(new MyObject(name));
+        object->initialize();
+        return object;
     }
 
 protected:
@@ -304,7 +306,7 @@ To disconnect a connection from the signal above:
 sigVoid.disconnect(*connection);
 ```
 
-However, you may not always have the connection toklen at your disposal. There may be cases when your object extension is descroyed while teh connection is still alive. Or the opposite case, when the signal gets destroyed while the slots are still alive.
+However, you may not always have the connection token at your disposal. There may be cases when your object extension is descroyed while teh connection is still alive. Or the opposite case, when the signal gets destroyed while the slots are still alive.
 
 To disconnect a slot from all the signals it is connected, call `ObjectExtension::disconnectTarget()`. This call will disconnect all the connections where the slot is set as target. The opposite is handled by the `SignalExtension`, which is the core of the **Meta** signals.
 ```cpp
@@ -328,7 +330,62 @@ if (sigVoid.trigger() == 0)
 ```
 **Note** that the connections hold a weak reference to the source and the target of the connection. You must ensure that both of these extensions are kept alive. Expired references to either the source and the target renders the connection invalid.
 
-You can connect slots in an activated slot. Those slots will only be executed after the current triger is over.
+You can connect slots in an activated slot. Those slots will only be executed after the current triger is over. The following example connects a new slot to the signal which activated the slot.
+```cpp
+class MyObject : public meta::Object
+{
+public:
+    VoidSignal sigVoid{*this, "sigVoid"};
+
+    // Connect itself to the signal which triggers this extension. This doubles the connections at 
+    // each trigger of the signal.
+    void connectInSlot(meta::CallContextPtr context)
+    {
+        auto connection = std::static_pointer_cast<meta::Connection>(context);
+
+        // Create an object extension with a different name, so that it gets successfully added to the object.
+        auto innerSlot = ConnectInSlot::create(generateName());
+        addExtension(innerSlot);
+
+        // Connect to the signal of the connection.
+        connection->getSource<meta::SignalExtension>()->connect(innerSlot);
+    }
+
+    DECLARE_INVOKABLE(ConnectInSlot, "connectInSlot", &Object::connectInSlot);
+
+    META_CLASS("Object", Object, meta::Object)
+    {
+        META_EXTENSION(VoidSignal);
+        META_EXTENSION(ConnectInSlot);
+    };
+
+    static auto create(std::string_view name)
+    {
+        auto object = std::shared_ptr<MyObject>(new MyObject(name));
+        object->initialize();
+        return object;
+    }
+
+protected:
+    explicit Object(std::string_view name) :
+        meta::Object(name)
+    {
+    }
+
+    // Generates a name using the time since epoch.
+    static std::string generateName()
+    {
+        std::stringstream ss;
+        ss << "slot_" << std::chrono::steady_clock().now().time_since_epoch().count();
+        return ss.str();
+    }
+};
+
+// Connect the `connectInSlot` extension to the signal, then trigger.
+auto object = MyObject::create("test");
+object->sigVoid.connect("connectInSlot");
+object->sigVoid.trigger();
+```
 
 ## Properties
 *NEXT*

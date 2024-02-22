@@ -69,6 +69,11 @@ void ObjectExtension::attachToObject(Object& object)
     abortIfFail(!m_object.lock());
 
     m_object = object.weak_from_this();
+    if (m_object.expired())
+    {
+        return;
+    }
+
     onAttached();
 }
 

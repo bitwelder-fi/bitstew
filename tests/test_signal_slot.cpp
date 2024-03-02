@@ -57,12 +57,11 @@ public:
     VoidSignal sigVoid{*this, "sigVoid"};
     IntSignal sigInt{*this, "sigInt"};
 
-    void connectInSlot(meta::CallContextPtr context)
+    void connectInSlot()
     {
-        auto connection = std::static_pointer_cast<meta::Connection>(context);
         auto innerSlot = ConnectInSlot::create(generateName());
         addExtension(innerSlot);
-        connection->getSource<meta::SignalExtension>()->connect(innerSlot);
+        sigVoid.connect(innerSlot);
     }
 
     DECLARE_INVOKABLE(ConnectInSlot, "connectInSlot", &Object::connectInSlot);

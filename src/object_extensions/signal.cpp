@@ -65,7 +65,6 @@ ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
         {
             continue;
         }
-        PackagedArguments::CallScope scope(arguments, connection);
         if (slot->run(arguments))
         {
             ++result;

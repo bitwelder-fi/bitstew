@@ -38,17 +38,6 @@ using CallContextPtr = std::shared_ptr<CallContext>;
 /// PackagedArguments packages arguments for meta method or meta signal invocation.
 struct META_API PackagedArguments
 {
-    /// The scope under which the packaged arguments get passed as arguments of a call.
-    struct META_API CallScope
-    {
-        explicit CallScope(PackagedArguments& pack, CallContextPtr context);
-        ~CallScope();
-
-    private:
-        PackagedArguments& pack;
-        CallContextPtr previousContext;
-    };
-
     /// The argument container;
     using Container = std::vector<Argument>;
     /// The iterator of the argument container.
@@ -162,9 +151,6 @@ struct META_API PackagedArguments
     template <class FunctionSignature>
     auto toTuple() const;
 
-    friend bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
-    friend bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
-
 private:
     void deepCopyIfRequired();
     struct META_API Descriptor
@@ -182,7 +168,13 @@ private:
         std::shared_ptr<Descriptor> clone();
     };
     std::shared_ptr<Descriptor> m_descriptor;
-};
+
+    friend bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
+    friend bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
+    };
+
+bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
+bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
 
 template <typename... Arguments>
 PackagedArguments::PackagedArguments(Arguments&&... arguments) :

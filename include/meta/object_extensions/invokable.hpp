@@ -150,10 +150,6 @@ PackagedArguments Invokable<Function, function>::repackageArguments(PackagedArgu
         using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
         arguments.addFront(dynamic_cast<ZipType>(this));
     }
-    else if constexpr (detail::enableRepack<Function>::packContext)
-    {
-        arguments.addFront(arguments.getContext());
-    }
 
     if constexpr (detail::enableRepack<Function>::packObject)
     {

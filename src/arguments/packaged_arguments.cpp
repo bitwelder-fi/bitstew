@@ -22,18 +22,6 @@
 namespace meta
 {
 
-PackagedArguments::CallScope::CallScope(PackagedArguments& pack, CallContextPtr context) :
-    pack(pack),
-    previousContext(pack.m_descriptor->callContext)
-{
-    pack.m_descriptor->callContext = context;
-}
-
-PackagedArguments::CallScope::~CallScope()
-{
-    pack.m_descriptor->callContext = previousContext;
-}
-
 std::shared_ptr<PackagedArguments::Descriptor> PackagedArguments::Descriptor::clone()
 {
     auto clonePack = std::make_shared<Descriptor>();

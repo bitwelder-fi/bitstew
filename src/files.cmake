@@ -39,6 +39,7 @@ template.cpp
 ../include/utils/function_traits.hpp
 ../include/utils/lockable.hpp
 ../include/utils/scope_value.hpp
+../include/utils/type_traits.hpp
 ../include/utils/utility.hpp
 ../include/utils/vector.hpp
 )

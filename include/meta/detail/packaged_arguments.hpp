@@ -20,14 +20,11 @@
 #define META_DETAIL_PACKAGED_ARGUMENTS_HPP
 
 #include <tuple>
-#include <memory>
 #include <utils/function_traits.hpp>
 
 namespace meta {
 
 class ObjectExtension;
-struct CallContext;
-using CallContextPtr = std::shared_ptr<CallContext>;
 
 namespace detail {
 
@@ -55,7 +52,6 @@ struct enableRepack
 {
     static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
     static constexpr bool packSelf = traits::is_base_arg_of<ObjectExtension*, Function, 0u>::value;
-    static constexpr bool packContext = traits::is_base_arg_of<CallContextPtr, Function, 0u>::value;
     static constexpr bool value = packObject || packSelf;
 };
 

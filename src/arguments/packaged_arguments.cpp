@@ -124,6 +124,7 @@ bool PackagedArguments::isEmpty() const
     return m_descriptor->pack.empty();
 }
 
+
 bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs)
 {
     return lhs.m_descriptor == rhs.m_descriptor;
@@ -133,6 +134,5 @@ bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs)
 {
     return lhs.m_descriptor != rhs.m_descriptor;
 }
-
 
 }

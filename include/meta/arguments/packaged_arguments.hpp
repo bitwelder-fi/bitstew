@@ -173,8 +173,8 @@ private:
     friend bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
     };
 
-bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
-bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
+META_API bool operator==(const PackagedArguments& lhs, const PackagedArguments& rhs);
+META_API bool operator!=(const PackagedArguments& lhs, const PackagedArguments& rhs);
 
 template <typename... Arguments>
 PackagedArguments::PackagedArguments(Arguments&&... arguments) :

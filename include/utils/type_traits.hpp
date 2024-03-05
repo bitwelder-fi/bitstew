@@ -34,6 +34,15 @@ template <typename T>
 struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 /// \}
 
+/// \name Weak pointer tester
+/// \{
+template <typename T>
+struct is_weak_ptr : std::false_type {};
+
+template <typename T>
+struct is_weak_ptr<std::weak_ptr<T>> : std::true_type {};
+/// \}
+
 /// \name Unique pointer tester
 /// \{
 template <typename T>
@@ -41,6 +50,32 @@ struct is_unique_ptr : std::false_type {};
 
 template <typename T>
 struct is_unique_ptr<std::unique_ptr<T>> : std::true_type {};
+/// \}
+
+template <typename T>
+inline constexpr bool is_smart_pointer_v = is_shared_ptr<T>::value || is_weak_ptr<T>::value || is_unique_ptr<T>::value;
+
+/// \name Container test.
+/// \{
+template <typename T, typename = void>
+struct is_container : std::false_type {};
+
+template <typename T>
+struct is_container<T, std::void_t<
+                           typename T::value_type,
+                           typename T::size_type,
+                           typename T::allocator_type,
+                           typename T::iterator,
+                           typename T::const_iterator,
+                           decltype(std::declval<T>().size()),
+                           decltype(std::declval<T>().begin()),
+                           decltype(std::declval<T>().end())
+                           >> : std::true_type {};
+
+/// Helper variable template
+template <typename T>
+inline constexpr bool is_container_v = is_container<T>::value;
+
 /// \}
 
 }

@@ -50,7 +50,7 @@ public:
     /// Returns whether the signal is processing its connections.
     inline bool isTriggering() const
     {
-        return m_runGuard;
+        return m_connections.getLockCount() > 0u;
     }
 
     /// Connects an object extension to the signal, and returns the connection token.

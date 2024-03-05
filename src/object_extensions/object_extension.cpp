@@ -21,7 +21,7 @@
 #include <meta/object_extensions/signal.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
-#include <utils/scope_value.hpp>
+#include <utils/container_view.hpp>
 
 namespace meta
 {
@@ -93,7 +93,7 @@ ObjectPtr ObjectExtension::getObject() const
 
 ReturnValue ObjectExtension::run(PackagedArguments arguments)
 {
-    if (m_runGuard)
+    if (m_connections.isLocked())
     {
         return {};
     }
@@ -103,12 +103,10 @@ ReturnValue ObjectExtension::run(PackagedArguments arguments)
     ReturnValue result;
 
     {
-        utils::ScopeValue<bool> guard(m_runGuard, true);
+        utils::ContainerView<ConnectionContainer> guard(m_connections);
         result = runOverride(arguments);
     }
 
-    // Compact disconnected connections.
-    tryCompactConnections();
     return result;
 }
 
@@ -116,7 +114,7 @@ void ObjectExtension::addConnection(ConnectionPtr connection)
 {
     // Add the connection to both source and target. It should be called on source!
     abortIfFail(connection->getSource().get() == this);
-    abortIfFail(findConnection(*connection) == m_connections.end());
+    abortIfFail(!findConnection(*connection));
 
     m_connections.push_back(connection);
     connection->getTarget()->m_connections.push_back(connection);
@@ -125,45 +123,34 @@ void ObjectExtension::addConnection(ConnectionPtr connection)
 void ObjectExtension::removeConnection(ConnectionPtr connection)
 {
     // Remove the connection from both source and target.
-    auto it = findConnection(*connection);
-    abortIfFail(it != m_connections.end());
+    auto pos = findConnection(*connection);
+    abortIfFail(pos);
     // The method should be called on source!
-    abortIfFail((*it)->getSource().get() == this);
+    abortIfFail((**pos)->getSource().get() == this);
 
-    if (m_runGuard)
-    {
-        it->reset();
-    }
-    else
-    {
-        m_connections.erase(it);
-    }
+    m_connections.erase(*pos);
 
+    // Go to target, and remove the connection from there too.
     auto target = connection->getTarget();
     if (!target)
     {
         return;
     }
 
-    it = target->findConnection(*connection);
-    abortIfFail(it != target->m_connections.end());
-    if (target->m_runGuard)
-    {
-        it->reset();
-    }
-    else
-    {
-        target->m_connections.erase(it);
-    }
+    pos = target->findConnection(*connection);
+    abortIfFail(pos);
+    target->m_connections.erase(*pos);
 
     connection->reset();
 }
 
 void ObjectExtension::disconnectTarget()
 {
-    utils::ScopeValue<bool> guard(m_runGuard, true);
+    utils::ContainerView<ConnectionContainer> guard(m_connections);
     auto self = shared_from_this();
-    for (auto connection : m_connections)
+    // The disconnect affects the whole range, so ensure that we use the full connection range, not
+    // only the locked.
+    for (auto connection : m_connections.getView())
     {
         if (connection->getTarget() == self)
         {
@@ -178,19 +165,10 @@ void ObjectExtension::disconnectTarget()
     }
 }
 
-ObjectExtension::ConnectionContainer::iterator ObjectExtension::findConnection(const Connection& connection)
+std::optional<ObjectExtension::ConnectionContainer::Iterator> ObjectExtension::findConnection(Connection& connection)
 {
-    return std::find(m_connections.begin(), m_connections.end(), connection.shared_from_this());
-}
-
-void ObjectExtension::tryCompactConnections()
-{
-    if (m_runGuard)
-    {
-        // Cannot compact!
-        return;
-    }
-    std::erase_if(m_connections, [](auto& connection) { return !connection || !connection->isValid(); });
+    auto range = m_connections.getView();
+    return range.find(connection.shared_from_this());
 }
 
 }

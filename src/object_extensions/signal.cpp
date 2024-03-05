@@ -19,7 +19,7 @@
 #include <meta/object.hpp>
 #include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/signal.hpp>
-#include <utils/scope_value.hpp>
+#include <utils/container_view.hpp>
 
 namespace meta
 {
@@ -31,6 +31,7 @@ SignalExtension::SignalExtension(std::string_view name) :
 
 SignalExtension::~SignalExtension()
 {
+    abortIfFail(!m_connections.isLocked());
     disconnect();
 }
 
@@ -44,9 +45,9 @@ ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
     auto result = 0;
     // Loop through the connections, excluding eventual new connections which may occur during
     // slot activations.
-    for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
+    utils::ContainerView<ConnectionContainer> connectionView(m_connections);
+    for (auto& connection : connectionView)
     {
-        auto connection = *it;
         if (!connection || !connection->isValid())
         {
             // Skip disconnected connections.
@@ -107,26 +108,22 @@ void SignalExtension::disconnect(Connection& connection)
 
 void SignalExtension::disconnect()
 {
+    utils::ContainerView<ConnectionContainer> guard(m_connections);
+    for (auto& connection : m_connections.getView())
     {
-        utils::ScopeValue<bool> guard(m_runGuard, true);
-        for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
+        if (!connection)
         {
-            auto connection = *it;
-            if (!connection)
-            {
-                continue;
-            }
-            if (connection->getSource().get() == this)
-            {
-                removeConnection(connection);
-            }
-            else
-            {
-                connection->getSource<SignalExtension>()->removeConnection(connection);
-            }
+            continue;
+        }
+        if (connection->getSource().get() == this)
+        {
+            removeConnection(connection);
+        }
+        else
+        {
+            connection->getSource<SignalExtension>()->removeConnection(connection);
         }
     }
-    tryCompactConnections();
 }
 
 bool SignalExtension::tryReset()
@@ -137,11 +134,12 @@ bool SignalExtension::tryReset()
     }
 
 
-    while (beginConnections() != endConnections())
+    auto range = m_connections.getView();
+    for (auto& connection : range)
     {
-        auto connection(*beginConnections());
         disconnect(*connection);
     }
+    m_connections.clear();
 
     return true;
 }
@@ -150,18 +148,10 @@ std::size_t SignalExtension::getConnectionCount() const
 {
     if (isTriggering())
     {
-        auto result = std::size_t(0u);
-        for (auto it = beginConnections(), end = endConnections(); it != end; ++it)
-        {
-            if (*it && (*it)->isValid())
-            {
-                ++result;
-            }
-        }
-        return result;
+        return m_connections.getLockedView()->size();
     }
 
-    return std::distance(beginConnections(), endConnections());
+    return m_connections.getConstView().size();
 }
 
 }

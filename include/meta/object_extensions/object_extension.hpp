@@ -23,6 +23,7 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/metadata/meta_object.hpp>
+#include <utils/guarded_sequence_container.hpp>
 
 #include <pimpl.hpp>
 
@@ -70,7 +71,7 @@ public:
 
 protected:
     /// The container of the connections.
-    using ConnectionContainer = std::deque<ConnectionPtr>;
+    using ConnectionContainer = utils::GuardedSequenceContainer<std::deque<ConnectionPtr>>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
@@ -85,7 +86,7 @@ protected:
     /// \param connection The connection to look for.
     /// \return If the connection is valid, and is found, returns the iterator to the connection. On
     ///         failure, returns the end iterator of the connection container.
-    ConnectionContainer::iterator findConnection(const Connection& connecton);
+    std::optional<ConnectionContainer::Iterator> findConnection(Connection& connecton);
 
     /// Adds a connection to both source and target object extensions. The method fails if the connection
     /// has already been added to the object extensions. The method must be called on source extension.
@@ -96,31 +97,6 @@ protected:
     /// connection is not found in the object extensions. The method must be called on source extension.
     /// \param connection The connectiomn to add to the extension.
     void removeConnection(ConnectionPtr connection);
-
-    /// Tries to remove the invalid connections from the extension.
-    void tryCompactConnections();
-
-    /// Returns the begin iterator of the connections container.
-    /// \return The begin iterator of the connections container.
-    inline ConnectionContainer::iterator beginConnections()
-    {
-        return m_connections.begin();
-    }
-    inline ConnectionContainer::const_iterator beginConnections() const
-    {
-        return m_connections.begin();
-    }
-
-    /// Returns the begin iterator of the connections container.
-    /// \return The begin iterator of the connections container.
-    inline ConnectionContainer::iterator endConnections()
-    {
-        return m_connections.end();
-    }
-    inline ConnectionContainer::const_iterator endConnections() const
-    {
-        return m_connections.end();
-    }
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -133,8 +109,8 @@ protected:
     {
     }
 
-    /// Guards running state of the object extension.
-    bool m_runGuard = false;
+    /// The container with the connections.
+    ConnectionContainer m_connections;
 
 private:
     DISABLE_COPY(ObjectExtension);
@@ -143,7 +119,6 @@ private:
     void attachToObject(Object& object);
     void detachFromObject();
 
-    ConnectionContainer m_connections;
     ObjectWeakPtr m_object;
     friend class Object;
 };

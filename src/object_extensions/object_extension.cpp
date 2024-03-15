@@ -21,7 +21,9 @@
 #include <meta/object_extensions/signal.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
-#include <utils/container_view.hpp>
+#include <containers/view.hpp>
+
+#include <meta/log/trace.hpp>
 
 namespace meta
 {
@@ -64,6 +66,11 @@ ObjectExtension::ObjectExtension(std::string_view name) :
 {
 }
 
+ObjectExtension::~ObjectExtension()
+{
+    abortIfFailWithMessage(!m_object.lock(), "Extension is still atached to an object!");
+}
+
 void ObjectExtension::attachToObject(Object& object)
 {
     abortIfFail(!m_object.lock());
@@ -77,9 +84,8 @@ void ObjectExtension::attachToObject(Object& object)
     onAttached();
 }
 
-void ObjectExtension::detachFromObject()
+void ObjectExtension::detachFromObject(Object& /*object*/)
 {
-    abortIfFail(m_object.lock());
     onDetached();
 
     m_object.reset();
@@ -93,36 +99,46 @@ ObjectPtr ObjectExtension::getObject() const
 
 ReturnValue ObjectExtension::run(PackagedArguments arguments)
 {
-    if (m_connections.isLocked())
+    if (m_connections.getRefCount() > 0u)
     {
+        // It's already running.
         return {};
     }
 
     // Make sure the extension is alive till it is running.
     auto keepAlive = shared_from_this();
-    ReturnValue result;
 
-    {
-        utils::ContainerView<ConnectionContainer> guard(m_connections);
-        result = runOverride(arguments);
-    }
-
-    return result;
+    // Lock the connections.
+    utils::LockGuard<ConnectionContainer> lock(m_connections);
+    containers::LockView<ConnectionContainer> guard(m_connections);
+    return runOverride(arguments);
 }
 
 void ObjectExtension::addConnection(ConnectionPtr connection)
 {
     // Add the connection to both source and target. It should be called on source!
+    auto target = connection->getTarget();
+    abortIfFailWithMessage(target, "Connection with invalid target!");
+    utils::ScopeLock<ConnectionContainer> guard(&m_connections, &target->m_connections);
+
     abortIfFail(connection->getSource().get() == this);
     abortIfFail(!findConnection(*connection));
 
     m_connections.push_back(connection);
-    connection->getTarget()->m_connections.push_back(connection);
+    target->m_connections.push_back(connection);
 }
 
 void ObjectExtension::removeConnection(ConnectionPtr connection)
 {
+    if (!connection)
+    {
+        return;
+    }
+
     // Remove the connection from both source and target.
+    auto target = connection->getTarget();
+    utils::ScopeLock<ConnectionContainer> guard(&m_connections, target ? &target->m_connections : nullptr);
+
     auto pos = findConnection(*connection);
     abortIfFail(pos);
     // The method should be called on source!
@@ -131,26 +147,25 @@ void ObjectExtension::removeConnection(ConnectionPtr connection)
     m_connections.erase(*pos);
 
     // Go to target, and remove the connection from there too.
-    auto target = connection->getTarget();
-    if (!target)
+    if (target)
     {
-        return;
+        pos = target->findConnection(*connection);
+        abortIfFail(pos);
+        target->m_connections.erase(*pos);
     }
-
-    pos = target->findConnection(*connection);
-    abortIfFail(pos);
-    target->m_connections.erase(*pos);
 
     connection->reset();
 }
 
 void ObjectExtension::disconnectTarget()
 {
-    utils::ContainerView<ConnectionContainer> guard(m_connections);
-    auto self = shared_from_this();
+    utils::LockGuard<ConnectionContainer> lock(m_connections);
     // The disconnect affects the whole range, so ensure that we use the full connection range, not
     // only the locked.
-    for (auto connection : m_connections.getView())
+    containers::View<ConnectionContainer> view(m_connections);
+    auto self = shared_from_this();
+
+    for (auto connection : view)
     {
         if (connection->getTarget() == self)
         {
@@ -160,10 +175,42 @@ void ObjectExtension::disconnectTarget()
                 continue;
             }
 
+            utils::RelockGuard<ConnectionContainer> relock(m_connections);
             source->removeConnection(connection);
         }
     }
 }
+
+void ObjectExtension::disconnect()
+{
+    utils::LockGuard<ConnectionContainer> lock(m_connections);
+    // The disconnect affects the whole range, so ensure that we use the full connection range, not
+    // only the locked.
+    containers::View<ConnectionContainer> view(m_connections);
+    auto self = shared_from_this();
+
+    for (auto connection : view)
+    {
+        abortIfFail(connection);
+        if (connection->getSource() == self)
+        {
+            utils::RelockGuard<ConnectionContainer> relock(m_connections);
+            removeConnection(connection);
+        }
+        else if (connection->getTarget() == self)
+        {
+            auto source = connection->getSource();
+            if (!source)
+            {
+                continue;
+            }
+
+            utils::RelockGuard<ConnectionContainer> relock(m_connections);
+            source->removeConnection(connection);
+        }
+    }
+}
+
 
 std::optional<ObjectExtension::ConnectionContainer::Iterator> ObjectExtension::findConnection(Connection& connection)
 {

@@ -20,6 +20,7 @@
 #define UTILS_REFERENCE_COUNTED_HPP
 
 #include <assert.hpp>
+#include <utils/lockable.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -27,16 +28,14 @@
 namespace utils
 {
 
-/// The reference counted object adds reference counting to an object. To use the feature, derive your
-/// class from this template, and expose a cleanup() method, which gets invoked every time the reference
-/// count reaches zero.
+/// The reference count lockable object adds reference counting to an object guarded with a mutex. To use
+/// the feature, derive your class from this template, and expose the methods below.
 /// \tparam DerivedClass The class derived from this guarded object. By contract, the class must have
 ///         the following methods:
-///         - getLockState() to get or create a locked snapshot of the object.
-///         - releaseLockState() to release the losked snapshot of the object.
-///
-template <typename DerivedClass>
-class ReferenceCounted
+///         - acquireResources() to acquire the resources of the object.
+///         - releaseResources() to release the resources of the object.
+template <class DerivedClass>
+class ReferenceCountLockable
 {
     DerivedClass* getDerived()
     {
@@ -44,47 +43,141 @@ class ReferenceCounted
     }
 
 public:
+    using MutexType = std::mutex;
+
     /// Constructor.
-    explicit ReferenceCounted() = default;
+    explicit ReferenceCountLockable() = default;
 
-    /// Returns if the reference count is greater than zero.
-    bool isLocked() const
-    {
-        return getLockCount() > 0u;
-    }
-
-    /// Returns the lock count of the vector.
-    std::size_t getLockCount() const
+    /// Returns the lock count of the object.
+    std::size_t getRefCount() const
     {
         return m_lockCount.load();
     }
 
-    /// Locks the vector. Increments the lock count.
-    auto lock()
+    /// Retains the object and acquires its resources. Increments the reference count. Does not lock
+    /// the mutex of the object.
+    ///
+    /// \return The return type depends on the derived class, whether that returns anything or it is
+    ///         a void method.
+    auto retain()
     {
         auto newCount = m_lockCount.load() + 1;
         while (!m_lockCount.compare_exchange_weak(newCount, newCount + 1));
 
-        return getDerived()->getLockState();
+        return getDerived()->acquireResources();
     }
 
-    /// Unlocks the vector. Decrements the lock count. When the lock count reaches zero, calls the
-    /// compact() method of the derived class.
+    /// Releases an incerement of the object. Decrements the lock count of the object. When the lock
+    /// count reaches zero, it releases the object resources invoking releaseResources() method. Does
+    /// not unlock the mutex of the object.
     ///
-    /// The call aborts if the guarded vector is not locked.
-    void unlock()
+    /// The call aborts if the guarded object is not locked.
+    void release()
     {
         abortIfFail(m_lockCount.load() > 0u);
+
         auto newCount = m_lockCount.load() - 1;
         while (!m_lockCount.compare_exchange_weak(newCount, newCount - 1));
         if (m_lockCount.load() == 0u)
         {
-            static_cast<DerivedClass*>(this)->releaseLockState();
+            getDerived()->releaseResources();
+        }
+    }
+
+    /// Returns the reference to the mutex of the reference counted object.
+    MutexType& mutex()
+    {
+        return m_lock;
+    }
+
+private:
+    mutable MutexType m_lock;
+    std::atomic_size_t m_lockCount = {0u};
+};
+
+/// Unlocks an already locked reference count lockable object, and re-locks on destruction.
+template <class LockableObject>
+struct RelockGuard
+{
+    explicit RelockGuard(LockableObject& lockable) :
+        m_mutex(lockable.mutex())
+    {
+        m_mutex.unlock();
+    }
+    ~RelockGuard()
+    {
+        m_mutex.lock();
+    }
+
+private:
+    typename LockableObject::MutexType& m_mutex;
+};
+
+namespace detail
+{
+
+template <class LockableObject>
+struct LockWrap
+{
+    explicit LockWrap(LockableObject* lockable) :
+        mutex(lockable ? &lockable->mutex() : nullptr)
+    {
+    }
+
+    void lock()
+    {
+        if (mutex)
+        {
+            mutex->lock();
+        }
+    }
+
+    bool try_lock()
+    {
+        if (mutex)
+        {
+            return mutex->try_lock();
+        }
+        return true;
+    }
+
+    void unlock()
+    {
+        if (mutex)
+        {
+            mutex->unlock();
         }
     }
 
 private:
-    std::atomic_size_t m_lockCount = {0u};
+    typename LockableObject::MutexType* mutex = nullptr;
+};
+
+}
+
+template <class LockableObject>
+struct ScopeLock
+{
+    explicit ScopeLock(LockableObject* lockable1, LockableObject* lockable2) :
+        l1(lockable1), l2(lockable2),
+        guard(l1, l2)
+    {
+    }
+
+private:
+    using MutexType = detail::LockWrap<LockableObject>;
+    MutexType l1;
+    MutexType l2;
+    std::scoped_lock<MutexType, MutexType> guard;
+};
+
+template <class LockableObject>
+struct LockGuard : public std::lock_guard<typename LockableObject::MutexType>
+{
+    explicit LockGuard(LockableObject& lockable) :
+        std::lock_guard<typename LockableObject::MutexType>(lockable.mutex())
+    {
+    }
 };
 
 } // namespace utils

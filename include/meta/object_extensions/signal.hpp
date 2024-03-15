@@ -50,7 +50,7 @@ public:
     /// Returns whether the signal is processing its connections.
     inline bool isTriggering() const
     {
-        return m_connections.getLockCount() > 0u;
+        return m_connections.getRefCount() > 0u;
     }
 
     /// Connects an object extension to the signal, and returns the connection token.
@@ -68,13 +68,10 @@ public:
     /// \param connection The connection to disconnect. On return, the connection is reset.
     void disconnect(Connection& connection);
 
-    /// Disconnect all signal connections.
-    void disconnect();
-
     /// Tries to reset the signal extension, disconnecting the connections. The method fails if
     /// the reset is called during signal activation.
     /// \return On siuccessful reset returns \e true, otherwise \e false.
-    bool tryReset();
+    bool tryDisconnect();
 
     /// Returns the number of valid connections.
     /// \return The number of connections which are valid.
@@ -197,11 +194,8 @@ public:
     /// Destructor.
     ~Signal()
     {
-        m_extension->disconnect();
-        if (m_extension->getObject())
-        {
-            m_extension->getObject()->removeExtension(*m_extension);
-        }
+        m_extension->tryDisconnect();
+        m_extension.reset();
     }
 
     /// Connects an object extension to the signal, and returns the connection token.
@@ -231,7 +225,7 @@ public:
     /// Disconnect all signal connections.
     void disconnect()
     {
-        m_extension->disconnect();
+        std::static_pointer_cast<ObjectExtension>(m_extension)->disconnect();
     }
 
     /// Returns the number of valid connections.

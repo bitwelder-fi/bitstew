@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef UTILS_GUARDED_SEQUENCE_CONTAINER_HPP
-#define UTILS_GUARDED_SEQUENCE_CONTAINER_HPP
+#ifndef CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
+#define CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
 
 #include <utils/type_traits.hpp>
 #include <utils/reference_counted.hpp>
@@ -26,7 +26,7 @@
 #include <optional>
 #include <utility>
 
-namespace utils
+namespace containers
 {
 
 namespace detail
@@ -38,20 +38,44 @@ bool isValid(const ElementType& value)
     return static_cast<bool>(value);
 }
 
-template <typename ContainerType, typename BaseIterator, typename Category, typename Pointer, typename Reference>
-class IteratorWrap
+
+template <class ContainerType>
+struct ForwardIteratorTraits
 {
-    BaseIterator m_pos;
-    BaseIterator m_end;
+    static constexpr bool isConst = std::is_const_v<ContainerType>;
+    using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_iterator, typename ContainerType::iterator>;
+    using Category = typename BaseIterator::iterator_category;
+    using Pointer = std::conditional_t<isConst, typename ContainerType::const_pointer, typename ContainerType::pointer>;
+    using Reference = std::conditional_t<isConst, typename ContainerType::const_reference, typename ContainerType::reference>;
+};
+
+template <class ContainerType>
+struct ReverseIteratorTraits
+{
+    static constexpr bool isConst = std::is_const_v<ContainerType>;
+    using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_reverse_iterator, typename ContainerType::reverse_iterator>;
+    using Category = typename BaseIterator::iterator_category;
+    using Pointer = std::conditional_t<isConst, typename ContainerType::const_pointer, typename ContainerType::pointer>;
+    using Reference = std::conditional_t<isConst, typename ContainerType::const_reference, typename ContainerType::reference>;
+};
+
+
+
+template <typename ContainerType, class Traits>
+class IteratorProxy
+{
+    using SelfType = IteratorProxy<ContainerType, Traits>;
 
 public:
-    using iterator_category = Category;
+    using BaseIterator      = Traits::BaseIterator;
+    using iterator_category = Traits::Category;
     using value_type        = typename ContainerType::value_type;
     using difference_type   = typename ContainerType::difference_type;
-    using pointer           = Pointer;
-    using reference         = Reference;
+    using pointer           = Traits::Pointer;
+    using reference         = Traits::Reference;
+    using size_type         = typename ContainerType::size_type;
 
-    IteratorWrap(BaseIterator pos, BaseIterator end) :
+    IteratorProxy(BaseIterator pos, BaseIterator end) :
         m_pos(pos),
         m_end(end)
     {
@@ -61,7 +85,7 @@ public:
         }
     }
 
-    IteratorWrap& operator++()
+    IteratorProxy& operator++()
     {
         while (++m_pos != m_end)
         {
@@ -74,29 +98,29 @@ public:
         return *this;
     }
 
-    IteratorWrap operator++(int)
+    IteratorProxy operator++(int)
     {
-        IteratorWrap retval = *this;
+        IteratorProxy retval = *this;
         ++(*this);
         return retval;
     }
 
-    bool operator==(IteratorWrap other) const
+    bool operator==(IteratorProxy other) const
     {
         return other.m_pos == m_pos;
     }
 
-    bool operator!=(IteratorWrap other) const
+    bool operator!=(IteratorProxy other) const
     {
         return !(*this == other);
     }
 
-    Reference operator*() const
+    reference operator*() const
     {
         return m_pos.operator*();
     }
 
-    Pointer operator->() const
+    pointer operator->() const
     {
         return m_pos.operator->();
     }
@@ -105,17 +129,33 @@ public:
     {
         return m_pos;
     }
+
+    friend size_type operator-(const SelfType& lhs, const SelfType& rhs)
+    {
+        return lhs.m_pos - rhs.m_pos;
+    }
+
+private:
+    BaseIterator m_pos;
+    BaseIterator m_end;
 };
 
 }
 
-/// A guarded deque is a deque guarded through a reference counted lock.
+/// A guarded sequence container is a reference counted sequence container.
+///
+/// Use views to access the container elements. It is recommended to use guard locks to do that. These guards ensure that the
+/// container gets locked before you try to access its content.
+///
+/// The container gets share-locked on read access, and exclusive-locked when you add or remove elements
+/// from the container. Whilst read operations are only possible through views, write operations are
+/// only possible through the interface of the container.
 /// \tparam ElementType
 template <class ContainerType>
-class GuardedSequenceContainer : public ReferenceCounted<GuardedSequenceContainer<ContainerType>>
+class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
 {
     using SelfType = GuardedSequenceContainer<ContainerType>;
-    friend class ReferenceCounted<SelfType>;
+    friend class utils::ReferenceCountLockable<SelfType>;
 
     ContainerType m_container;
 
@@ -128,33 +168,21 @@ public:
     using pointer               = typename ContainerType::pointer;
     using const_pointer         = typename ContainerType::const_pointer;
 
-    using Iterator = detail::IteratorWrap<
+    using Iterator = detail::IteratorProxy<
         ContainerType,
-        typename ContainerType::iterator,
-        typename ContainerType::iterator::iterator_category,
-        pointer,
-        reference>;
+        detail::ForwardIteratorTraits<ContainerType>>;
 
-    using ConstIterator = detail::IteratorWrap<
-        ContainerType,
-        typename ContainerType::const_iterator,
-        typename ContainerType::const_iterator::iterator_category,
-        const_pointer,
-        const_reference>;
+    using ConstIterator = detail::IteratorProxy<
+        const ContainerType,
+        detail::ForwardIteratorTraits<const ContainerType>>;
 
-    using ReverseIterator = detail::IteratorWrap<
+    using ReverseIterator = detail::IteratorProxy<
         ContainerType,
-        typename ContainerType::reverse_iterator,
-        typename ContainerType::reverse_iterator::iterator_category,
-        pointer,
-        reference>;
+        detail::ReverseIteratorTraits<ContainerType>>;
 
-    using ConstReverseIterator = detail::IteratorWrap<
-        ContainerType,
-        typename ContainerType::const_reverse_iterator,
-        typename ContainerType::const_reverse_iterator::iterator_category,
-        const_pointer,
-        const_reference>;
+    using ConstReverseIterator = detail::IteratorProxy<
+        const ContainerType,
+        detail::ReverseIteratorTraits<const ContainerType>>;
 
     /// A view of iterators of the container.
     template <class IteratorType>
@@ -278,26 +306,6 @@ public:
     }
     /// \}
 
-    /// \name Element access
-    /// \{
-    reference at(size_type index)
-    {
-        return m_container.at(index);
-    }
-    const_reference at(size_type index) const
-    {
-        return m_container.at(index);
-    }
-    reference operator[](size_type index)
-    {
-        return m_container[index];
-    }
-    const_reference operator[](size_type index) const
-    {
-        return m_container[index];
-    }
-    /// \}
-
     /// \name Modifiers
     /// \{
 
@@ -324,13 +332,17 @@ public:
     ///         nullopt.
     std::optional<Iterator> insert(Iterator position, const value_type& item)
     {
-        if (m_lockedView && m_lockedView->inView(position))
+        if (m_lockedView)
         {
-            return {};
+            if (m_lockedView->inView(position))
+            {
+                return {};
+            }
+            auto result = m_container.insert(position, item);
+            return Iterator(result, m_container.end());
         }
 
-        auto result = m_container.insert(position, item);
-        return Iterator(result, m_container.end());
+        return insert(position, item);
     }
 
     /// Inserts an item at position. The operation fails if the insert position is inside
@@ -342,13 +354,18 @@ public:
     ///         std::nullopt.
     std::optional<Iterator> insert(Iterator position, value_type&& item)
     {
-        if (m_lockedView && m_lockedView->inView(position))
+        if (m_lockedView)
         {
-            return {};
+            if (m_lockedView->inView(position))
+            {
+                return {};
+            }
+
+            auto result = m_container.insert(position, std::forward<value_type>(item));
+            return Iterator(result, m_container.end());
         }
 
-        auto result = m_container.insert(position, std::forward<value_type>(item));
-        return Iterator(result, m_container.end());
+        return insert(position, std::forward<value_type>(item));
     }
 
     /// Erases or resets the item at position.
@@ -360,21 +377,21 @@ public:
     ///         position falls outside of the locked view, returns std::nullopt.
     std::optional<Iterator> erase(Iterator position)
     {
-        if (m_lockedView && m_lockedView->inView(position))
+        if (m_lockedView)
         {
-            *position = value_type();
-            return Iterator(position, m_container.end());
-        }
-        else
-        {
-            auto it = m_container.erase(static_cast<ContainerType::iterator>(position));
-
-            if (this->isLocked())
+            if (m_lockedView->inView(position))
             {
-                return {};
+                *position = value_type();
+                return Iterator(position, m_container.end());
             }
-            return Iterator(it, m_container.end());
+
+            // Erase outside of the view.
+            m_container.erase(static_cast<typename ContainerType::iterator>(position));
+            return {};
         }
+
+        auto it = m_container.erase(static_cast<typename ContainerType::iterator>(position));
+        return Iterator(it, m_container.end());
     }
 
     /// Erases or resets the item at position.
@@ -386,21 +403,21 @@ public:
     ///         position falls outside of the locked view, returns std::nullopt.
     std::optional<Iterator> erase(ConstIterator position)
     {
-        if (m_lockedView && m_lockedView->inView(position))
+        if (m_lockedView)
         {
-            *position = value_type();
-            return Iterator(position, m_container.end());
-        }
-        else
-        {
-            auto it = m_container.erase(position);
-
-            if (this->isLocked())
+            if (m_lockedView->inView(position))
             {
-                return {};
+                *position = value_type();
+                return Iterator(position, m_container.end());
             }
-            return Iterator(it, m_container.end());
+
+            // Erase outside of the view.
+            m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
+            return {};
         }
+
+        auto it = m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
+        return Iterator(it, m_container.end());
     }
 
     /// Adds an element at the end of the container.
@@ -420,8 +437,9 @@ public:
 
 private:
     LockedView m_lockedView;
-    /// Method called by ReferenceCounted<> when the container gets locked the first time.
-    View<Iterator> getLockState()
+
+    /// Method called by ReferenceCountLockable<> when the container gets locked the first time.
+    View<Iterator> acquireResources()
     {
         if (!m_lockedView)
         {
@@ -430,8 +448,8 @@ private:
         return *m_lockedView;
     }
 
-    /// Method called by ReferenceCounted<> when the container gets fully unlocked.
-    void releaseLockState()
+    /// Method called by ReferenceCountLockable<> when the container gets fully unlocked.
+    void releaseResources()
     {
         auto predicate = [](auto& item) { return !detail::isValid(item); };
         m_container.erase(std::remove_if(m_container.begin(), m_container.end(), predicate), m_container.end());
@@ -442,4 +460,4 @@ private:
 
 } // namespace utils
 
-#endif // UTILS_GUARDED_SEQUENCE_CONTAINER_HPP
+#endif // CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP

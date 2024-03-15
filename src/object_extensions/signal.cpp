@@ -19,7 +19,7 @@
 #include <meta/object.hpp>
 #include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/signal.hpp>
-#include <utils/container_view.hpp>
+#include <containers/view.hpp>
 
 namespace meta
 {
@@ -31,8 +31,7 @@ SignalExtension::SignalExtension(std::string_view name) :
 
 SignalExtension::~SignalExtension()
 {
-    abortIfFail(!m_connections.isLocked());
-    disconnect();
+    abortIfFail(!m_connections.getRefCount());
 }
 
 ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
@@ -44,28 +43,27 @@ ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
 
     auto result = 0;
     // Loop through the connections, excluding eventual new connections which may occur during
-    // slot activations.
-    utils::ContainerView<ConnectionContainer> connectionView(m_connections);
-    for (auto& connection : connectionView)
+    // slot activations. The connections should have a locked view already!
+
+    containers::LockView<ConnectionContainer> view(m_connections);
+    for (auto& connection : view)
     {
         if (!connection || !connection->isValid())
         {
             // Skip disconnected connections.
             continue;
         }
+        // Keep the slot alive while running.
+        auto slot = connection->getTarget();
+
         // Consider only those connections, where this signal is the source. Other connections are
         // those, where this signal is the slot.
-        if (connection->getSource().get() != this)
+        if (connection->getSource().get() != this || !slot)
         {
             continue;
         }
 
-        // Keep the slot alive while running.
-        auto slot = connection->getTarget();
-        if (!slot)
-        {
-            continue;
-        }
+        utils::RelockGuard<ConnectionContainer> relock(m_connections);
         if (slot->run(arguments))
         {
             ++result;
@@ -106,41 +104,14 @@ void SignalExtension::disconnect(Connection& connection)
     removeConnection(connectionPtr);
 }
 
-void SignalExtension::disconnect()
-{
-    utils::ContainerView<ConnectionContainer> guard(m_connections);
-    for (auto& connection : m_connections.getView())
-    {
-        if (!connection)
-        {
-            continue;
-        }
-        if (connection->getSource().get() == this)
-        {
-            removeConnection(connection);
-        }
-        else
-        {
-            connection->getSource<SignalExtension>()->removeConnection(connection);
-        }
-    }
-}
-
-bool SignalExtension::tryReset()
+bool SignalExtension::tryDisconnect()
 {
     if (isTriggering())
     {
         return false;
     }
 
-
-    auto range = m_connections.getView();
-    for (auto& connection : range)
-    {
-        disconnect(*connection);
-    }
-    m_connections.clear();
-
+    ObjectExtension::disconnect();
     return true;
 }
 

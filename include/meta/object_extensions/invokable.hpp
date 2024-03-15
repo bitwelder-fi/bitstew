@@ -173,6 +173,7 @@ ReturnValue Invokable<Function, function>::runOverride(PackagedArguments argumen
     {
         auto args = repackageArguments(arguments);
         auto pack = args.template toTuple<Function>();
+        utils::RelockGuard<ConnectionContainer> relock(m_connections);
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
             std::apply(function, pack);

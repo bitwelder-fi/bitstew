@@ -12,6 +12,8 @@ tasks/job.cpp
 tasks/thread_pool.cpp
 template.cpp
 ../include/assert.hpp
+../include/containers/guarded_sequence_container.hpp
+../include/containers/view.hpp
 ../include/meta/arguments/argument.hpp
 ../include/meta/arguments/packaged_arguments.hpp
 ../include/meta/detail/packaged_arguments.hpp
@@ -36,10 +38,9 @@ template.cpp
 ../include/meta/tasks/thread_pool.hpp
 ../include/pimpl.hpp
 ../include/preprocessor.hpp
-../include/utils/container_view.hpp
 ../include/utils/function_traits.hpp
-../include/utils/guarded_sequence_container.hpp
 ../include/utils/lockable.hpp
+../include/utils/locks.hpp
 ../include/utils/reference_counted.hpp
 ../include/utils/scope_value.hpp
 ../include/utils/type_traits.hpp

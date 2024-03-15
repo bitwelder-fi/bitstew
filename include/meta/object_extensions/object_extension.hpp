@@ -23,7 +23,7 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/metadata/meta_object.hpp>
-#include <utils/guarded_sequence_container.hpp>
+#include <containers/guarded_sequence_container.hpp>
 
 #include <pimpl.hpp>
 
@@ -50,6 +50,9 @@ namespace meta
 class META_API ObjectExtension : public MetaObject, public std::enable_shared_from_this<ObjectExtension>
 {
 public:
+    /// Destructor.
+    ~ObjectExtension() override;
+
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
     ObjectPtr getObject() const;
@@ -69,9 +72,12 @@ public:
     /// Disconnects all connections where this object extension is set as target.
     void disconnectTarget();
 
+    /// Disconnects all connections to and from this object.
+    void disconnect();
+
 protected:
     /// The container of the connections.
-    using ConnectionContainer = utils::GuardedSequenceContainer<std::deque<ConnectionPtr>>;
+    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
@@ -82,7 +88,7 @@ protected:
     ///         return a void Argument. On failure, implementations are expected to return \e nullopt.
     virtual ReturnValue runOverride(PackagedArguments arguments) = 0;
 
-    /// Returns the iterator to the connection.
+    /// Returns the iterator to the connection. Not thread safe!
     /// \param connection The connection to look for.
     /// \return If the connection is valid, and is found, returns the iterator to the connection. On
     ///         failure, returns the end iterator of the connection container.
@@ -117,7 +123,7 @@ private:
     DISABLE_MOVE(ObjectExtension);
 
     void attachToObject(Object& object);
-    void detachFromObject();
+    void detachFromObject(Object& object);
 
     ObjectWeakPtr m_object;
     friend class Object;

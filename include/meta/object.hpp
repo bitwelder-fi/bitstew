@@ -39,7 +39,7 @@ public:
     static ObjectPtr create(std::string_view name);
 
     /// Destructor.
-    virtual ~Object();
+    ~Object() override;
 
     /// The metadata of a meta object.
     META_CLASS("meta.Object", Object, MetaObject)

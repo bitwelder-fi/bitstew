@@ -30,6 +30,14 @@ Object::Object(std::string_view name) :
 
 Object::~Object()
 {
+    // Detach all attached extensions.
+    for (auto it = m_extensions.begin(), end = m_extensions.end(); it != end; ++it)
+    {
+        if (it->second)
+        {
+            it->second->detachFromObject(*this);
+        }
+    }
 }
 
 void Object::initialize()
@@ -75,7 +83,7 @@ bool Object::removeExtension(ObjectExtension& extension)
     auto it = m_extensions.find(extension.getName());
     if (it != m_extensions.end())
     {
-        extension.detachFromObject();
+        extension.detachFromObject(*this);
         m_extensions.erase(it);
         return true;
     }

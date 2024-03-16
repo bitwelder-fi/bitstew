@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <mutex>
 
 namespace utils
 {

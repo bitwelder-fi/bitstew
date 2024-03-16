@@ -67,12 +67,12 @@ class IteratorProxy
     using SelfType = IteratorProxy<ContainerType, Traits>;
 
 public:
-    using BaseIterator      = Traits::BaseIterator;
-    using iterator_category = Traits::Category;
+    using BaseIterator      = typename Traits::BaseIterator;
+    using iterator_category = typename Traits::Category;
     using value_type        = typename ContainerType::value_type;
     using difference_type   = typename ContainerType::difference_type;
-    using pointer           = Traits::Pointer;
-    using reference         = Traits::Reference;
+    using pointer           = typename Traits::Pointer;
+    using reference         = typename Traits::Reference;
     using size_type         = typename ContainerType::size_type;
 
     IteratorProxy(BaseIterator pos, BaseIterator end) :

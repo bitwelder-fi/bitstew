@@ -214,8 +214,14 @@ void ObjectExtension::disconnect()
 
 std::optional<ObjectExtension::ConnectionContainer::Iterator> ObjectExtension::findConnection(Connection& connection)
 {
-    auto range = m_connections.getView();
-    return range.find(connection.shared_from_this());
+    containers::View<ConnectionContainer> view(m_connections);
+    auto pos = view.find(connection.shared_from_this());
+    if (pos != view.end())
+    {
+        return pos;
+    }
+
+    return {};
 }
 
 }

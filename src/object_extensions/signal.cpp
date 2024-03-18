@@ -122,7 +122,8 @@ std::size_t SignalExtension::getConnectionCount() const
         return m_connections.getLockedView()->size();
     }
 
-    return m_connections.getConstView().size();
+    containers::View<ConnectionContainer, containers::forward_const_t> view(const_cast<ConnectionContainer&>(m_connections));
+    return view.size();
 }
 
 }

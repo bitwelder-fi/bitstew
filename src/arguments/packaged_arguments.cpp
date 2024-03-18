@@ -26,7 +26,6 @@ std::shared_ptr<PackagedArguments::Descriptor> PackagedArguments::Descriptor::cl
 {
     auto clonePack = std::make_shared<Descriptor>();
     clonePack->pack = pack;
-    clonePack->callContext = callContext;
     return clonePack;
 }
 

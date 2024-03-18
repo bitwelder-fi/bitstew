@@ -77,7 +77,8 @@ public:
 
 protected:
     /// The container of the connections.
-    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>>;
+    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>,
+                                                                     [](const ConnectionPtr& connection) { return connection != nullptr; }>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);

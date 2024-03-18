@@ -20,6 +20,8 @@
 #define CONTAINERS_VIEW_HPP
 
 #include <meta/meta_api.hpp>
+
+#include <optional>
 #include <type_traits>
 
 namespace containers
@@ -43,14 +45,14 @@ struct View
                                                            std::conditional_t<std::is_same_v<IteratorType, reverse_t>,
                                                                               typename GuardedContainerType::ReverseIterator,
                                                                               typename GuardedContainerType::ConstReverseIterator>>>;
-    using ViewType  = typename GuardedContainerType::template View<Iterator>;
+    using ViewType      = typename GuardedContainerType::template View<Iterator>;
+    using value_type    = typename GuardedContainerType::value_type;
 
     /// Constructor, locks the guarded container and returns an iterator range to the locked content.
     explicit View(GuardedContainerType& container) :
         m_container(container),
         m_containerView(m_container)
     {
-
         m_container.retain();
     }
     /// Destructor
@@ -68,6 +70,21 @@ struct View
     Iterator end() const
     {
         return m_containerView.end();
+    }
+
+    /// Find an item in the view.
+    /// \param item The item to find in the view.
+    /// \return On success, returns the position of the itemn within the view. On failure, returns
+    ///         \e std::nullopt.
+    Iterator find(const value_type& item)
+    {
+        return m_containerView.find(item);
+    }
+
+    /// Returns the size of the view. The size is the number of valid elements in the view.
+    std::size_t size() const
+    {
+        return m_containerView.size();
     }
 
 private:

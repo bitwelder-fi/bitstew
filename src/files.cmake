@@ -13,6 +13,7 @@ tasks/thread_pool.cpp
 template.cpp
 ../include/assert.hpp
 ../include/containers/guarded_sequence_container.hpp
+../include/containers/iterator.hpp
 ../include/containers/view.hpp
 ../include/meta/arguments/argument.hpp
 ../include/meta/arguments/packaged_arguments.hpp

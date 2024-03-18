@@ -4,6 +4,8 @@ include(configure-target)
 
 project(${PROJECT_LIBRARY} VERSION 1.0.0 LANGUAGES CXX)
 
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+
 # get the files
 include(files.cmake)
 

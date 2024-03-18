@@ -19,6 +19,7 @@
 #ifndef CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
 #define CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
 
+#include <containers/iterator.hpp>
 #include <utils/type_traits.hpp>
 #include <utils/reference_counted.hpp>
 
@@ -29,119 +30,6 @@
 namespace containers
 {
 
-namespace detail
-{
-
-template <class ElementType>
-bool isValid(const ElementType& value)
-{
-    return static_cast<bool>(value);
-}
-
-
-template <class ContainerType>
-struct ForwardIteratorTraits
-{
-    static constexpr bool isConst = std::is_const_v<ContainerType>;
-    using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_iterator, typename ContainerType::iterator>;
-    using Category = typename BaseIterator::iterator_category;
-    using Pointer = std::conditional_t<isConst, typename ContainerType::const_pointer, typename ContainerType::pointer>;
-    using Reference = std::conditional_t<isConst, typename ContainerType::const_reference, typename ContainerType::reference>;
-};
-
-template <class ContainerType>
-struct ReverseIteratorTraits
-{
-    static constexpr bool isConst = std::is_const_v<ContainerType>;
-    using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_reverse_iterator, typename ContainerType::reverse_iterator>;
-    using Category = typename BaseIterator::iterator_category;
-    using Pointer = std::conditional_t<isConst, typename ContainerType::const_pointer, typename ContainerType::pointer>;
-    using Reference = std::conditional_t<isConst, typename ContainerType::const_reference, typename ContainerType::reference>;
-};
-
-
-
-template <typename ContainerType, class Traits>
-class IteratorProxy
-{
-    using SelfType = IteratorProxy<ContainerType, Traits>;
-
-public:
-    using BaseIterator      = typename Traits::BaseIterator;
-    using iterator_category = typename Traits::Category;
-    using value_type        = typename ContainerType::value_type;
-    using difference_type   = typename ContainerType::difference_type;
-    using pointer           = typename Traits::Pointer;
-    using reference         = typename Traits::Reference;
-    using size_type         = typename ContainerType::size_type;
-
-    IteratorProxy(BaseIterator pos, BaseIterator end) :
-        m_pos(pos),
-        m_end(end)
-    {
-        while (m_pos != m_end && !isValid(*m_pos))
-        {
-            ++m_pos;
-        }
-    }
-
-    IteratorProxy& operator++()
-    {
-        while (++m_pos != m_end)
-        {
-            if (isValid(*m_pos))
-            {
-                break;
-            }
-        }
-
-        return *this;
-    }
-
-    IteratorProxy operator++(int)
-    {
-        IteratorProxy retval = *this;
-        ++(*this);
-        return retval;
-    }
-
-    bool operator==(IteratorProxy other) const
-    {
-        return other.m_pos == m_pos;
-    }
-
-    bool operator!=(IteratorProxy other) const
-    {
-        return !(*this == other);
-    }
-
-    reference operator*() const
-    {
-        return m_pos.operator*();
-    }
-
-    pointer operator->() const
-    {
-        return m_pos.operator->();
-    }
-
-    operator BaseIterator()
-    {
-        return m_pos;
-    }
-
-    friend size_type operator-(const SelfType& lhs, const SelfType& rhs)
-    {
-        return lhs.m_pos - rhs.m_pos;
-    }
-
-private:
-    BaseIterator m_pos;
-    BaseIterator m_end;
-};
-
-}
-
 /// A guarded sequence container is a reference counted sequence container.
 ///
 /// Use views to access the container elements. It is recommended to use guard locks to do that. These guards ensure that the
@@ -151,40 +39,73 @@ private:
 /// from the container. Whilst read operations are only possible through views, write operations are
 /// only possible through the interface of the container.
 /// \tparam ElementType
-template <class ContainerType>
-class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
+template <class ContainerType, bool (*ValidElementFunction)(const typename ContainerType::value_type&)>
+class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType, ValidElementFunction>>
 {
-    using SelfType = GuardedSequenceContainer<ContainerType>;
+    using SelfType = GuardedSequenceContainer<ContainerType, ValidElementFunction>;
     friend class utils::ReferenceCountLockable<SelfType>;
 
     ContainerType m_container;
 
+    /// Forward iterator traits.
+    template <class TContainer>
+    struct ForwardIteratorTraits
+    {
+        static constexpr bool isConst = std::is_const_v<TContainer>;
+
+        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_iterator, typename ContainerType::iterator>;
+        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
+        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
+        using SizeType = typename TContainer::size_type;
+
+        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
+    };
+
+    /// Reverse iterator traits.
+    template <class TContainer>
+    struct ReverseIteratorTraits
+    {
+        static constexpr bool isConst = std::is_const_v<TContainer>;
+
+        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_reverse_iterator, typename ContainerType::reverse_iterator>;
+        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
+        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
+        using SizeType = typename TContainer::size_type;
+
+        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
+    };
+
 public:
-    using value_type            = typename ContainerType::value_type;
-    using reference             = typename ContainerType::reference;
-    using const_reference       = typename ContainerType::const_reference;
-    using size_type             = typename ContainerType::size_type;
-    using difference_type       = typename ContainerType::difference_type;
-    using pointer               = typename ContainerType::pointer;
-    using const_pointer         = typename ContainerType::const_pointer;
+    using value_type        = typename ContainerType::value_type;
+    using reference         = typename ContainerType::reference;
+    using const_reference   = typename ContainerType::const_reference;
+    using size_type         = typename ContainerType::size_type;
+    using difference_type   = typename ContainerType::difference_type;
+    using pointer           = typename ContainerType::pointer;
+    using const_pointer     = typename ContainerType::const_pointer;
 
-    using Iterator = detail::IteratorProxy<
-        ContainerType,
-        detail::ForwardIteratorTraits<ContainerType>>;
+    bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
 
-    using ConstIterator = detail::IteratorProxy<
-        const ContainerType,
-        detail::ForwardIteratorTraits<const ContainerType>>;
+    /// Creates a guarded vector container.
+    explicit GuardedSequenceContainer() = default;
 
-    using ReverseIterator = detail::IteratorProxy<
-        ContainerType,
-        detail::ReverseIteratorTraits<ContainerType>>;
+    /// \name View
+    /// \{
 
-    using ConstReverseIterator = detail::IteratorProxy<
-        const ContainerType,
-        detail::ReverseIteratorTraits<const ContainerType>>;
+    /// The forward iterator of the guarded container.
+    using Iterator = IteratorWrap<ForwardIteratorTraits<SelfType>>;
 
-    /// A view of iterators of the container.
+    /// The forward const iterator of the guarded container.
+    using ConstIterator = IteratorWrap<ForwardIteratorTraits<const SelfType>>;
+
+    /// The reverse iterator of the guarded container.
+    using ReverseIterator = IteratorWrap<ReverseIteratorTraits<SelfType>>;
+
+    /// The reverse const iterator of the guarded container.
+    using ConstReverseIterator = IteratorWrap<ReverseIteratorTraits<const SelfType>>;
+
+    /// A view of the container. The view range is marked by iterators. You can iterate through the
+    /// view elements, where each position always points to a valid element of the view.
     template <class IteratorType>
     struct View
     {
@@ -226,7 +147,7 @@ public:
         /// \{
         bool isEmpty() const
         {
-            return size() > 0u;
+            return size() == 0u;
         }
         size_type size() const
         {
@@ -237,19 +158,18 @@ public:
         /// \name Element access in a view.
         /// \{
 
-        std::optional<IteratorType> find(const value_type& item)
+        /// Find an element in the view.
+        /// \param item The item to find in the view.
+        /// \return On success returns the iterator pointing to the position of the item. On failure
+        ///         returns the end iterator.
+        IteratorType find(const value_type& item)
         {
             auto pos = std::find(m_viewBegin, m_viewEnd, item);
-            if (pos != m_viewEnd)
-            {
-                return IteratorType(pos, m_viewEnd);
-            }
-
-            return {};
+            return IteratorType(pos, m_viewEnd);
         }
         /// \}
 
-    private:
+    protected:
         IteratorType m_viewBegin;
         IteratorType m_viewEnd;
     };
@@ -257,53 +177,12 @@ public:
     /// The locked view type of the container.
     using LockedView = std::optional<View<Iterator>>;
 
-    /// Creates a guarded vector container.
-    explicit GuardedSequenceContainer() = default;
-
-    /// name Capacity
-    /// \{
-    bool isEmpty() const
-    {
-        return m_container.empty();
-    }
-    size_type size() const
-    {
-        return m_container.size();
-    }
-    /// \}
-
-    /// \name Iterators
-    /// \{
-
     /// Returns the locked view of the container.
     LockedView getLockedView() const
     {
         return m_lockedView;
     }
 
-    /// Returns an unlocked view of the container.
-    View<Iterator> getView()
-    {
-        return View<Iterator>(*this);
-    }
-
-    /// Returns an unlocked view of the container with const iterators.
-    View<ConstIterator> getConstView() const
-    {
-        return View<ConstIterator>(*this);
-    }
-
-    /// Returns an unlocked view of the container with reverse iterators.
-    View<ReverseIterator> getReverseView()
-    {
-        return View<ReverseIterator>(*this);
-    }
-
-    /// Returns an unlocked view of the container with const reverse iterators.
-    View<ConstReverseIterator> getConstReverseView() const
-    {
-        return View<ConstReverseIterator>(*this);
-    }
     /// \}
 
     /// \name Modifiers
@@ -443,7 +322,7 @@ private:
     {
         if (!m_lockedView)
         {
-            m_lockedView = std::move(std::make_optional(getView()));
+            m_lockedView = std::move(std::make_optional(View<Iterator>(*this)));
         }
         return *m_lockedView;
     }
@@ -451,7 +330,7 @@ private:
     /// Method called by ReferenceCountLockable<> when the container gets fully unlocked.
     void releaseResources()
     {
-        auto predicate = [](auto& item) { return !detail::isValid(item); };
+        auto predicate = [this](auto& item) { return !valid_element(item); };
         m_container.erase(std::remove_if(m_container.begin(), m_container.end(), predicate), m_container.end());
 
         m_lockedView.reset();

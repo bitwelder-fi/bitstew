@@ -21,30 +21,14 @@
 
 #include <meta/meta_api.hpp>
 
-#include <optional>
-#include <type_traits>
-
 namespace containers
 {
 
-struct META_API forward_t {};
-struct META_API forward_const_t {};
-struct META_API reverse_t {};
-struct META_API reverse_const_t {};
-
-
 /// Gets a view of a container and retains the container. The view may differ from the locked view of
 /// the container.
-template <typename GuardedContainerType, typename IteratorType = forward_t>
+template <typename GuardedContainerType, typename Iterator = typename GuardedContainerType::Iterator>
 struct View
 {
-    using Iterator  = std::conditional_t<std::is_same_v<IteratorType, forward_t>,
-                                        typename GuardedContainerType::Iterator,
-                                        std::conditional_t<std::is_same_v<IteratorType, forward_const_t>,
-                                                           typename GuardedContainerType::ConstIterator,
-                                                           std::conditional_t<std::is_same_v<IteratorType, reverse_t>,
-                                                                              typename GuardedContainerType::ReverseIterator,
-                                                                              typename GuardedContainerType::ConstReverseIterator>>>;
     using ViewType      = typename GuardedContainerType::template View<Iterator>;
     using value_type    = typename GuardedContainerType::value_type;
 
@@ -95,11 +79,11 @@ private:
 
 /// Locks a container, and gets the locked view of it. The view of the container is always the locked
 /// view, no matter how many times the container gets retained with using this view.
-template <typename GuardedContainerType>
+template <typename GuardedContainerType, typename Iterator = typename GuardedContainerType::Iterator>
 struct LockView
 {
-    using Iterator  = typename GuardedContainerType::Iterator;
-    using ViewType  = typename GuardedContainerType::template View<Iterator>;
+    using ViewType      = typename GuardedContainerType::template View<Iterator>;
+    using value_type    = typename GuardedContainerType::value_type;
 
     /// Constructor, locks the guarded container and returns an iterator range to the locked content.
     explicit LockView(GuardedContainerType& container) :
@@ -124,10 +108,19 @@ struct LockView
         return m_lockedView.end();
     }
 
-    /// Cast to view type of the container.
-    operator ViewType()
+    /// Find an item in the view.
+    /// \param item The item to find in the view.
+    /// \return On success, returns the position of the itemn within the view. On failure, returns
+    ///         \e std::nullopt.
+    Iterator find(const value_type& item)
     {
-        return m_lockedView;
+        return m_lockedView.find(item);
+    }
+
+    /// Returns the size of the view. The size is the number of valid elements in the view.
+    std::size_t size() const
+    {
+        return m_lockedView.size();
     }
 
 private:

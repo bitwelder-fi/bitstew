@@ -23,8 +23,11 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/metadata/meta_object.hpp>
+#include <containers/guarded_sequence_container.hpp>
 
 #include <pimpl.hpp>
+
+#include <deque>
 
 namespace meta
 {
@@ -48,32 +51,59 @@ class META_API ObjectExtension : public MetaObject, public std::enable_shared_fr
 {
 public:
     /// Destructor.
-    virtual ~ObjectExtension() = default;
+    ~ObjectExtension() override;
 
     /// Returns the object which owns the object extension.
     /// \return The object which owns the object extension.
     ObjectPtr getObject() const;
 
-    /// The entry point of an object extensions.
+    /// The entry point of an object extensions. The method is not re-entrant, a recoursive call of
+    /// run returns with failure.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void Argument.
-    Argument run(const PackagedArguments& arguments = PackagedArguments());
+    ///         return a void Argument. On failure, returns a \e nullopt
+    ReturnValue run(PackagedArguments arguments = PackagedArguments());
 
     /// The metaclass of the object extension.
     META_CLASS("meta.ObjectExtension", ObjectExtension, MetaObject)
     {
     };
 
+    /// Disconnects all connections where this object extension is set as target.
+    void disconnectTarget();
+
+    /// Disconnects all connections to and from this object.
+    void disconnect();
+
 protected:
+    /// The container of the connections.
+    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>,
+                                                                     [](const ConnectionPtr& connection) { return connection != nullptr; }>;
+
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
 
     /// Override this to provide extension specific executor.
     /// \param arguments The arguments with which the extension gets executed.
     /// \return The return value of the extension execution. Extensions which do not return any value
-    ///         return a void Argument.
-    virtual Argument runOverride(const PackagedArguments& arguments) = 0;
+    ///         return a void Argument. On failure, implementations are expected to return \e nullopt.
+    virtual ReturnValue runOverride(PackagedArguments arguments) = 0;
+
+    /// Returns the iterator to the connection. Not thread safe!
+    /// \param connection The connection to look for.
+    /// \return If the connection is valid, and is found, returns the iterator to the connection. On
+    ///         failure, returns the end iterator of the connection container.
+    std::optional<ConnectionContainer::Iterator> findConnection(Connection& connecton);
+
+    /// Adds a connection to both source and target object extensions. The method fails if the connection
+    /// has already been added to the object extensions. The method must be called on source extension.
+    /// \param connection The connectiomn to add to the extension.
+    void addConnection(ConnectionPtr connection);
+
+    /// Removes a connection from both source and target object extensions. The method fails if the
+    /// connection is not found in the object extensions. The method must be called on source extension.
+    /// \param connection The connectiomn to add to the extension.
+    void removeConnection(ConnectionPtr connection);
 
     /// Meta calls this method when an object extension gets attached to an Object.
     virtual void onAttached()
@@ -86,12 +116,15 @@ protected:
     {
     }
 
+    /// The container with the connections.
+    ConnectionContainer m_connections;
+
 private:
     DISABLE_COPY(ObjectExtension);
     DISABLE_MOVE(ObjectExtension);
 
     void attachToObject(Object& object);
-    void detachFromObject();
+    void detachFromObject(Object& object);
 
     ObjectWeakPtr m_object;
     friend class Object;

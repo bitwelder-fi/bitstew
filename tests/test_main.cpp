@@ -17,14 +17,24 @@
  */
 
 #include <gtest/gtest.h>
+#include <gtest/gtest-spi.h>
 #include <gmock/gmock.h>
 
 #include <meta/meta.hpp>
 #include <meta/library_config.hpp>
 
+#include <thread>
+
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
+    GTEST_FLAG_SET(death_test_style, "fast");
 
-    return RUN_ALL_TESTS();
+    int result = 0;
+    std::thread testRunner([&result] { result = RUN_ALL_TESTS(); });
+    testRunner.join();
+
+    delete ::testing::internal::GetFailureReporter();
+
+    return result;
 }

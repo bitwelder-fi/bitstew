@@ -139,7 +139,7 @@ TEST_F(InvokableTests, lambdaWithNoArgs)
     auto callable = Callable::create("lambda");
     EXPECT_CALL(*m_mockPrinter, log("lambdaWithNoArgs"));
     auto result = callable->run();
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, lambdaWithSelf)
@@ -152,7 +152,7 @@ TEST_F(InvokableTests, lambdaWithSelf)
     auto callable = Callable::create("lambda");
     EXPECT_CALL(*m_mockPrinter, log("lambdaWithSelf lambda"));
     auto result = callable->run();
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, callableWithNoArguments)
@@ -161,7 +161,7 @@ TEST_F(InvokableTests, callableWithNoArguments)
     auto callable = Callable::create("voidNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto result = callable->run();
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, callableIntWithNoArguments)
@@ -170,7 +170,7 @@ TEST_F(InvokableTests, callableIntWithNoArguments)
     auto callable = Callable::create("intNoArgs");
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto result = callable->run();
-    EXPECT_EQ(42, static_cast<int>(result));
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(InvokableTests, callableWithArguments)
@@ -180,7 +180,7 @@ TEST_F(InvokableTests, callableWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->run(arguments);
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, callableWithSelfAndArguments)
@@ -190,7 +190,7 @@ TEST_F(InvokableTests, callableWithSelfAndArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidInvokableStringInt(): one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->run(arguments);
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, callableIntWithArguments)
@@ -200,7 +200,7 @@ TEST_F(InvokableTests, callableIntWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(std::string("one"), 2);
     auto result = callable->run(arguments);
-    EXPECT_EQ(42, static_cast<int>(result));
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(InvokableTests, methodWithNoArguments)
@@ -211,7 +211,7 @@ TEST_F(InvokableTests, methodWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable->run(arguments);
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, methodIntWithNoArguments)
@@ -222,7 +222,7 @@ TEST_F(InvokableTests, methodIntWithNoArguments)
     EXPECT_CALL(*m_mockPrinter, log("intNoArgs"));
     auto arguments = meta::PackagedArguments(&object);
     auto result = callable->run(arguments);
-    EXPECT_EQ(42, static_cast<int>(result));
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(InvokableTests, methodWithInvokableArgument)
@@ -233,7 +233,7 @@ TEST_F(InvokableTests, methodWithInvokableArgument)
     object->addExtension(callable);
     EXPECT_CALL(*m_mockPrinter, log("voidWithInvokable: voidWithInvokable"));
     auto result = callable->run(meta::PackagedArguments(std::string("one"), 2));
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, methodWithArguments)
@@ -244,7 +244,7 @@ TEST_F(InvokableTests, methodWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("voidStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable->run(arguments);
-    EXPECT_FALSE(result.has_value());
+    EXPECT_TRUE(result);
 }
 
 TEST_F(InvokableTests, methodIntWithArguments)
@@ -255,7 +255,7 @@ TEST_F(InvokableTests, methodIntWithArguments)
     EXPECT_CALL(*m_mockPrinter, log("intStringInt: one, 2"));
     auto arguments = meta::PackagedArguments(&object, std::string("one"), 2);
     auto result = callable->run(arguments);
-    EXPECT_EQ(42, static_cast<int>(result));
+    EXPECT_EQ(42, static_cast<int>(*result));
 }
 
 TEST_F(InvokableTests, methodWithPointerArgument)

@@ -80,9 +80,9 @@ META_API bool isValidMetaName(std::string_view text);
 /// numeric and alphanumeric characters, dots, columns, dashes and underscores. Any invalid character
 /// is replaces with the hint character, which is also checked against validity.
 /// \param name The string to check.
-/// \param hint The character to replace every invalid character occurrence in the name
+/// \param hint The character to replace every invalid character occurrence in the name.
 /// \return If the string is a valid meta-name, returns \e true, otherwise \e false.
-META_API std::string ensureValidMetaName(std::string name, char hint = '.');
+META_API std::string ensureValidMetaName(std::string name, char hint = 0);
 
 } // namespace meta
 

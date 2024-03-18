@@ -30,11 +30,28 @@ Object::Object(std::string_view name) :
 
 Object::~Object()
 {
+    // Detach all attached extensions.
+    for (auto it = m_extensions.begin(), end = m_extensions.end(); it != end; ++it)
+    {
+        if (it->second)
+        {
+            it->second->detachFromObject(*this);
+        }
+    }
 }
 
 void Object::initialize()
 {
     MetaObject::initialize();
+
+    // Attach all un-attached extensions.
+    for (auto it = m_extensions.begin(), end = m_extensions.end(); it != end; ++it)
+    {
+        if (!it->second->getObject())
+        {
+            it->second->attachToObject(*this);
+        }
+    }
 }
 
 ObjectPtr Object::create(std::string_view name)
@@ -66,7 +83,7 @@ bool Object::removeExtension(ObjectExtension& extension)
     auto it = m_extensions.find(extension.getName());
     if (it != m_extensions.end())
     {
-        extension.detachFromObject();
+        extension.detachFromObject(*this);
         m_extensions.erase(it);
         return true;
     }
@@ -80,7 +97,7 @@ ObjectExtensionPtr Object::findExtension(std::string_view name) const
     return (it != m_extensions.end()) ? it->second : ObjectExtensionPtr();
 }
 
-std::optional<Argument> Object::invoke(std::string_view name, const PackagedArguments& arguments)
+ReturnValue Object::invoke(std::string_view name, PackagedArguments arguments)
 {
     abortIfFail(!name.empty());
 
@@ -93,7 +110,7 @@ std::optional<Argument> Object::invoke(std::string_view name, const PackagedArgu
 }
 
 
-std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments)
+ReturnValue invoke(ObjectPtr object, std::string_view name, PackagedArguments arguments)
 {
     abortIfFail(object && !name.empty());
     return object->invoke(name, arguments);

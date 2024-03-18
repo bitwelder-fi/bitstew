@@ -36,8 +36,6 @@ macro(__common_config arg_target)
     # linker options
     if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         target_link_libraries(${arg_target} "-framework Foundation -framework CoreFoundation")
-        # target_link_options available from 3.13.5
-    #    target_link_options(${arg_target} PUBLIC Wl F/Library/Frameworks)
     endif()
 
     if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")

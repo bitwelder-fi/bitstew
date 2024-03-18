@@ -174,7 +174,7 @@ public:
 
     /// Tries to add the meta-class of a registered object extension to this meta-class. The meta-class
     /// must be registered to Meta library under the meta-name passed as argument.
-    /// \param metaName The meta-name of teh meta-class to register as extension.
+    /// \param metaName The meta-name of the meta-class to register as extension.
     /// \return If the meta-class of the object extension was registered with success, returns \e true,
     ///         otherwise \e false.
     bool tryAddExtension(std::string_view metaName);
@@ -199,7 +199,7 @@ protected:
         /// The container with the meta extensions.
         MetaExtensionContainer extensions;
         /// The name of the meta-class.
-        const std::string name;
+        const std::string_view name;
         /// Whether the metaclass is sealed.
         bool sealed = false;
 

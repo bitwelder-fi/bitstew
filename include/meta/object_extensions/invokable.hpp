@@ -39,12 +39,12 @@ struct META_API InvokableClass : public meta::Invokable<decltype(Function), Func
     META_CLASS(InvokableName, InvokableClass, Base)                                     \
     {                                                                                   \
     };                                                                                  \
-    static std::shared_ptr<InvokableClass> create(std::string_view = std::string_view())\
+    static std::shared_ptr<InvokableClass> create(std::string_view name = std::string_view())\
     {                                                                                   \
-        return std::make_shared<InvokableClass>(getStaticMetaClass()->getName());       \
+        return std::make_shared<InvokableClass>(name);                                  \
     }                                                                                   \
     explicit InvokableClass(std::string_view name) :                                    \
-        Base(name)                                                                      \
+        Base(name.empty() ? getStaticMetaClass()->getName() : name)                     \
     {                                                                                   \
     }                                                                                   \
 }
@@ -114,9 +114,9 @@ class Invokable : public ObjectExtension
 
 protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
-    PackagedArguments repackageArguments(const PackagedArguments& arguments);
+    PackagedArguments repackageArguments(PackagedArguments arguments);
     /// Overrides ObjectExtension::Descriptor::runOverride().
-    Argument runOverride(const PackagedArguments& arguments) final;
+    ReturnValue runOverride(PackagedArguments arguments) final;
 
     /// Constructor.
     explicit Invokable(std::string_view name);
@@ -143,9 +143,14 @@ Invokable<Function, function>::Invokable(std::string_view name) :
 }
 
 template <class Function, Function function>
-PackagedArguments Invokable<Function, function>::repackageArguments(const PackagedArguments& arguments)
+PackagedArguments Invokable<Function, function>::repackageArguments(PackagedArguments arguments)
 {
-    auto result = PackagedArguments();
+    if constexpr (detail::enableRepack<Function>::packSelf)
+    {
+        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
+        arguments.addFront(dynamic_cast<ZipType>(this));
+    }
+
     if constexpr (detail::enableRepack<Function>::packObject)
     {
         using ClassType = typename traits::function_traits<Function>::object;
@@ -154,28 +159,21 @@ PackagedArguments Invokable<Function, function>::repackageArguments(const Packag
             auto object = getObject();
             if (object)
             {
-                result += Argument(dynamic_cast<ClassType*>(object.get()));
+                arguments.addFront(dynamic_cast<ClassType*>(object.get()));
             }
         }
     }
-
-    if constexpr (detail::enableRepack<Function>::packSelf)
-    {
-        using ZipType = typename traits::function_traits<Function>::arg::template get<0u>::type;
-        result += Argument(dynamic_cast<ZipType>(this));
-    }
-
-    result += arguments;
-    return result;
+    return arguments;
 }
 
 template <class Function, Function function>
-Argument Invokable<Function, function>::runOverride(const PackagedArguments& arguments)
+ReturnValue Invokable<Function, function>::runOverride(PackagedArguments arguments)
 {
     try
     {
         auto args = repackageArguments(arguments);
         auto pack = args.template toTuple<Function>();
+        utils::RelockGuard<ConnectionContainer> relock(m_connections);
         if constexpr (std::is_void_v<typename traits::function_traits<Function>::return_type>)
         {
             std::apply(function, pack);
@@ -190,7 +188,7 @@ Argument Invokable<Function, function>::runOverride(const PackagedArguments& arg
     catch (const std::exception& e)
     {
         META_LOG_ERROR(e.what());
-        return Argument();
+        return std::nullopt;
     }
 }
 

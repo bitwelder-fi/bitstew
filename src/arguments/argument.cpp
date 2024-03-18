@@ -31,7 +31,7 @@ BadArgumentException::BadArgumentException(const std::type_info& actualType, con
 {
     auto actual = Argument::Type(actualType).getName();
     auto expected = Argument::Type(expectedType).getName();
-    auto msg = "Bad argument: actual type: " + actual + ", expected: " + expected;
+    auto msg = "Bad argument type:\n\tactual type: " + actual + "\n\texpected: " + expected;
     message.reset(static_cast<char*>(std::calloc(msg.length(), sizeof(char))));
     memcpy(message.get(), msg.c_str(), msg.length());
 }

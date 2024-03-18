@@ -19,6 +19,33 @@
 #ifndef TEST_UTILS_HPP
 #define TEST_UTILS_HPP
 
+#include <preprocessor.hpp>
 #include <gtest/gtest.h>
+#include <gtest/gtest-spi.h>
+
+struct SafeDeathTestScope
+{
+    explicit SafeDeathTestScope() :
+        previousDeathTestStyle(::testing::GTEST_FLAG(death_test_style))
+#ifndef PREPROCESSOR_CPP_MSVC
+        , previousDebughFlagpreviousDebughFlag(_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF))
+#endif
+    {
+        GTEST_FLAG_SET(death_test_style, "threadsafe");
+    }
+    ~SafeDeathTestScope()
+    {
+#ifndef PREPROCESSOR_CPP_MSVC
+        _CrtSetDbgFlag(previousDebughFlags);
+#endif
+        GTEST_FLAG_SET(death_test_style, previousDeathTestStyle);
+    }
+
+private:
+    std::string previousDeathTestStyle;
+#ifndef PREPROCESSOR_CPP_MSVC
+    int previousDebughFlags = 0;
+#endif
+};
 
 #endif // TEST_UTILS_HPP

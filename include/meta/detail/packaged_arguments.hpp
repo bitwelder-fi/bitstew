@@ -19,8 +19,8 @@
 #ifndef META_DETAIL_PACKAGED_ARGUMENTS_HPP
 #define META_DETAIL_PACKAGED_ARGUMENTS_HPP
 
-#include <utils/function_traits.hpp>
 #include <tuple>
+#include <utils/function_traits.hpp>
 
 namespace meta {
 

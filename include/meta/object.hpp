@@ -26,7 +26,6 @@
 #include <pimpl.hpp>
 
 #include <memory>
-#include <optional>
 #include <unordered_map>
 
 namespace meta
@@ -40,7 +39,7 @@ public:
     static ObjectPtr create(std::string_view name);
 
     /// Destructor.
-    virtual ~Object();
+    ~Object() override;
 
     /// The metadata of a meta object.
     META_CLASS("meta.Object", Object, MetaObject)
@@ -72,7 +71,13 @@ public:
     ///         - If the extension is found, and has a return value, the return value of the extension.
     ///         - If the extension is found, and has no return value, returns an invalid Argument.
     ///         - If the extension is not found, returns nullopt.
-    std::optional<Argument> invoke(std::string_view name, const PackagedArguments& args = PackagedArguments());
+    ReturnValue invoke(std::string_view name, PackagedArguments args = PackagedArguments());
+
+    template <typename... Arguments>
+    ReturnValue invoke(std::string_view name, Arguments... arguments)
+    {
+        return Object::invoke(name, PackagedArguments(arguments...));
+    }
 
 protected:
     /// Constructor.
@@ -95,7 +100,7 @@ private:
 ///         - If the extension is found, and has a return value, the return value of the extension.
 ///         - If the extension is found, and has no return value, returns an invalid Argument.
 ///         - If the extension is not found, returns nullopt.
-META_API std::optional<Argument> invoke(ObjectPtr object, std::string_view name, const PackagedArguments& arguments = PackagedArguments());
+META_API ReturnValue invoke(ObjectPtr object, std::string_view name, PackagedArguments arguments = PackagedArguments());
 
 }
 

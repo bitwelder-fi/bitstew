@@ -24,15 +24,19 @@
 namespace meta
 {
 
+struct Connection;
 class MetaObject;
 class Object;
 class ObjectExtension;
+class SignalExtension;
 
+using ConnectionPtr = std::shared_ptr<Connection>;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 using ObjectPtr = std::shared_ptr<Object>;
 using ObjectWeakPtr = std::weak_ptr<Object>;
 using ObjectExtensionPtr = std::shared_ptr<ObjectExtension>;
-using ObjectExtensionWeakPtr = std::shared_ptr<ObjectExtension>;
+using ObjectExtensionWeakPtr = std::weak_ptr<ObjectExtension>;
+using SignalExtensionPtr = std::shared_ptr<SignalExtension>;
 
 }
 

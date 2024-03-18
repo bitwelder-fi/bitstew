@@ -38,16 +38,6 @@ protected:
     {
         DomainTestEnvironment::initializeDomain(true, true);
     }
-    void TearDown() override
-    {
-        // Ensure tracer completes its job.
-        auto tracer = meta::Library::instance().tracer();
-        if (tracer->isBusy())
-        {
-            tracer->wait();
-        }
-        DomainTestEnvironment::TearDown();
-    }
 };
 
 DECLARE_INVOKABLE(GetName, "getName", &meta::Object::getName);

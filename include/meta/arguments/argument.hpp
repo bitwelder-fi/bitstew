@@ -23,6 +23,7 @@
 
 #include <any>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace meta
@@ -91,6 +92,7 @@ private:
     bool m_isConst = false;
 };
 
+using ReturnValue = std::optional<Argument>;
 
 // ----- Implementation -----
 template <typename T>
@@ -102,7 +104,7 @@ Argument::operator T() const
     }
     catch (std::bad_any_cast&)
     {
-        throw BadArgumentException(type(), m_isConst ? typeid(const T) : typeid(T));
+        throw BadArgumentException(type(), typeid(T));
     }
 }
 

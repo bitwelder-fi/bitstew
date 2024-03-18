@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/../cmake.modules" CACHE STRING "module-path")
 include(configure-target)
 
 project(${PROJECT_LIBRARY} VERSION 1.0.0 LANGUAGES CXX)
+
+option(BUILD_SHARED_LIBS "Build shared library" ON)
 
 # get the files
 include(files.cmake)

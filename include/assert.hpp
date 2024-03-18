@@ -19,10 +19,19 @@
 #ifndef ASSERT_HPP
 #define ASSERT_HPP
 
+#include <iostream>
+
 #ifdef DEBUG
 
 #include <cassert>
+
 #define abortIfFail(condition)  assert(condition)
+#define abortIfFailWithMessage(condition, message)  \
+if (!(condition)) \
+{ \
+    std::cerr << message << std::endl; \
+    assert(condition); \
+}
 
 #else
 

@@ -106,7 +106,9 @@ public:
 
     static std::shared_ptr<Object> create(std::string_view name)
     {
-        return std::shared_ptr<Object>(new Object(name));
+        auto object = std::shared_ptr<Object>(new Object(name));
+        object->initialize();
+        return object;
     }
 
 protected:
@@ -125,9 +127,11 @@ public:
         META_EXTENSION(MetaGetName);
     };
 
-    static std::shared_ptr<Object> create(std::string_view name)
+    static std::shared_ptr<ExtendedObject> create(std::string_view name)
     {
-        return std::shared_ptr<Object>(new ExtendedObject(name));
+        auto object = std::shared_ptr<ExtendedObject>(new ExtendedObject(name));
+        object->initialize();
+        return object;
     }
 
 protected:
@@ -171,7 +175,9 @@ public:
 
     static auto create(std::string_view name)
     {
-        return std::shared_ptr<Object>(new DynamicObject(name));
+        auto object = std::shared_ptr<DynamicObject>(new DynamicObject(name));
+        object->initialize();
+        return object;
     }
 
 protected:

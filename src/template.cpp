@@ -42,7 +42,7 @@ namespace meta
 namespace
 {
 
-const std::string_view c_invalidMetaNameCharacters{"~`!@#$%^&*()+={[}]|\\;\"'<,>?/ "};
+const std::string_view c_invalidMetaNameCharacters{"~`!@#$%^&+={[}]|\\;\"'<,>?/ "};
 
 }
 
@@ -155,8 +155,17 @@ std::string ensureValidMetaName(std::string name, char hint)
     std::size_t it = 0;
     while ( (it = name.find_first_of(c_invalidMetaNameCharacters)) != std::string::npos)
     {
-        name.at(it) = hint;
+        if (hint != 0)
+        {
+            name.at(it) = hint;
+        }
+        else
+        {
+            auto pos = name.begin() + it;
+            name.erase(pos);
+        }
     }
+    abortIfFail(isValidMetaName(name));
     return name;
 }
 

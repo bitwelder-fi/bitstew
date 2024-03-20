@@ -22,11 +22,22 @@ _generate_filelist()
     INCLUDE_PATH=$2
 
     echo "set(SOURCES" > ${CMAKE_FILELIST}
-    find -E * -type f -regex $SOURCE_FILTER|sort >> ${CMAKE_FILELIST}
-    find -E * -type f -regex $HEADER_FILTER|sort >> ${CMAKE_FILELIST}
-    if [ ! -z "$INCLUDE_PATH" ] ; then
-        find -E $INCLUDE_PATH/* -type f -regex $HEADER_FILTER|sort >> ${CMAKE_FILELIST}
-    fi
+    case `uname -s` in
+        *Linux*)
+            find * -type f -name "*.cpp"|sort >> ${CMAKE_FILELIST}
+            find * -type f -name "*.hpp"|sort >> ${CMAKE_FILELIST}
+            if [ ! -z "$INCLUDE_PATH" ] ; then
+                find $INCLUDE_PATH/* -type f -name "*.hpp"|sort >> ${CMAKE_FILELIST}
+            fi
+            ;;
+        *Darwin*)
+            find -E * -type f -regex $SOURCE_FILTER|sort >> ${CMAKE_FILELIST}
+            find -E * -type f -regex $HEADER_FILTER|sort >> ${CMAKE_FILELIST}
+            if [ ! -z "$INCLUDE_PATH" ] ; then
+                find -E $INCLUDE_PATH/* -type f -regex $HEADER_FILTER|sort >> ${CMAKE_FILELIST}
+            fi
+            ;;
+    esac
     echo ")" >> ${CMAKE_FILELIST}
 }
 

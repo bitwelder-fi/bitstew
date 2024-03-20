@@ -39,7 +39,7 @@ void function(int i)
     META_LOG_INFO(__FUNCTION__ << "(" << i << ")");
 }
 
-void selfDisconnect(meta::ObjectExtension* self)
+void selfDisconnect(meta::ExecutableExtension* self)
 {
     self->disconnectTarget();
 }
@@ -127,7 +127,7 @@ TEST_F(GenericSignalTests, connect)
     auto slot = VoidSlot::create();
     auto connection = signal.connect(slot);
     EXPECT_TRUE(connection->isValid());
-    EXPECT_EQ(static_cast<meta::ObjectExtensionPtr>(signal), connection->getSource());
+    EXPECT_EQ(static_cast<meta::ExecutableExtensionPtr>(signal), connection->getSource());
     EXPECT_EQ(slot, connection->getTarget());
 
     auto slot2 = IntSlot::create();

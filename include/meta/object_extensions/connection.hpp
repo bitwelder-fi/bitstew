@@ -31,7 +31,7 @@ namespace meta
 struct META_API Connection : public std::enable_shared_from_this<Connection>
 {
     /// Creates a connection with a source and a target.
-    static ConnectionPtr create(ObjectExtension& source, ObjectExtension& target);
+    static ConnectionPtr create(ExecutableExtension& source, ExecutableExtension& target);
     /// Returns whether the connection is valid. A connection is valid if both source and target are
     /// defined.
     /// \return If the connection is valid, returns \e true, otherwise \e false.
@@ -40,7 +40,7 @@ struct META_API Connection : public std::enable_shared_from_this<Connection>
     /// Returns the source object extension of the connection.
     /// \return The source object extension of a valid connection, or an invalid object extension if
     ///         the connection is invalid.
-    ObjectExtensionPtr getSource() const;
+    ExecutableExtensionPtr getSource() const;
 
     template <typename T>
     auto getSource() const
@@ -51,7 +51,7 @@ struct META_API Connection : public std::enable_shared_from_this<Connection>
     /// Returns the target object extension of the connection.
     /// \return The target object extension of a valid connection, or an invalid object extension if
     ///         the connection is invalid.
-    ObjectExtensionPtr getTarget() const;
+    ExecutableExtensionPtr getTarget() const;
 
     template <typename T>
     auto getTarget() const
@@ -60,18 +60,18 @@ struct META_API Connection : public std::enable_shared_from_this<Connection>
     }
 
 private:
-    friend class ObjectExtension;
+    friend class ExecutableExtension;
 
     DISABLE_COPY(Connection);
 
     /// Constructor, creates a connection with a source and a target.
-    explicit Connection(ObjectExtension& source, ObjectExtension& target);
+    explicit Connection(ExecutableExtension& source, ExecutableExtension& target);
 
     /// Resets the connection.
     void reset();
 
-    ObjectExtensionWeakPtr m_source;
-    ObjectExtensionWeakPtr m_target;
+    ExecutableExtensionWeakPtr m_source;
+    ExecutableExtensionWeakPtr m_target;
 };
 
 }

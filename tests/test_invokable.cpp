@@ -52,7 +52,7 @@ void voidStringInt(std::string a1, int a2)
     META_LOG_INFO(__FUNCTION__ << ": " << a1 << ", " << a2);
 }
 
-void voidInvokableStringInt(meta::ObjectExtension* self, std::string a1, int a2)
+void voidInvokableStringInt(meta::ExecutableExtension* self, std::string a1, int a2)
 {
     META_LOG_INFO(self->getName() << "(): " << a1 << ", " << a2);
 }
@@ -72,16 +72,16 @@ struct InvokableWrapper
     {
     }
 
-    meta::ObjectExtensionPtr operator->()
+    meta::ExecutableExtensionPtr operator->()
     {
         return m_invokable;
     }
-    const meta::ObjectExtensionPtr operator->() const
+    const meta::ExecutableExtensionPtr operator->() const
     {
         return m_invokable;
     }
 private:
-    meta::ObjectExtensionPtr m_invokable;
+    meta::ExecutableExtensionPtr m_invokable;
 };
 
 struct Class
@@ -113,7 +113,7 @@ struct Class
         ++(*i);
     }
 
-    InvokableWrapper lambda{"lambda", [](meta::ObjectExtension* self) { META_LOG_INFO("invokable wrapper: " << self->getName()); }};
+    InvokableWrapper lambda{"lambda", [](meta::ExecutableExtension* self) { META_LOG_INFO("invokable wrapper: " << self->getName()); }};
 };
 
 class TestObject : public meta::Object
@@ -124,7 +124,7 @@ public:
     {
     }
 
-    void voidWithInvokable(meta::ObjectExtension* self)
+    void voidWithInvokable(meta::ExecutableExtension* self)
     {
         META_LOG_INFO(__FUNCTION__ << ": " << self->getName());
     }
@@ -144,7 +144,7 @@ TEST_F(InvokableTests, lambdaWithNoArgs)
 
 TEST_F(InvokableTests, lambdaWithSelf)
 {
-    auto lambda = [](meta::ObjectExtension* self)
+    auto lambda = [](meta::ExecutableExtension* self)
     {
         META_LOG_INFO("lambdaWithSelf " << self->getName());
     };

@@ -16,31 +16,9 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/object.hpp>
+#include <meta/object_extensions/data_extension.hpp>
 
 namespace meta
 {
-
-Object::Object(std::string_view name) :
-    MetaObject(name)
-{
-}
-
-Object::~Object()
-{
-}
-
-void Object::initialize()
-{
-    MetaObject::initialize();
-    ExecutableExtensionsObject::initialize();
-}
-
-ObjectPtr Object::create(std::string_view name)
-{
-    auto object = ObjectPtr(new Object(name));
-    object->initialize();
-    return object;
-}
 
 }

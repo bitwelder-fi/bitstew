@@ -20,19 +20,18 @@
 #define META_OBJECT_HPP
 
 #include <meta/forwards.hpp>
-#include <meta/meta_api.hpp>
-#include <meta/arguments/packaged_arguments.hpp>
 #include <meta/metadata/meta_object.hpp>
-#include <pimpl.hpp>
-
-#include <memory>
-#include <unordered_map>
+#include <meta/object_extensions/executable_extensions_object.hpp>
+#include <meta/object_extensions/data_extensions_object.hpp>
 
 namespace meta
 {
 
 /// The base class of any object that defines a meta-class.
-class META_API Object : public MetaObject, public std::enable_shared_from_this<Object>
+class META_API Object : public MetaObject,
+                        public DataExtensionsObject,
+                        public ExecutableExtensionsObject,
+                        public std::enable_shared_from_this<Object>
 {
 public:
     /// Creates a meta-object.
@@ -46,39 +45,6 @@ public:
     {
     };
 
-    /// Adds an extension to the object. The object takes ownership over the extension. The method
-    /// fails if the extension is already added to the object.
-    /// \param extension The extension to add to the object.
-    /// \return If the extension gets added with success, returns \e true, otherwise \e false.
-    void addExtension(ObjectExtensionPtr extension);
-
-    /// Removes an extension from the object. The extension gets destroyed if the object owns the
-    /// extension. The method fails if the extension does not extend the object.
-    /// \param extension The extension to remove from the object.
-    /// \return If the extension gets removed with success, returns \e true, otherwise \e false.
-    bool removeExtension(ObjectExtension& extension);
-
-    /// Tries to locate the extension with the name.
-    /// \param name The extension name to locate.
-    /// \return The extension with the name, or \e nullptr if the object has no extension with the
-    ///         name registered.
-    ObjectExtensionPtr findExtension(std::string_view name) const;
-
-    /// Invokes an extension of the object.
-    /// \param name The name of the object extension to invoke.
-    /// \param args Optional, the arguments with which to invoke the extension.
-    /// \return returns one of the following:
-    ///         - If the extension is found, and has a return value, the return value of the extension.
-    ///         - If the extension is found, and has no return value, returns an invalid Argument.
-    ///         - If the extension is not found, returns nullopt.
-    ReturnValue invoke(std::string_view name, PackagedArguments args = PackagedArguments());
-
-    template <typename... Arguments>
-    ReturnValue invoke(std::string_view name, Arguments... arguments)
-    {
-        return Object::invoke(name, PackagedArguments(arguments...));
-    }
-
 protected:
     /// Constructor.
     explicit Object(std::string_view name);
@@ -86,21 +52,7 @@ protected:
     /// Second phase initializer.
     void initialize();
 
-private:
-    using ExtensionsMap = std::unordered_map<std::string_view, ObjectExtensionPtr>;
-
-    ExtensionsMap m_extensions;
 };
-
-/// Invokes an extension of a object.
-/// \param object The object whose extension to invoke.
-/// \param name The extension name to invoke.
-/// \param arguments The arguments with which to invoke the extension.
-/// \return returns one of the following:
-///         - If the extension is found, and has a return value, the return value of the extension.
-///         - If the extension is found, and has no return value, returns an invalid Argument.
-///         - If the extension is not found, returns nullopt.
-META_API ReturnValue invoke(ObjectPtr object, std::string_view name, PackagedArguments arguments = PackagedArguments());
 
 }
 

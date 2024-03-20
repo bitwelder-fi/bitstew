@@ -24,7 +24,7 @@
 
 namespace meta {
 
-class ObjectExtension;
+class ExecutableExtension;
 
 namespace detail {
 
@@ -51,7 +51,7 @@ template <typename Function>
 struct enableRepack
 {
     static constexpr bool packObject = std::is_member_function_pointer_v<Function>;
-    static constexpr bool packSelf = traits::is_base_arg_of<ObjectExtension*, Function, 0u>::value;
+    static constexpr bool packSelf = traits::is_base_arg_of<ExecutableExtension*, Function, 0u>::value;
     static constexpr bool value = packObject || packSelf;
 };
 

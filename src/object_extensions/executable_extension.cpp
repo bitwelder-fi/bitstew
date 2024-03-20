@@ -17,7 +17,7 @@
  */
 
 #include <meta/object_extensions/connection.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 #include <meta/object_extensions/signal.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
@@ -28,13 +28,13 @@
 namespace meta
 {
 
-Connection::Connection(ObjectExtension& source, ObjectExtension& target) :
+Connection::Connection(ExecutableExtension& source, ExecutableExtension& target) :
     m_source(source.weak_from_this()),
     m_target(target.weak_from_this())
 {
 }
 
-ConnectionPtr Connection::create(ObjectExtension& source, ObjectExtension& target)
+ConnectionPtr Connection::create(ExecutableExtension& source, ExecutableExtension& target)
 {
     return ConnectionPtr(new Connection(source, target));
 }
@@ -44,12 +44,12 @@ bool Connection::isValid() const
     return m_source.lock() && m_target.lock();
 }
 
-ObjectExtensionPtr Connection::getSource() const
+ExecutableExtensionPtr Connection::getSource() const
 {
     return m_source.lock();
 }
 
-ObjectExtensionPtr Connection::getTarget() const
+ExecutableExtensionPtr Connection::getTarget() const
 {
     return m_target.lock();
 }
@@ -61,43 +61,39 @@ void Connection::reset()
 }
 
 
-ObjectExtension::ObjectExtension(std::string_view name) :
+ExecutableExtension::ExecutableExtension(std::string_view name) :
     MetaObject(name)
 {
 }
 
-ObjectExtension::~ObjectExtension()
+ExecutableExtension::~ExecutableExtension()
 {
-    abortIfFailWithMessage(!m_object.lock(), "Extension is still atached to an object!");
+    abortIfFailWithMessage(!m_object, "Extension is still atached to an object!");
 }
 
-void ObjectExtension::attachToObject(Object& object)
+void ExecutableExtension::attachToObject(ExecutableExtensionsObject& object)
 {
-    abortIfFail(!m_object.lock());
+    abortIfFail(!m_object);
 
-    m_object = object.weak_from_this();
-    if (m_object.expired())
-    {
-        return;
-    }
+    m_object = &object;
 
     onAttached();
 }
 
-void ObjectExtension::detachFromObject(Object& /*object*/)
+void ExecutableExtension::detachFromObject()
 {
     onDetached();
 
-    m_object.reset();
+    m_object = nullptr;
 }
 
 
-ObjectPtr ObjectExtension::getObject() const
+ExecutableExtensionsObject* ExecutableExtension::getObject() const
 {
-    return m_object.lock();
+    return m_object;
 }
 
-ReturnValue ObjectExtension::run(PackagedArguments arguments)
+ReturnValue ExecutableExtension::run(PackagedArguments arguments)
 {
     if (m_connections.getRefCount() > 0u)
     {
@@ -114,7 +110,7 @@ ReturnValue ObjectExtension::run(PackagedArguments arguments)
     return runOverride(arguments);
 }
 
-void ObjectExtension::addConnection(ConnectionPtr connection)
+void ExecutableExtension::addConnection(ConnectionPtr connection)
 {
     // Add the connection to both source and target. It should be called on source!
     auto target = connection->getTarget();
@@ -128,7 +124,7 @@ void ObjectExtension::addConnection(ConnectionPtr connection)
     target->m_connections.push_back(connection);
 }
 
-void ObjectExtension::removeConnection(ConnectionPtr connection)
+void ExecutableExtension::removeConnection(ConnectionPtr connection)
 {
     if (!connection)
     {
@@ -157,7 +153,7 @@ void ObjectExtension::removeConnection(ConnectionPtr connection)
     connection->reset();
 }
 
-void ObjectExtension::disconnectTarget()
+void ExecutableExtension::disconnectTarget()
 {
     utils::LockGuard<ConnectionContainer> lock(m_connections);
     // The disconnect affects the whole range, so ensure that we use the full connection range, not
@@ -181,7 +177,7 @@ void ObjectExtension::disconnectTarget()
     }
 }
 
-void ObjectExtension::disconnect()
+void ExecutableExtension::disconnect()
 {
     utils::LockGuard<ConnectionContainer> lock(m_connections);
     // The disconnect affects the whole range, so ensure that we use the full connection range, not
@@ -212,7 +208,7 @@ void ObjectExtension::disconnect()
 }
 
 
-std::optional<ObjectExtension::ConnectionContainer::Iterator> ObjectExtension::findConnection(Connection& connection)
+std::optional<ExecutableExtension::ConnectionContainer::Iterator> ExecutableExtension::findConnection(Connection& connection)
 {
     containers::View<ConnectionContainer> view(m_connections);
     auto pos = view.find(connection.shared_from_this());

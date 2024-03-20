@@ -29,7 +29,7 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 #include <meta/tasks/thread_pool.hpp>
 
 #include <meta/log/trace.hpp>
@@ -99,7 +99,7 @@ void Library::initialize(const LibraryArguments& arguments)
 
     d->objectFactory = std::make_unique<ObjectFactory>();
     d->objectFactory->registerMetaClass(Object::getStaticMetaClass());
-    d->objectFactory->registerMetaClass(ObjectExtension::getStaticMetaClass());
+    d->objectFactory->registerMetaClass(ExecutableExtension::getStaticMetaClass());
 }
 
 void Library::uninitialize()

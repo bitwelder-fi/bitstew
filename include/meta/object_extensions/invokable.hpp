@@ -23,7 +23,7 @@
 #include <meta/forwards.hpp>
 #include <meta/log/trace.hpp>
 #include <meta/meta_api.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 
 #include <string_view>
 
@@ -95,9 +95,9 @@ namespace meta
 /// To call invokable extensions on an Object, use the meta::invoke() function.
 ///
 /// In most cases, the invokable needs to access the instance it extends. To do that, the first argument
-/// of the invokable function should be a pionter to ObjectExtension:
+/// of the invokable function should be a pionter to ExecutableExtension:
 /// \code
-/// auto lambda = [](meta::ObjectExtension* self)
+/// auto lambda = [](meta::ExecutableExtension* self)
 /// {
 ///     // You can access the object through the extension.
 ///     auto object = self->getObject();
@@ -108,21 +108,21 @@ namespace meta
 ///
 /// The invokable arguments can hold any type, except reference types.
 template <class Function, Function function>
-class Invokable : public ObjectExtension
+class Invokable : public ExecutableExtension
 {
     using SelfType = Invokable<Function, function>;
 
 protected:
     /// Repackages the arguments, appending the owning object and itself, when required.
     PackagedArguments repackageArguments(PackagedArguments arguments);
-    /// Overrides ObjectExtension::Descriptor::runOverride().
+    /// Overrides ExecutableExtension::Descriptor::runOverride().
     ReturnValue runOverride(PackagedArguments arguments) final;
 
     /// Constructor.
     explicit Invokable(std::string_view name);
 
 public:
-    AUTO_META_CLASS(Function, SelfType, ObjectExtension)
+    AUTO_META_CLASS(Function, SelfType, ExecutableExtension)
     {
     };
 
@@ -138,7 +138,7 @@ public:
 // ----- Implementation -----
 template <class Function, Function function>
 Invokable<Function, function>::Invokable(std::string_view name) :
-    ObjectExtension(name)
+    ExecutableExtension(name)
 {
 }
 
@@ -156,10 +156,10 @@ PackagedArguments Invokable<Function, function>::repackageArguments(PackagedArgu
         using ClassType = typename traits::function_traits<Function>::object;
         if constexpr (std::is_base_of_v<MetaObject, ClassType>)
         {
-            auto object = getObject();
+            auto object = this->getObject();
             if (object)
             {
-                arguments.addFront(dynamic_cast<ClassType*>(object.get()));
+                arguments.addFront(dynamic_cast<ClassType*>(object));
             }
         }
     }

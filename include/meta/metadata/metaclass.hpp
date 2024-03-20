@@ -26,7 +26,6 @@
 
 #include <functional>
 #include <memory>
-#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -52,10 +51,10 @@ namespace meta
 /// body of the meta-class declaration. Example:
 /// \code
 ///
-/// class RunMe : public meta::ObjectExtension
+/// class RunMe : public meta::ExecutableExtension
 /// {
 /// public:
-///     META_CLASS("runMe", RunMe, meta::ObjectExtension)
+///     META_CLASS("runMe", RunMe, meta::ExecutableExtension)
 ///     {
 ///     };
 ///
@@ -65,7 +64,7 @@ namespace meta
 ///     }
 /// protected:
 ///     explicit RunMe() :
-///         meta::ObjectExtension(getStaticMetaClass()->getname())
+///         meta::ExecutableExtension(getStaticMetaClass()->getname())
 ///     {
 ///     }
 /// };

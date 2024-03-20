@@ -16,30 +16,9 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_FORWARDS_HPP
-#define META_FORWARDS_HPP
-
-#include <memory>
+#include <meta/object_extensions/data_extension.hpp>
 
 namespace meta
 {
 
-struct Connection;
-class MetaObject;
-class Object;
-class ExecutableExtension;
-class SignalExtension;
-class DataExtension;
-
-using ConnectionPtr = std::shared_ptr<Connection>;
-using MetaObjectPtr = std::shared_ptr<MetaObject>;
-using ObjectPtr = std::shared_ptr<Object>;
-using ObjectWeakPtr = std::weak_ptr<Object>;
-using ExecutableExtensionPtr = std::shared_ptr<ExecutableExtension>;
-using ExecutableExtensionWeakPtr = std::weak_ptr<ExecutableExtension>;
-using SignalExtensionPtr = std::shared_ptr<SignalExtension>;
-using DataExtensionPtr = std::shared_ptr<DataExtension>;
-
 }
-
-#endif // META_FORWARDS_HPP

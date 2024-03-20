@@ -6,6 +6,8 @@ log/trace_printer.cpp
 metadata/factory.cpp
 metadata/metaclass.cpp
 object.cpp
+object_extensions/data_extension.cpp
+object_extensions/data_extensions_object.cpp
 object_extensions/executable_extension.cpp
 object_extensions/executable_extensions_object.cpp
 object_extensions/signal.cpp
@@ -32,6 +34,8 @@ template.cpp
 ../include/meta/metadata/metaclass_impl.hpp
 ../include/meta/object.hpp
 ../include/meta/object_extensions/connection.hpp
+../include/meta/object_extensions/data_extension.hpp
+../include/meta/object_extensions/data_extensions_object.hpp
 ../include/meta/object_extensions/executable_extension.hpp
 ../include/meta/object_extensions/executable_extensions_object.hpp
 ../include/meta/object_extensions/invokable.hpp

@@ -20,6 +20,7 @@
 #include <meta/metadata/factory.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/object.hpp>
+#include <meta/object_extensions/data_extension.hpp>
 #include <meta/object_extensions/executable_extension.hpp>
 #include <utils/scope_value.hpp>
 
@@ -77,8 +78,16 @@ void MetaClass::initializeInstance(ObjectPtr instance) const
     {
         for (auto& metaExtension : metaClass->m_descriptor->extensions)
         {
-            auto extension = metaExtension.second->template create<ExecutableExtension>(metaExtension.second->getName());
-            instance->addExtension(extension);
+            if (metaExtension.second->template isDerivedFromClass<ExecutableExtension>())
+            {
+                auto extension = metaExtension.second->template create<ExecutableExtension>(metaExtension.second->getName());
+                instance->addExtension(extension);
+            }
+            if (metaExtension.second->template isDerivedFromClass<DataExtension>())
+            {
+                auto data = metaExtension.second->template create<DataExtension>(metaExtension.second->getName());
+                instance->addData(data);
+            }
         }
         return VisitResult::Continue;
     };

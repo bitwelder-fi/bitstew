@@ -16,30 +16,31 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_FORWARDS_HPP
-#define META_FORWARDS_HPP
-
-#include <memory>
+#include <meta/object_extensions/data_extension.hpp>
+#include <meta/object_extensions/data_extensions_object.hpp>
 
 namespace meta
 {
 
-struct Connection;
-class MetaObject;
-class Object;
-class ExecutableExtension;
-class SignalExtension;
-class DataExtension;
-
-using ConnectionPtr = std::shared_ptr<Connection>;
-using MetaObjectPtr = std::shared_ptr<MetaObject>;
-using ObjectPtr = std::shared_ptr<Object>;
-using ObjectWeakPtr = std::weak_ptr<Object>;
-using ExecutableExtensionPtr = std::shared_ptr<ExecutableExtension>;
-using ExecutableExtensionWeakPtr = std::weak_ptr<ExecutableExtension>;
-using SignalExtensionPtr = std::shared_ptr<SignalExtension>;
-using DataExtensionPtr = std::shared_ptr<DataExtension>;
-
+DataExtensionsObject::~DataExtensionsObject()
+{
 }
 
-#endif // META_FORWARDS_HPP
+void DataExtensionsObject::addData(DataExtensionPtr data)
+{
+    MAYBE_UNUSED(data);
+}
+
+bool DataExtensionsObject::removeData(DataExtension& data)
+{
+    MAYBE_UNUSED(data);
+    return false;
+}
+
+DataExtensionPtr DataExtensionsObject::findData(std::string_view name) const
+{
+    MAYBE_UNUSED(name);
+    return {};
+}
+
+}

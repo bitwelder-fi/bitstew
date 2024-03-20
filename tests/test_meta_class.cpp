@@ -105,7 +105,7 @@ TEST_P(MetaNameValidityTest, testMetaClassName)
 
 using GetStaticMetaClassTypes = ::testing::Types<meta::MetaObject,
                                                  meta::Object,
-                                                 meta::ObjectExtension,
+                                                 meta::ExecutableExtension,
                                                  AbstractClass,
                                                  Interface,
                                                  OverrideClass,
@@ -343,5 +343,5 @@ TEST_F(MetaLibraryTest, metaLibraryObjectFactoryRegistryDefaultContent)
 
     EXPECT_NE(nullptr, factory->findMetaClass("meta.MetaObject"));
     EXPECT_NE(nullptr, factory->findMetaClass("meta.Object"));
-    EXPECT_NE(nullptr, factory->findMetaClass("meta.ObjectExtension"));
+    EXPECT_NE(nullptr, factory->findMetaClass("meta.ExecutableExtension"));
 }

@@ -77,7 +77,7 @@ protected:
 
         bool isExtension() const final
         {
-            return std::is_base_of_v<ObjectExtension, DeclaredClass>;
+            return std::is_base_of_v<ExecutableExtension, DeclaredClass>;
         }
     };
 

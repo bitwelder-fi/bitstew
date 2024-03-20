@@ -23,7 +23,7 @@
 #include <meta/meta_api.hpp>
 #include <meta/forwards.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 
 #include <string_view>
 
@@ -37,10 +37,10 @@ namespace meta
 /// A generic signal is activated using the trigger() method. When a signal is activated, its connected
 /// slots get invoked. Connections created within an activated slot is left out from the current signal
 /// activation.
-class META_API SignalExtension : public ObjectExtension
+class META_API SignalExtension : public ExecutableExtension
 {
 public:
-    META_CLASS("SignalExtension", SignalExtension, ObjectExtension)
+    META_CLASS("SignalExtension", SignalExtension, ExecutableExtension)
     {
     };
 
@@ -56,7 +56,7 @@ public:
     /// Connects an object extension to the signal, and returns the connection token.
     /// \param slot The object extension as the slot of the connection.
     /// \return The connection token.
-    ConnectionPtr connect(ObjectExtensionPtr slot);
+    ConnectionPtr connect(ExecutableExtensionPtr slot);
 
     /// Connects an object extension identified by the extensionName to the signal, and returns the
     /// connection token. The method is only applicable when the signal is attached to an object.
@@ -93,7 +93,7 @@ protected:
     /// Constructs the signal extension
     explicit SignalExtension(std::string_view name);
 
-    /// Overrides ObjectExtension::runOverride() to activate the slots of the signal.
+    /// Overrides ExecutableExtension::runOverride() to activate the slots of the signal.
     /// \param arguments The packaged arguments to pass as signal arguments.
     /// \return The number of activated slots.
     ReturnValue runOverride(PackagedArguments arguments) final;
@@ -201,7 +201,7 @@ public:
     /// Connects an object extension to the signal, and returns the connection token.
     /// \param slot The object extension as the slot of the connection.
     /// \return The connection token.
-    inline ConnectionPtr connect(ObjectExtensionPtr slot)
+    inline ConnectionPtr connect(ExecutableExtensionPtr slot)
     {
         return m_extension->connect(slot);
     }
@@ -225,7 +225,7 @@ public:
     /// Disconnect all signal connections.
     void disconnect()
     {
-        std::static_pointer_cast<ObjectExtension>(m_extension)->disconnect();
+        std::static_pointer_cast<ExecutableExtension>(m_extension)->disconnect();
     }
 
     /// Returns the number of valid connections.
@@ -258,7 +258,7 @@ public:
     }
 
     /// Cast operator to use a signal as a slot.
-    operator ObjectExtensionPtr() const
+    operator ExecutableExtensionPtr() const
     {
         return m_extension;
     }

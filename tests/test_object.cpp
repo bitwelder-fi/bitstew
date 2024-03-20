@@ -21,7 +21,7 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/metaclass.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 #include <meta/library_config.hpp>
 
 #include <meta/object_extensions/invokable.hpp>
@@ -69,7 +69,7 @@ TEST_F(ObjectTest, removeExtension)
     auto object = meta::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
-    EXPECT_EQ(object, getName->getObject());
+    EXPECT_EQ(object.get(), getName->getObject());
 
     object->removeExtension(*getName);
     EXPECT_EQ(nullptr, getName->getObject());

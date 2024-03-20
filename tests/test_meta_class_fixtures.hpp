@@ -187,15 +187,29 @@ protected:
     }
 };
 
-void extendObjects(meta::ObjectExtension* self)
+void extendObjects(meta::ExecutableExtension* self)
 {
-    META_LOG_INFO("extends " << self->getObject()->getName());
+    auto name = meta::invoke(self->getObject(), "getName");
+    if (!name)
+    {
+        META_LOG_INFO("extends an object with no name");
+        return;
+    }
+
+    META_LOG_INFO("extends " << static_cast<std::string_view>(*name));
 }
 DECLARE_INVOKABLE(ExtendObjectFunction, "extendObjects", &extendObjects);
 
-auto globalLambda = [](meta::ObjectExtension* self)
+auto globalLambda = [](meta::ExecutableExtension* self)
 {
-    META_LOG_INFO(self->getObject()->getName());
+    auto name = meta::invoke(self->getObject(), "getName");
+    if (!name)
+    {
+        META_LOG_INFO("extends an object with no name");
+        return;
+    }
+
+    META_LOG_INFO(static_cast<std::string_view>(*name));
 };
 DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
 

@@ -25,7 +25,7 @@ namespace meta
 {
 
 SignalExtension::SignalExtension(std::string_view name) :
-    ObjectExtension(name)
+    ExecutableExtension(name)
 {
 }
 
@@ -73,7 +73,7 @@ ReturnValue SignalExtension::runOverride(PackagedArguments arguments)
     return result;
 }
 
-ConnectionPtr SignalExtension::connect(ObjectExtensionPtr slot)
+ConnectionPtr SignalExtension::connect(ExecutableExtensionPtr slot)
 {
     abortIfFail(slot);
 
@@ -111,7 +111,7 @@ bool SignalExtension::tryDisconnect()
         return false;
     }
 
-    ObjectExtension::disconnect();
+    ExecutableExtension::disconnect();
     return true;
 }
 

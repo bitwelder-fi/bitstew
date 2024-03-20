@@ -21,17 +21,19 @@
 #include <meta/meta.hpp>
 #include <meta/metadata/factory.hpp>
 #include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <meta/object_extensions/executable_extension.hpp>
 
 namespace
 {
 
-class FunctionExtension : public meta::ObjectExtension
+class FunctionExtension : public meta::ExecutableExtensionImpl<meta::Object>
 {
+    using BaseClass = meta::ExecutableExtensionImpl<meta::Object>;
+
 public:
     using FunctionType = std::function<void(FunctionExtension&)>;
     explicit FunctionExtension(std::string_view name) :
-        meta::ObjectExtension(name)
+        BaseClass(name)
     {
         m_function = [](auto&)
         {
@@ -39,7 +41,7 @@ public:
         };
     }
 
-    META_CLASS("FunctionExtension", FunctionExtension, meta::ObjectExtension)
+    META_CLASS("FunctionExtension", FunctionExtension, BaseClass)
     {
     };
 
@@ -67,7 +69,7 @@ protected:
 };
 
 
-class ObjectExtensionTestBase : public DomainTestEnvironment
+class ExecutableExtensionTestBase : public DomainTestEnvironment
 {
 protected:
     meta::ObjectPtr testObject;
@@ -84,24 +86,24 @@ protected:
         testObject->addExtension(functor);
     }
 };
-using ObjectExtensionTests = ObjectExtensionTestBase;
+using ExecutableExtensionTests = ExecutableExtensionTestBase;
 
 }
 
 
-TEST_F(ObjectExtensionTests, hasOwner)
+TEST_F(ExecutableExtensionTests, hasOwner)
 {
-    EXPECT_EQ(testObject, functor->getObject());
+    EXPECT_EQ(testObject.get(), functor->getObject());
     EXPECT_EQ(functor, testObject->findExtension("functor"));
 }
 
-TEST_F(ObjectExtensionTests, customExtension)
+TEST_F(ExecutableExtensionTests, customExtension)
 {
     EXPECT_CALL(*m_mockPrinter, log("default"));
     testObject->invoke("functor");
 }
 
-TEST_F(ObjectExtensionTests, changeFunction)
+TEST_F(ExecutableExtensionTests, changeFunction)
 {
     auto lambda = [](FunctionExtension& self)
     {

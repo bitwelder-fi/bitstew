@@ -27,15 +27,15 @@ namespace meta
 struct Connection;
 class MetaObject;
 class Object;
-class ObjectExtension;
+class ExecutableExtension;
 class SignalExtension;
 
 using ConnectionPtr = std::shared_ptr<Connection>;
 using MetaObjectPtr = std::shared_ptr<MetaObject>;
 using ObjectPtr = std::shared_ptr<Object>;
 using ObjectWeakPtr = std::weak_ptr<Object>;
-using ObjectExtensionPtr = std::shared_ptr<ObjectExtension>;
-using ObjectExtensionWeakPtr = std::weak_ptr<ObjectExtension>;
+using ExecutableExtensionPtr = std::shared_ptr<ExecutableExtension>;
+using ExecutableExtensionWeakPtr = std::weak_ptr<ExecutableExtension>;
 using SignalExtensionPtr = std::shared_ptr<SignalExtension>;
 
 }

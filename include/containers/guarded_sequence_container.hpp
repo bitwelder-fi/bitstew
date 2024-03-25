@@ -20,6 +20,7 @@
 #define CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
 
 #include <containers/iterator.hpp>
+#include <containers/view.hpp>
 #include <utils/type_traits.hpp>
 #include <utils/reference_counted.hpp>
 
@@ -76,6 +77,7 @@ class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSeq
     };
 
 public:
+    using Container         = ContainerType;
     using value_type        = typename ContainerType::value_type;
     using reference         = typename ContainerType::reference;
     using const_reference   = typename ContainerType::const_reference;
@@ -104,78 +106,58 @@ public:
     /// The reverse const iterator of the guarded container.
     using ConstReverseIterator = IteratorWrap<ReverseIteratorTraits<const SelfType>>;
 
-    /// A view of the container. The view range is marked by iterators. You can iterate through the
-    /// view elements, where each position always points to a valid element of the view.
-    template <class IteratorType>
-    struct View
+    Iterator begin()
     {
-        explicit View(SelfType& self) :
-            m_viewBegin(IteratorType(self.m_container.begin(), self.m_container.end())),
-            m_viewEnd(IteratorType(self.m_container.end(), self.m_container.end()))
-        {
-        }
-        explicit View(const SelfType& self) :
-            m_viewBegin(IteratorType(self.m_container.begin(), self.m_container.end())),
-            m_viewEnd(IteratorType(self.m_container.end(), self.m_container.end()))
-        {
-        }
-
-        /// \name Iterators
-        /// \{
-        IteratorType begin() const
-        {
-            return m_viewBegin;
-        }
-        IteratorType end() const
-        {
-            return m_viewEnd;
-        }
-        bool inView(IteratorType position) const
-        {
-            for (auto it = m_viewBegin; it != m_viewEnd; ++it)
-            {
-                if (it == position)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        /// \}
-
-        /// name Capacity
-        /// \{
-        bool isEmpty() const
-        {
-            return size() == 0u;
-        }
-        size_type size() const
-        {
-            return std::distance(m_viewBegin, m_viewEnd);
-        }
-        /// \}
-
-        /// \name Element access in a view.
-        /// \{
-
-        /// Find an element in the view.
-        /// \param item The item to find in the view.
-        /// \return On success returns the iterator pointing to the position of the item. On failure
-        ///         returns the end iterator.
-        IteratorType find(const value_type& item)
-        {
-            auto pos = std::find(m_viewBegin, m_viewEnd, item);
-            return IteratorType(pos, m_viewEnd);
-        }
-        /// \}
-
-    protected:
-        IteratorType m_viewBegin;
-        IteratorType m_viewEnd;
-    };
+        return Iterator(m_container.begin(), m_container.end());
+    }
+    ConstIterator begin() const
+    {
+        return ConstIterator(m_container.begin(), m_container.end());
+    }
+    ConstIterator cbegin() const
+    {
+        return ConstIterator(m_container.cbegin(), m_container.cend());
+    }
+    ReverseIterator rbegin()
+    {
+        return ReverseIterator(m_container.rbegin(), m_container.rend());
+    }
+    ConstReverseIterator rbegin() const
+    {
+        return ConstReverseIterator(m_container.rbegin(), m_container.rend());
+    }
+    ConstReverseIterator crbegin() const
+    {
+        return ConstReverseIterator(m_container.crbegin(), m_container.crend());
+    }
+    Iterator end()
+    {
+        return Iterator(m_container.end(), m_container.end());
+    }
+    ConstIterator end() const
+    {
+        return ConstIterator(m_container.end(), m_container.end());
+    }
+    ConstIterator cend() const
+    {
+        return ConstIterator(m_container.cend(), m_container.cend());
+    }
+    ReverseIterator rend()
+    {
+        return ReverseIterator(m_container.rend(), m_container.rend());
+    }
+    ConstReverseIterator rend() const
+    {
+        return ConstReverseIterator(m_container.rend(), m_container.rend());
+    }
+    ConstReverseIterator crend() const
+    {
+        return ConstReverseIterator(m_container.crend(), m_container.crend());
+    }
 
     /// The locked view type of the container.
-    using LockedView = std::optional<View<Iterator>>;
+    using LockedViewType = View<ContainerType, ConstIterator>;
+    using LockedView = std::optional<LockedViewType>;
 
     /// Returns the locked view of the container.
     LockedView getLockedView() const
@@ -286,12 +268,15 @@ public:
         {
             if (m_lockedView->inView(position))
             {
-                *position = value_type();
-                return Iterator(position, m_container.end());
+                auto dist = std::distance(cbegin(), position);
+                auto pos = begin();
+                std::advance(pos, dist);
+                *pos = value_type();
+                return Iterator(pos, m_container.end());
             }
 
             // Erase outside of the view.
-            m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
+            m_container.erase(position);
             return {};
         }
 
@@ -318,11 +303,11 @@ private:
     LockedView m_lockedView;
 
     /// Method called by ReferenceCountLockable<> when the container gets locked the first time.
-    View<Iterator> acquireResources()
+    LockedViewType acquireResources()
     {
         if (!m_lockedView)
         {
-            m_lockedView = std::move(std::make_optional(View<Iterator>(*this)));
+            m_lockedView = std::move(std::make_optional(LockedViewType(cbegin(), cend())));
         }
         return *m_lockedView;
     }

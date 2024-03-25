@@ -41,6 +41,9 @@ public:
     using reference         = typename Traits::Reference;
     using size_type         = typename Traits::SizeType;
 
+    /// Default constructor.
+    IteratorWrap() = default;
+
     /// Constructor. Initializes the iterator for a given position. Adjusts the iterator to point to
     /// the first valid element of the container, between the pos and end.
     /// \param pos The position of the iterator.
@@ -75,6 +78,19 @@ public:
         IteratorWrap retval = *this;
         ++(*this);
         return retval;
+    }
+
+    /// Advancing operator.
+    IteratorWrap& operator+=(difference_type distance)
+    {
+        if (distance > 0)
+        {
+            while (distance-- > 0)
+            {
+                ++(*this);
+            }
+        }
+        return *this;
     }
 
     /// Equality comparation operator.

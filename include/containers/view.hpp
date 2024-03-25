@@ -21,68 +21,89 @@
 
 #include <meta/meta_api.hpp>
 
+#include <algorithm>
+
 namespace containers
 {
 
 /// Gets a view of a container and retains the container. The view may differ from the locked view of
 /// the container.
-template <typename GuardedContainerType, typename Iterator = typename GuardedContainerType::Iterator>
+template <class GuardedContainerType, class IteratorType>
 struct View
 {
-    using ViewType      = typename GuardedContainerType::template View<Iterator>;
+    using iterator_type = IteratorType;
     using value_type    = typename GuardedContainerType::value_type;
 
     /// Constructor, locks the guarded container and returns an iterator range to the locked content.
-    explicit View(GuardedContainerType& container) :
-        m_container(container),
-        m_containerView(m_container)
+    explicit View(iterator_type begin, iterator_type end) :
+        m_viewBegin(begin),
+        m_viewEnd(end)
     {
-        m_container.retain();
     }
     /// Destructor
     ~View()
     {
-        m_container.release();
     }
 
     /// The begin iterator of the locked container view.
-    Iterator begin() const
+    iterator_type begin() const
     {
-        return m_containerView.begin();
+        return m_viewBegin;
     }
     /// The end iterator of the locked container view.
-    Iterator end() const
+    iterator_type end() const
     {
-        return m_containerView.end();
+        return m_viewEnd;
     }
 
     /// Find an item in the view.
     /// \param item The item to find in the view.
     /// \return On success, returns the position of the itemn within the view. On failure, returns
     ///         \e std::nullopt.
-    Iterator find(const value_type& item)
+    iterator_type find(const value_type& item)
     {
-        return m_containerView.find(item);
+        return std::find(m_viewBegin, m_viewEnd, item);
     }
 
     /// Returns the size of the view. The size is the number of valid elements in the view.
     std::size_t size() const
     {
-        return m_containerView.size();
+        return std::distance(m_viewBegin, m_viewEnd);
+    }
+
+    template <typename TIteratorType>
+    bool inView(TIteratorType position)
+    {
+        for (auto it = m_viewBegin; it != m_viewEnd; ++it)
+        {
+            if (it == position)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    iterator_type erase(iterator_type pos)
+    {
+        abortIfFail(inView(pos));
+
+
     }
 
 private:
-    GuardedContainerType& m_container;
-    ViewType m_containerView;
+    iterator_type m_viewBegin;
+    iterator_type m_viewEnd;
 };
 
 
 /// Locks a container, and gets the locked view of it. The view of the container is always the locked
 /// view, no matter how many times the container gets retained with using this view.
-template <typename GuardedContainerType, typename Iterator = typename GuardedContainerType::Iterator>
+template <class GuardedContainerType>
 struct LockView
 {
-    using ViewType      = typename GuardedContainerType::template View<Iterator>;
+    using view_type     = typename GuardedContainerType::LockedViewType;
+    using iterator_type = typename view_type::iterator_type;
     using value_type    = typename GuardedContainerType::value_type;
 
     /// Constructor, locks the guarded container and returns an iterator range to the locked content.
@@ -98,12 +119,12 @@ struct LockView
     }
 
     /// The begin iterator of the locked container view.
-    Iterator begin() const
+    iterator_type begin() const
     {
         return m_lockedView.begin();
     }
     /// The end iterator of the locked container view.
-    Iterator end() const
+    iterator_type end() const
     {
         return m_lockedView.end();
     }
@@ -112,7 +133,7 @@ struct LockView
     /// \param item The item to find in the view.
     /// \return On success, returns the position of the itemn within the view. On failure, returns
     ///         \e std::nullopt.
-    Iterator find(const value_type& item)
+    iterator_type find(const value_type& item)
     {
         return m_lockedView.find(item);
     }
@@ -125,7 +146,7 @@ struct LockView
 
 private:
     GuardedContainerType& m_container;
-    ViewType m_lockedView;
+    view_type m_lockedView;
 };
 
 }

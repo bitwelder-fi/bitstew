@@ -40,10 +40,10 @@ namespace containers
 /// from the container. Whilst read operations are only possible through views, write operations are
 /// only possible through the interface of the container.
 /// \tparam ElementType
-template <class ContainerType, bool (*ValidElementFunction)(const typename ContainerType::value_type&)>
-class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType, ValidElementFunction>>
+template <class ContainerType>
+class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
 {
-    using SelfType = GuardedSequenceContainer<ContainerType, ValidElementFunction>;
+    using SelfType = GuardedSequenceContainer<ContainerType>;
     friend class utils::ReferenceCountLockable<SelfType>;
 
     ContainerType m_container;
@@ -58,8 +58,6 @@ class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSeq
         using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
         using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
         using SizeType = typename TContainer::size_type;
-
-        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
     };
 
     /// Reverse iterator traits.
@@ -72,8 +70,6 @@ class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSeq
         using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
         using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
         using SizeType = typename TContainer::size_type;
-
-        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
     };
 
 public:
@@ -86,10 +82,11 @@ public:
     using pointer           = typename ContainerType::pointer;
     using const_pointer     = typename ContainerType::const_pointer;
 
-    bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
-
     /// Creates a guarded vector container.
-    explicit GuardedSequenceContainer() = default;
+    explicit GuardedSequenceContainer(value_type invalidElement) :
+        m_invalidElement(invalidElement)
+    {
+    }
 
     /// \name View
     /// \{
@@ -108,51 +105,51 @@ public:
 
     Iterator begin()
     {
-        return Iterator(m_container.begin(), m_container.end());
+        return Iterator(m_container.begin(), m_container.end(), m_invalidElement);
     }
     ConstIterator begin() const
     {
-        return ConstIterator(m_container.begin(), m_container.end());
+        return ConstIterator(m_container.begin(), m_container.end(), m_invalidElement);
     }
     ConstIterator cbegin() const
     {
-        return ConstIterator(m_container.cbegin(), m_container.cend());
+        return ConstIterator(m_container.cbegin(), m_container.cend(), m_invalidElement);
     }
     ReverseIterator rbegin()
     {
-        return ReverseIterator(m_container.rbegin(), m_container.rend());
+        return ReverseIterator(m_container.rbegin(), m_container.rend(), m_invalidElement);
     }
     ConstReverseIterator rbegin() const
     {
-        return ConstReverseIterator(m_container.rbegin(), m_container.rend());
+        return ConstReverseIterator(m_container.rbegin(), m_container.rend(), m_invalidElement);
     }
     ConstReverseIterator crbegin() const
     {
-        return ConstReverseIterator(m_container.crbegin(), m_container.crend());
+        return ConstReverseIterator(m_container.crbegin(), m_container.crend(), m_invalidElement);
     }
     Iterator end()
     {
-        return Iterator(m_container.end(), m_container.end());
+        return Iterator(m_container.end(), m_container.end(), m_invalidElement);
     }
     ConstIterator end() const
     {
-        return ConstIterator(m_container.end(), m_container.end());
+        return ConstIterator(m_container.end(), m_container.end(), m_invalidElement);
     }
     ConstIterator cend() const
     {
-        return ConstIterator(m_container.cend(), m_container.cend());
+        return ConstIterator(m_container.cend(), m_container.cend(), m_invalidElement);
     }
     ReverseIterator rend()
     {
-        return ReverseIterator(m_container.rend(), m_container.rend());
+        return ReverseIterator(m_container.rend(), m_container.rend(), m_invalidElement);
     }
     ConstReverseIterator rend() const
     {
-        return ConstReverseIterator(m_container.rend(), m_container.rend());
+        return ConstReverseIterator(m_container.rend(), m_container.rend(), m_invalidElement);
     }
     ConstReverseIterator crend() const
     {
-        return ConstReverseIterator(m_container.crend(), m_container.crend());
+        return ConstReverseIterator(m_container.crend(), m_container.crend(), m_invalidElement);
     }
 
     /// The locked view type of the container.
@@ -176,7 +173,7 @@ public:
     {
         if (this->isLocked())
         {
-            std::for_each(m_lockedView->begin(), m_lockedView->end(), [](auto& item) { item = value_type(); });
+            std::for_each(m_lockedView->begin(), m_lockedView->end(), [this](auto& item) { item = m_invalidElement; });
         }
         else
         {
@@ -200,7 +197,7 @@ public:
                 return {};
             }
             auto result = m_container.insert(position, item);
-            return Iterator(result, m_container.end());
+            return Iterator(result, m_container.end(), m_invalidElement);
         }
 
         return insert(position, item);
@@ -223,7 +220,7 @@ public:
             }
 
             auto result = m_container.insert(position, std::forward<value_type>(item));
-            return Iterator(result, m_container.end());
+            return Iterator(result, m_container.end(), m_invalidElement);
         }
 
         return insert(position, std::forward<value_type>(item));
@@ -242,8 +239,8 @@ public:
         {
             if (m_lockedView->inView(position))
             {
-                *position = value_type();
-                return Iterator(position, m_container.end());
+                *position = m_invalidElement;
+                return Iterator(position, m_container.end(), m_invalidElement);
             }
 
             // Erase outside of the view.
@@ -271,8 +268,8 @@ public:
                 auto dist = std::distance(cbegin(), position);
                 auto pos = begin();
                 std::advance(pos, dist);
-                *pos = value_type();
-                return Iterator(pos, m_container.end());
+                *pos = m_invalidElement;
+                return Iterator(pos, m_container.end(), m_invalidElement);
             }
 
             // Erase outside of the view.
@@ -281,7 +278,7 @@ public:
         }
 
         auto it = m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
-        return Iterator(it, m_container.end());
+        return Iterator(it, m_container.end(), m_invalidElement);
     }
 
     /// Adds an element at the end of the container.
@@ -301,6 +298,7 @@ public:
 
 private:
     LockedView m_lockedView;
+    value_type m_invalidElement = {};
 
     /// Method called by ReferenceCountLockable<> when the container gets locked the first time.
     LockedViewType acquireResources()
@@ -315,7 +313,7 @@ private:
     /// Method called by ReferenceCountLockable<> when the container gets fully unlocked.
     void releaseResources()
     {
-        auto predicate = [this](auto& item) { return !valid_element(item); };
+        auto predicate = [this](auto& item) { return item == m_invalidElement; };
         m_container.erase(std::remove_if(m_container.begin(), m_container.end(), predicate), m_container.end());
 
         m_lockedView.reset();

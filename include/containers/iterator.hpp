@@ -48,11 +48,12 @@ public:
     /// the first valid element of the container, between the pos and end.
     /// \param pos The position of the iterator.
     /// \param end The end position of the iterator.
-    IteratorWrap(BaseIterator pos, BaseIterator end) :
+    IteratorWrap(BaseIterator pos, BaseIterator end, value_type invalidElement) :
         m_pos(pos),
-        m_end(end)
+        m_end(end),
+        m_invalidElement(invalidElement)
     {
-        while (m_pos != m_end && !m_traits.valid_element(*m_pos))
+        while (m_pos != m_end && *m_pos == m_invalidElement)
         {
             ++m_pos;
         }
@@ -63,7 +64,7 @@ public:
     {
         while (++m_pos != m_end)
         {
-            if (m_traits.valid_element(*m_pos))
+            if (*m_pos != m_invalidElement)
             {
                 break;
             }
@@ -130,9 +131,9 @@ public:
     }
 
 private:
-    Traits m_traits;
     BaseIterator m_pos;
     BaseIterator m_end;
+    value_type m_invalidElement = {};
 };
 
 }

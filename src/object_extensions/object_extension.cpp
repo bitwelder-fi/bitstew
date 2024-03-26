@@ -62,7 +62,8 @@ void Connection::reset()
 
 
 ObjectExtension::ObjectExtension(std::string_view name) :
-    MetaObject(name)
+    MetaObject(name),
+    m_connections(ConnectionPtr())
 {
 }
 

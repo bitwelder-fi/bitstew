@@ -22,6 +22,7 @@
 #include <meta/meta_api.hpp>
 
 #include <algorithm>
+#include <concepts>
 
 namespace containers
 {
@@ -72,6 +73,7 @@ struct View
     }
 
     template <typename TIteratorType>
+    requires std::same_as<TIteratorType, IteratorType>
     bool inView(TIteratorType position)
     {
         for (auto it = m_viewBegin; it != m_viewEnd; ++it)
@@ -82,13 +84,6 @@ struct View
             }
         }
         return false;
-    }
-
-    iterator_type erase(iterator_type pos)
-    {
-        abortIfFail(inView(pos));
-
-
     }
 
 private:
@@ -102,14 +97,14 @@ private:
 template <class GuardedContainerType>
 struct LockView
 {
-    using view_type     = typename GuardedContainerType::LockedViewType;
+    using view_type     = typename GuardedContainerType::GuardedViewType;
     using iterator_type = typename view_type::iterator_type;
     using value_type    = typename GuardedContainerType::value_type;
 
     /// Constructor, locks the guarded container and returns an iterator range to the locked content.
     explicit LockView(GuardedContainerType& container) :
         m_container(container),
-        m_lockedView(m_container.retain())
+        m_guard(m_container.retain())
     {
     }
     /// Destructor
@@ -121,12 +116,12 @@ struct LockView
     /// The begin iterator of the locked container view.
     iterator_type begin() const
     {
-        return m_lockedView.begin();
+        return m_guard.begin();
     }
     /// The end iterator of the locked container view.
     iterator_type end() const
     {
-        return m_lockedView.end();
+        return m_guard.end();
     }
 
     /// Find an item in the view.
@@ -135,18 +130,18 @@ struct LockView
     ///         \e std::nullopt.
     iterator_type find(const value_type& item)
     {
-        return m_lockedView.find(item);
+        return m_guard.find(item);
     }
 
     /// Returns the size of the view. The size is the number of valid elements in the view.
     std::size_t size() const
     {
-        return m_lockedView.size();
+        return m_guard.size();
     }
 
 private:
     GuardedContainerType& m_container;
-    view_type m_lockedView;
+    view_type m_guard;
 };
 
 }

@@ -20,7 +20,7 @@
 #define CONTAINERS_ITERATOR_HPP
 
 #include <utils/type_traits.hpp>
-
+#include <cmath>
 
 namespace containers
 {
@@ -53,7 +53,7 @@ public:
         m_end(end),
         m_invalidElement(invalidElement)
     {
-        while (m_pos != m_end && *m_pos == m_invalidElement)
+        while (m_pos != m_end && !isValid(*m_pos))
         {
             ++m_pos;
         }
@@ -64,7 +64,7 @@ public:
     {
         while (++m_pos != m_end)
         {
-            if (*m_pos != m_invalidElement)
+            if (isValid(*m_pos))
             {
                 break;
             }
@@ -134,6 +134,18 @@ private:
     BaseIterator m_pos;
     BaseIterator m_end;
     value_type m_invalidElement = {};
+
+    bool isValid(const value_type& element) const
+    {
+        if constexpr (std::is_floating_point_v<value_type>)
+        {
+            return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
+        }
+        else
+        {
+            return m_invalidElement != element;
+        }
+    }
 };
 
 }

@@ -62,11 +62,15 @@ public:
     /// Increment operator.
     IteratorWrap& operator++()
     {
+        if (m_pos == m_end)
+        {
+            throw std::out_of_range("out of view range");
+        }
         while (++m_pos != m_end)
         {
             if (isValid(*m_pos))
             {
-                break;
+                return *this;
             }
         }
 
@@ -78,6 +82,22 @@ public:
     {
         IteratorWrap retval = *this;
         ++(*this);
+        return retval;
+    }
+
+    /// Decrement operator.
+    IteratorWrap& operator--()
+    {
+        while (!isValid(*(--m_pos)));
+
+        return *this;
+    }
+
+    /// Left-decrement operator.
+    IteratorWrap operator--(int)
+    {
+        IteratorWrap retval = *this;
+        --(*this);
         return retval;
     }
 

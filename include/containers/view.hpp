@@ -133,7 +133,7 @@ struct LockView
         return m_guard.find(item);
     }
 
-    /// Returns the size of the view. The size is the number of valid elements in the view.
+    /// Returns the content size of the view. The size is the number of valid elements in the view.
     std::size_t size() const
     {
         return m_guard.size();

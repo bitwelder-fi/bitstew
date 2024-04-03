@@ -31,16 +31,16 @@
 namespace containers
 {
 
-/// A guarded sequence container is a reference counted sequence container, which can be guarded against destructive changes
-/// in logic, where the container content gets altered during a recoursive or complex logic. Used together with views and locks,
-/// you can build algorithms which remove content from the container, or add content outside of a guarded view of the container
-/// in the same logic of your program.
+/// A guarded sequence container is a reference counted sequence container, which guards the container against
+/// deep content changes. Used together with views and locks, you can build logic where you can safely remove
+/// content from the container, and continue iterating.
 ///
-/// Use views to access the container elements. It is recommended to use guard locks when creating views. These guards ensure
-/// that the container gets guarded before you try to access its content.
+/// Use views to access the container elements. It is recommended to use guard locks when creating views. These
+/// guards ensure that the container gets guarded before you try to access its content.
 ///
 /// \tparam ContainerType The container to guard. This should be a sequence container such as std::vector<> or std::deque<>.
 template <class ContainerType>
+    requires traits::is_vector<ContainerType>::value || traits::is_deque<ContainerType>::value
 class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
 {
     using SelfType = GuardedSequenceContainer<ContainerType>;
@@ -209,7 +209,7 @@ public:
     }
 
     /// Inserts a copy of an item at position. The operation fails if the insert position is inside
-    /// the locked view of the container.
+    /// the guarded view of the container.
     ///
     /// \param position The position where to insert the item.
     /// \param item The item to insert.
@@ -227,7 +227,7 @@ public:
     }
 
     /// Inserts an item at position. The operation fails if the insert position is inside
-    /// the locked view of the container.
+    /// the guarded view of the container.
     ///
     /// \param position The position where to insert the item.
     /// \param item The item to insert.
@@ -245,11 +245,11 @@ public:
     }
 
     /// Erases or resets the item at position.
-    /// - The element is reset if the position is within the locked view of the container.
-    /// - The element is removed if the position is outside of the locked view.
+    /// - The element is reset if the position is within the guarded view of the container.
+    /// - The element is removed if the position is outside of the guarded view.
     ///
     /// \param position The position of the element to erase.
-    /// \return The iterator which follows the erased element. If the container is locked, and the
+    /// \return The iterator which follows the erased element. If the container is guarded, and the
     ///         position falls outside of the locked view, returns std::nullopt.
     std::optional<iterator> erase(iterator position)
     {
@@ -259,11 +259,11 @@ public:
     }
 
     /// Erases or resets the item at position.
-    /// - The element is reset if the position is within the locked view of the container.
-    /// - The element is removed if the position is outside of the locked view.
+    /// - The element is reset if the position is within the guarded view of the container.
+    /// - The element is removed if the position is outside of the guarded view.
     ///
     /// \param position The position of the element to erase.
-    /// \return The iterator which follows the erased element. If the container is locked, and the
+    /// \return The iterator which follows the erased element. If the container is guarded, and the
     ///         position falls outside of the locked view, returns std::nullopt.
     std::optional<iterator> erase(const_iterator position)
     {

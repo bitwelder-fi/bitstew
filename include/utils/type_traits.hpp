@@ -19,11 +19,13 @@
 #ifndef UTIL_TYPE_TRAITS_HPP
 #define UTIL_TYPE_TRAITS_HPP
 
+#include <deque>
 #include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace traits
 {
@@ -87,6 +89,20 @@ struct is_container<T, std::void_t<
 /// Helper variable template
 template <typename T>
 inline constexpr bool is_container_v = is_container<T>::value;
+
+
+template <typename T>
+struct is_vector : std::false_type {};
+
+template <typename T>
+struct is_vector<std::vector<T>> : std::true_type {};
+
+
+template <typename T>
+struct is_deque : std::false_type {};
+
+template <typename T>
+struct is_deque<std::deque<T>> : std::true_type {};
 
 /// \}
 

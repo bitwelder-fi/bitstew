@@ -31,6 +31,9 @@
 namespace containers
 {
 
+template <class T>
+concept guardable_sequence_container = !traits::is_list<T>::value;
+
 /// A guarded sequence container is a reference counted sequence container, which guards the container against
 /// deep content changes. Used together with views and locks, you can build logic where you can safely remove
 /// content from the container, and continue iterating.
@@ -40,7 +43,7 @@ namespace containers
 ///
 /// \tparam ContainerType The container to guard. This should be a sequence container such as std::vector<> or std::deque<>.
 template <class ContainerType>
-    requires traits::is_vector<ContainerType>::value || traits::is_deque<ContainerType>::value
+    requires guardable_sequence_container<ContainerType>
 class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
 {
     using SelfType = GuardedSequenceContainer<ContainerType>;
@@ -83,8 +86,8 @@ public:
     using const_pointer     = typename ContainerType::const_pointer;
 
     /// Creates a guarded vector container.
-    explicit GuardedSequenceContainer(value_type invalidElement) :
-        m_invalidElement(invalidElement)
+    explicit GuardedSequenceContainer(value_type invalidElement = value_type()) :
+        m_invalidElement(std::move(invalidElement))
     {
     }
 
@@ -283,6 +286,49 @@ public:
 
         auto it = m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
         return iterator(it, m_container.end(), m_invalidElement);
+    }
+
+    std::optional<iterator> erase(iterator first, iterator last)
+    {
+        if (m_guard)
+        {
+            auto baseFirst = static_cast<typename ContainerType::iterator>(first);
+            auto baseLast = static_cast<typename ContainerType::iterator>(last);
+
+            auto viewBegin = static_cast<typename ContainerType::iterator>(toIterator(m_guard->begin()));
+            auto viewEnd = static_cast<typename ContainerType::iterator>(toIterator(m_guard->end()));
+
+            // auto itBegin = first;
+            // auto itEnd = last;
+
+            // std::advance(itBegin, m_guard)
+
+
+
+            // const auto firstIn = m_guard->inView(first);
+            // const auto lastIn = m_guard->inView(last);
+
+            // if (firstIn && lastIn)
+            // {
+            //     for (auto it = first; it != last; ++it)
+            //     {
+            //         *it = m_invalidElement;
+            //     }
+            //     return last;
+            // }
+
+            // Erase outside of the view.
+            m_container.erase(static_cast<typename ContainerType::iterator>(first), static_cast<typename ContainerType::iterator>(last));
+            return {};
+        }
+
+        auto it = m_container.erase(static_cast<typename ContainerType::iterator>(first), static_cast<typename ContainerType::iterator>(last));
+        return iterator(it, m_container.end(), m_invalidElement);
+    }
+
+    std::optional<iterator> erase(const_iterator first, const_iterator last)
+    {
+        return erase(toIterator(first), toIterator(last));
     }
 
     /// Adds an element at the end of the container.

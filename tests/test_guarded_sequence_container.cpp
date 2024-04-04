@@ -43,6 +43,12 @@ enum class EnumType
 template <class E>
 concept test_enum = std::is_enum_v<E> && std::is_same_v<E, EnumType>;
 
+struct UserType
+{
+};
+template <class T>
+concept user_type = std::is_same_v<T, UserType>;
+
 template <typename BaseContainerType>
 class GuardedSequenceContainerTests : public DomainTestEnvironment
 {
@@ -59,9 +65,7 @@ protected:
     {
         initializeDomain(false, true);
 
-        value_type invalidElement;
-        getInvalidElement(invalidElement);
-        m_container = std::make_unique<GuardedContainer>(invalidElement);
+        m_container = std::make_unique<GuardedContainer>(getInvalidElement());
         m_initialSize = m_container->size();
     }
 
@@ -81,77 +85,86 @@ protected:
         }
     }
 
-    void getInvalidElement(std::signed_integral auto& element) const
+    auto getInvalidElement() const
+        requires std::signed_integral<value_type>
     {
-        element = std::numeric_limits<value_type>::min();
+        return std::numeric_limits<value_type>::min();
     }
-    void getInvalidElement(std::unsigned_integral auto& element) const
+    auto getInvalidElement() const
+        requires std::unsigned_integral<value_type>
     {
-        element = std::numeric_limits<value_type>::min();
+        return std::numeric_limits<value_type>::max();
     }
-    void getInvalidElement(std::floating_point auto& element) const
+    auto getInvalidElement() const
+        requires std::floating_point<value_type>
     {
-        element = std::numeric_limits<value_type>::quiet_NaN();
+        return std::numeric_limits<value_type>::quiet_NaN();
     }
-    void getInvalidElement(concepts::raw_pointer auto& element) const
+    auto getInvalidElement() const
+        requires concepts::raw_pointer<value_type>
     {
-        element = nullptr;
+        return nullptr;
     }
-    void getInvalidElement(concepts::smart_pointer auto& element) const
+    auto getInvalidElement() const
+        requires concepts::smart_pointer<value_type>
     {
-        element = value_type();
+        return value_type();
     }
-    void getInvalidElement(test_enum auto& element) const
+    auto getInvalidElement() const
+        requires test_enum<value_type>
     {
-        element = EnumType::Invalid;
+        return EnumType::Invalid;
     }
-    void getInvalidElement(concepts::std_string auto& element) const
+    auto getInvalidElement() const
+        requires concepts::std_string<value_type>
     {
-        element = std::string("");
+        return std::string("");
     }
-    void getInvalidElement(concepts::std_string_view auto& element) const
+    auto getInvalidElement() const
+        requires concepts::std_string_view<value_type>
     {
-        element = std::string_view("");
+        return std::string_view("");
     }
 
-    value_type generateValue()
+    value_type generateValue() const
+        requires std::is_arithmetic_v<value_type>
     {
-        if constexpr(std::is_arithmetic_v<value_type>)
-        {
-            value_type invalid;
-            getInvalidElement(invalid);
-            auto element = static_cast<value_type>(rand());
-            for (;element == invalid; element = static_cast<value_type>(rand()));
-            return element;
-        }
-        else if constexpr(std::is_pointer_v<value_type>)
-        {
-            return new value_type();
-        }
-        else if constexpr (traits::is_unique_pointer_v<value_type>)
-        {
-            return std::make_unique<value_type>();
-        }
-        else if constexpr (traits::is_shared_pointer_v<value_type>)
-        {
-            return std::make_shared<value_type>();
-        }
-        else if constexpr (std::is_same_v<EnumType, value_type>)
-        {
-            return EnumType::Three;
-        }
-        else if constexpr(traits::is_std_string_v<value_type>)
-        {
-            return std::to_string(rand());
-        }
-        else if constexpr(traits::is_std_string_view_v<value_type>)
-        {
-            return std::string_view("test");
-        }
-        else
-        {
-            return value_type();
-        }
+        const auto invalid = getInvalidElement();
+        auto element = static_cast<value_type>(rand());
+        for (;element == invalid; element = static_cast<value_type>(rand()));
+        return element;
+    }
+    value_type generateValue() const
+        requires std::is_pointer_v<value_type>
+    {
+        return new value_type();
+    }
+    value_type generateValue() const
+        requires traits::is_unique_pointer_v<value_type>
+    {
+        using data_type = typename value_type::element_type;
+        return std::make_unique<data_type>();
+    }
+    value_type generateValue() const
+        requires traits::is_shared_pointer_v<value_type>
+    {
+        using data_type = typename value_type::element_type;
+        return std::make_shared<data_type>();
+    }
+    value_type generateValue() const
+        requires std::is_same_v<EnumType, value_type>
+    {
+        return EnumType::Three;
+    }
+    value_type generateValue() const
+        requires traits::is_std_string_v<value_type>
+    {
+        return std::to_string(rand());
+    }
+    value_type generateValue() const
+        requires traits::is_std_string_view_v<value_type>
+    {
+        return std::string_view("test");
     }
 };
 
@@ -164,16 +177,15 @@ using ContainerTypes = ::testing::Types<
     std::vector<EnumType>,
     std::vector<std::string>,
     std::vector<std::string_view>,
+    std::vector<std::shared_ptr<UserType>>,
 
     std::deque<int>,
     std::deque<float>,
     std::deque<char>,
     std::deque<EnumType>,
     std::deque<std::string>,
-    std::deque<std::string_view>
-
-    // containers::GuardedSequenceContainer<std::vector<int>>,
-    // containers::GuardedSequenceContainer<std::deque<int>>
+    std::deque<std::string_view>,
+    std::deque<std::shared_ptr<UserType>>
     >;
 TYPED_TEST_SUITE(GuardedSequenceContainerTests, ContainerTypes);
 

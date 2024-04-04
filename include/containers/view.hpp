@@ -73,7 +73,7 @@ struct View
     }
 
     template <typename TIteratorType>
-    requires std::same_as<TIteratorType, IteratorType>
+        requires std::same_as<std::remove_cv_t<TIteratorType>, std::remove_cv_t<IteratorType>>
     bool inView(TIteratorType position)
     {
         for (auto it = m_viewBegin; it != m_viewEnd; ++it)

@@ -21,6 +21,7 @@
 
 #include <deque>
 #include <iterator>
+#include <list>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -103,6 +104,13 @@ struct is_deque : std::false_type {};
 
 template <typename T>
 struct is_deque<std::deque<T>> : std::true_type {};
+
+
+template <typename T>
+struct is_list : std::false_type {};
+
+template <typename T>
+struct is_list<std::list<T>> : std::true_type {};
 
 /// \}
 

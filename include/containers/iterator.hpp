@@ -155,16 +155,13 @@ private:
     BaseIterator m_end;
     value_type m_invalidElement = {};
 
+    bool isValid(const std::floating_point auto& element) const
+    {
+        return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
+    }
     bool isValid(const value_type& element) const
     {
-        if constexpr (std::is_floating_point_v<value_type>)
-        {
-            return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
-        }
-        else
-        {
-            return m_invalidElement != element;
-        }
+        return m_invalidElement != element;
     }
 };
 

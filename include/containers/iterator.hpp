@@ -25,6 +25,9 @@
 namespace containers
 {
 
+template <class N>
+concept non_floating_point = !std::floating_point<N>;
+
 /// An iterator which wraps an iterator type of a container. The iterator ensures that the element of
 /// the container it points to is always valid, unless it points to the end iterator.
 template <class Traits>
@@ -155,11 +158,13 @@ private:
     BaseIterator m_end;
     value_type m_invalidElement = {};
 
-    bool isValid(const std::floating_point auto& element) const
+    bool isValid(const value_type& element) const
+        requires std::floating_point<value_type>
     {
         return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
     }
     bool isValid(const value_type& element) const
+        requires non_floating_point<value_type>
     {
         return m_invalidElement != element;
     }

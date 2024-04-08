@@ -30,19 +30,18 @@ concept non_floating_point = !std::floating_point<N>;
 
 /// An iterator which wraps an iterator type of a container. The iterator ensures that the element of
 /// the container it points to is always valid, unless it points to the end iterator.
-template <class Traits>
+template <class Container, class BaseIterator, class Pointer, class Reference>
 class IteratorWrap
 {
-    using SelfType = IteratorWrap<Traits>;
+    using SelfType = IteratorWrap<Container, BaseIterator, Pointer, Reference>;
 
 public:
-    using BaseIterator      = typename Traits::BaseIterator;
     using iterator_category = typename BaseIterator::iterator_category;
     using value_type        = typename BaseIterator::value_type;
     using difference_type   = typename BaseIterator::difference_type;
-    using pointer           = typename Traits::Pointer;
-    using reference         = typename Traits::Reference;
-    using size_type         = typename Traits::SizeType;
+    using pointer           = Pointer;
+    using reference         = Reference;
+    using size_type         = typename Container::size_type;
 
     /// Default constructor.
     IteratorWrap() = default;
@@ -158,13 +157,11 @@ private:
     BaseIterator m_end;
     value_type m_invalidElement = {};
 
-    bool isValid(const value_type& element) const
-        requires std::floating_point<value_type>
+    bool isValid(const std::floating_point auto& element) const
     {
         return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
     }
-    bool isValid(const value_type& element) const
-        requires non_floating_point<value_type>
+    bool isValid(const non_floating_point auto& element) const
     {
         return m_invalidElement != element;
     }

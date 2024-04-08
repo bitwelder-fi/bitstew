@@ -76,14 +76,15 @@ class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSeq
     };
 
 public:
-    using Container         = ContainerType;
-    using value_type        = typename ContainerType::value_type;
-    using reference         = typename ContainerType::reference;
-    using const_reference   = typename ContainerType::const_reference;
-    using size_type         = typename ContainerType::size_type;
-    using difference_type   = typename ContainerType::difference_type;
-    using pointer           = typename ContainerType::pointer;
-    using const_pointer     = typename ContainerType::const_pointer;
+    using GuardedContainer  = ContainerType;
+
+    using value_type        = typename GuardedContainer::value_type;
+    using reference         = typename GuardedContainer::reference;
+    using const_reference   = typename GuardedContainer::const_reference;
+    using size_type         = typename GuardedContainer::size_type;
+    using difference_type   = typename GuardedContainer::difference_type;
+    using pointer           = typename GuardedContainer::pointer;
+    using const_pointer     = typename GuardedContainer::const_pointer;
 
     /// Creates a guarded vector container.
     explicit GuardedSequenceContainer(value_type invalidElement = value_type()) :
@@ -95,16 +96,16 @@ public:
     /// \{
 
     /// The forward iterator of the guarded container.
-    using iterator = IteratorWrap<ForwardIteratorTraits<SelfType>>;
+    using iterator = IteratorWrap<SelfType, typename GuardedContainer::iterator, pointer, reference>;
 
     /// The forward const iterator of the guarded container.
-    using const_iterator = IteratorWrap<ForwardIteratorTraits<const SelfType>>;
+    using const_iterator = IteratorWrap<const SelfType, typename GuardedContainer::const_iterator, const_pointer, const_reference>;
 
     /// The reverse iterator of the guarded container.
-    using reverse_iterator = IteratorWrap<ReverseIteratorTraits<SelfType>>;
+    using reverse_iterator = IteratorWrap<SelfType, typename GuardedContainer::reverse_iterator, pointer, reference>;
 
     /// The reverse const iterator of the guarded container.
-    using const_reverse_iterator = IteratorWrap<ReverseIteratorTraits<const SelfType>>;
+    using const_reverse_iterator = IteratorWrap<const SelfType, typename GuardedContainer::const_reverse_iterator, const_pointer, const_reference>;
 
     iterator begin()
     {

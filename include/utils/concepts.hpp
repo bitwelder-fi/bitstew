@@ -31,6 +31,9 @@ concept raw_pointer = std::is_pointer_v<P>;
 template <class S>
 concept smart_pointer = traits::is_smart_pointer_v<S>;
 
+template <class P>
+concept unique_pointer = traits::is_unique_pointer_v<P>;
+
 template <class T>
 concept std_string = traits::is_std_string_v<T>;
 

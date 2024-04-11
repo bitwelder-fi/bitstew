@@ -20,13 +20,17 @@
 #define CONTAINERS_ITERATOR_HPP
 
 #include <utils/type_traits.hpp>
-#include <cmath>
 
 namespace containers
 {
 
+namespace
+{
+
 template <class N>
 concept non_floating_point = !std::floating_point<N>;
+
+}
 
 /// An iterator which wraps an iterator type of a container. The iterator ensures that the element of
 /// the container it points to is always valid, unless it points to the end iterator.
@@ -50,12 +54,12 @@ public:
     /// the first valid element of the container, between the pos and end.
     /// \param pos The position of the iterator.
     /// \param end The end position of the iterator.
-    IteratorWrap(BaseIterator pos, BaseIterator end, value_type invalidElement) :
+    IteratorWrap(Container& container, BaseIterator pos, BaseIterator end) :
+        m_container(&container),
         m_pos(pos),
-        m_end(end),
-        m_invalidElement(invalidElement)
+        m_end(end)
     {
-        while (m_pos != m_end && !isValid(*m_pos))
+        while (m_pos != m_end && !m_container->isValid(*m_pos))
         {
             ++m_pos;
         }
@@ -70,7 +74,7 @@ public:
         }
         while (++m_pos != m_end)
         {
-            if (isValid(*m_pos))
+            if (m_container->isValid(*m_pos))
             {
                 return *this;
             }
@@ -90,7 +94,7 @@ public:
     /// Decrement operator.
     IteratorWrap& operator--()
     {
-        while (!isValid(*(--m_pos)));
+        while (!m_container->isValid(*(--m_pos)));
 
         return *this;
     }
@@ -147,25 +151,32 @@ public:
     }
 
     /// Difference operator.
-    friend size_type operator-(const SelfType& lhs, const SelfType& rhs)
+    friend size_type operator-(const SelfType& last, const SelfType& first)
     {
-        return lhs.m_pos - rhs.m_pos;
+        size_type diff = 0;
+        for (auto it = first; it != last; ++it)
+        {
+            ++diff;
+        }
+        return diff;
     }
 
 private:
+    Container* m_container = nullptr;
     BaseIterator m_pos;
     BaseIterator m_end;
-    value_type m_invalidElement = {};
-
-    bool isValid(const std::floating_point auto& element) const
-    {
-        return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
-    }
-    bool isValid(const non_floating_point auto& element) const
-    {
-        return m_invalidElement != element;
-    }
 };
+
+/// Increment operator, returns the iterator pointing to an element at \a distance from the position.
+/// \param position The iterator at position.
+/// \param distance The distance to which to move the position.
+/// \return The iterator pointing to the position at distance.
+template <class Iterator>
+Iterator operator+(Iterator position, typename Iterator::size_type distance)
+{
+    position += distance;
+    return position;
+}
 
 }
 

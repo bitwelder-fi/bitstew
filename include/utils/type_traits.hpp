@@ -139,11 +139,32 @@ inline constexpr bool is_std_string_view_v = is_std_string_view<T>::value;
 /// \name Iterator testers
 /// \{
 
+template <class Iter, typename = void>
+struct is_iterator : std::false_type {};
+
+template <class Iter>
+struct is_iterator<Iter, std::void_t<
+                                    typename Iter::value_type,
+                                    typename Iter::difference_type,
+                                    typename Iter::iterator_category,
+                                    decltype(++std::declval<Iter&>()), // incrementable
+                                    decltype(*std::declval<Iter&>()), // dereferencable
+                                    decltype(std::declval<Iter&>() == std::declval<Iter&>()) // comparable
+                                     >> : std::true_type {};
+
+
 template <class IT>
 struct is_const_iterator
 {
-    static constexpr bool value = std::is_const_v<typename std::remove_pointer_t<typename std::iterator_traits<IT>::pointer>>;
+    static constexpr bool value = is_iterator<IT>::value && std::is_const_v<typename std::remove_pointer_t<typename std::iterator_traits<IT>::pointer>>;
 };
+
+template <typename IT>
+struct is_reverse_iterator : std::false_type {};
+
+template <typename IT>
+struct is_reverse_iterator<std::reverse_iterator<IT>> : std::integral_constant<bool, !is_reverse_iterator<IT>::value> {};
+
 /// \}
 
 }

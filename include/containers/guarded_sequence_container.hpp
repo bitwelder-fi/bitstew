@@ -21,6 +21,7 @@
 
 #include <containers/iterator.hpp>
 #include <containers/view.hpp>
+#include <utils/concepts.hpp>
 #include <utils/type_traits.hpp>
 #include <utils/reference_counted.hpp>
 
@@ -30,6 +31,14 @@
 
 namespace containers
 {
+
+namespace
+{
+
+template <class T>
+concept generic_resetable = !concepts::smart_pointer<T>;
+
+}
 
 template <class T>
 concept guardable_sequence_container = !traits::is_list<T>::value;
@@ -92,6 +101,40 @@ public:
     {
     }
 
+    /// \name Invalid element
+    /// \{
+
+    /// Initializes an element as invalid from the point of view of the container.
+    /// \param element The smart pointer element to invalidate.
+    void invalidate(concepts::smart_pointer auto& element)
+    {
+        element.reset();
+    }
+    /// Initializes an element as invalid from the point of view of the container.
+    /// \param element The non-smart pointer element to invalidate.
+    void invalidate(generic_resetable auto& element)
+    {
+        element = m_invalidElement;
+    }
+
+    /// Checks whether an element is considered as invalid by the container.
+    /// Floating-point version.
+    /// \param element The element value to check.
+    /// \return If the element is valid, returns \e true, otherwise \e false.
+    bool isValid(const std::floating_point auto& element) const
+    {
+        return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
+    }
+
+    /// Checks whether an element is considered as invalid by the container.
+    /// \param element The element value to check.
+    /// \return If the element is valid, returns \e true, otherwise \e false.
+    bool isValid(const non_floating_point auto& element) const
+    {
+        return m_invalidElement != element;
+    }
+    /// \}
+
     /// \name Iterators
     /// \{
 
@@ -109,51 +152,51 @@ public:
 
     iterator begin()
     {
-        return iterator(m_container.begin(), m_container.end(), m_invalidElement);
+        return iterator(*this, m_container.begin(), m_container.end());
     }
     const_iterator begin() const
     {
-        return const_iterator(m_container.begin(), m_container.end(), m_invalidElement);
+        return cbegin();
     }
     const_iterator cbegin() const
     {
-        return const_iterator(m_container.cbegin(), m_container.cend(), m_invalidElement);
+        return const_iterator(*this, m_container.cbegin(), m_container.cend());
     }
     reverse_iterator rbegin()
     {
-        return reverse_iterator(m_container.rbegin(), m_container.rend(), m_invalidElement);
+        return reverse_iterator(*this, m_container.rbegin(), m_container.rend());
     }
     const_reverse_iterator rbegin() const
     {
-        return const_reverse_iterator(m_container.rbegin(), m_container.rend(), m_invalidElement);
+        return crbegin();
     }
     const_reverse_iterator crbegin() const
     {
-        return const_reverse_iterator(m_container.crbegin(), m_container.crend(), m_invalidElement);
+        return const_reverse_iterator(*this, m_container.crbegin(), m_container.crend());
     }
     iterator end()
     {
-        return iterator(m_container.end(), m_container.end(), m_invalidElement);
+        return iterator(*this, m_container.end(), m_container.end());
     }
     const_iterator end() const
     {
-        return const_iterator(m_container.end(), m_container.end(), m_invalidElement);
+        return cend();
     }
     const_iterator cend() const
     {
-        return const_iterator(m_container.cend(), m_container.cend(), m_invalidElement);
+        return const_iterator(*this, m_container.cend(), m_container.cend());
     }
     reverse_iterator rend()
     {
-        return reverse_iterator(m_container.rend(), m_container.rend(), m_invalidElement);
+        return reverse_iterator(*this, m_container.rend(), m_container.rend());
     }
     const_reverse_iterator rend() const
     {
-        return const_reverse_iterator(m_container.rend(), m_container.rend(), m_invalidElement);
+        return crend();
     }
     const_reverse_iterator crend() const
     {
-        return const_reverse_iterator(m_container.crend(), m_container.crend(), m_invalidElement);
+        return const_reverse_iterator(*this, m_container.crend(), m_container.crend());
     }
 
     /// Converts a const iterator to a non-const iterator.
@@ -192,6 +235,13 @@ public:
         return std::distance(begin(), end());
     }
 
+    /// Returns the effective size of the container, which is the size of the guarded container that
+    /// includes the invalid elements.
+    size_type effectiveSize() const
+    {
+        return m_container.size();
+    }
+
     /// \name Modifiers
     /// \{
 
@@ -204,7 +254,7 @@ public:
         if (m_guard)
         {
             std::for_each(m_container.begin(), m_container.end(),
-                          [this](auto& item) { item = m_invalidElement; });
+                          [this](auto& item) { resetElement(item); });
         }
         else
         {
@@ -220,6 +270,7 @@ public:
     /// \return On success, returns the iterator pointing to the inserted item. On failure returns a
     ///         nullopt.
     std::optional<iterator> insert(const_iterator position, const value_type& item)
+        requires std::is_copy_constructible_v<value_type>
     {
         if (m_guard && m_guard->inView(position))
         {
@@ -227,7 +278,7 @@ public:
         }
 
         auto result = m_container.insert(position, item);
-        return iterator(result, m_container.end(), m_invalidElement);
+        return iterator(*this, result, m_container.end());
     }
 
     /// Inserts an item at position. The operation fails if the insert position is inside
@@ -245,7 +296,7 @@ public:
         }
 
         auto result = m_container.insert(position, std::forward<value_type>(item));
-        return iterator(result, m_container.end(), m_invalidElement);
+        return iterator(*this, result, m_container.end());
     }
 
     /// Erases or resets the item at position.
@@ -276,8 +327,8 @@ public:
             if (m_guard->inView(position))
             {
                 auto pos = toIterator(position);
-                *pos = m_invalidElement;
-                return iterator(pos, m_container.end(), m_invalidElement);
+                resetElement(*pos);
+                return iterator(*this, pos, m_container.end());
             }
 
             // Erase outside of the view.
@@ -286,50 +337,7 @@ public:
         }
 
         auto it = m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
-        return iterator(it, m_container.end(), m_invalidElement);
-    }
-
-    std::optional<iterator> erase(iterator first, iterator last)
-    {
-        if (m_guard)
-        {
-            auto baseFirst = static_cast<typename ContainerType::iterator>(first);
-            auto baseLast = static_cast<typename ContainerType::iterator>(last);
-
-            auto viewBegin = static_cast<typename ContainerType::iterator>(toIterator(m_guard->begin()));
-            auto viewEnd = static_cast<typename ContainerType::iterator>(toIterator(m_guard->end()));
-
-            // auto itBegin = first;
-            // auto itEnd = last;
-
-            // std::advance(itBegin, m_guard)
-
-
-
-            // const auto firstIn = m_guard->inView(first);
-            // const auto lastIn = m_guard->inView(last);
-
-            // if (firstIn && lastIn)
-            // {
-            //     for (auto it = first; it != last; ++it)
-            //     {
-            //         *it = m_invalidElement;
-            //     }
-            //     return last;
-            // }
-
-            // Erase outside of the view.
-            m_container.erase(static_cast<typename ContainerType::iterator>(first), static_cast<typename ContainerType::iterator>(last));
-            return {};
-        }
-
-        auto it = m_container.erase(static_cast<typename ContainerType::iterator>(first), static_cast<typename ContainerType::iterator>(last));
-        return iterator(it, m_container.end(), m_invalidElement);
-    }
-
-    std::optional<iterator> erase(const_iterator first, const_iterator last)
-    {
-        return erase(toIterator(first), toIterator(last));
+        return iterator(*this, it, m_container.end());
     }
 
     /// Adds an element at the end of the container.
@@ -351,6 +359,15 @@ private:
     GuardedView m_guard;
     value_type m_invalidElement = {};
 
+    void resetElement(concepts::smart_pointer auto& element)
+    {
+        element.reset();
+    }
+    void resetElement(generic_resetable auto& element)
+    {
+        element = m_invalidElement;
+    }
+
     /// Method called by ReferenceCountLockable<> when the container gets locked the first time.
     GuardedViewType acquireResources()
     {
@@ -364,7 +381,7 @@ private:
     /// Method called by ReferenceCountLockable<> when the container gets fully unlocked.
     void releaseResources()
     {
-        auto predicate = [this](auto& item) { return item == m_invalidElement; };
+        auto predicate = [this](auto& item) { return !this->isValid(item); };
         m_container.erase(std::remove_if(m_container.begin(), m_container.end(), predicate), m_container.end());
 
         m_guard.reset();

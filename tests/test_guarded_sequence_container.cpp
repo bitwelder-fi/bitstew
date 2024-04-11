@@ -54,6 +54,8 @@ class GuardedSequenceContainerTests : public DomainTestEnvironment
 {
 protected:
     using value_type = typename BaseContainerType::value_type;
+    using reference = typename BaseContainerType::reference;
+    using const_reference = typename BaseContainerType::const_reference;
     using GuardedContainer = containers::GuardedSequenceContainer<BaseContainerType>;
     using size_type = typename GuardedContainer::size_type;
     using Guard = containers::LockView<GuardedContainer>;
@@ -83,6 +85,11 @@ protected:
                 this->m_container->push_back(generateValue());
             }
         }
+    }
+
+    reference at(size_type index)
+    {
+        return *(this->m_container->begin() + index);
     }
 
     auto getInvalidElement() const
@@ -165,6 +172,21 @@ protected:
         requires traits::is_std_string_view_v<value_type>
     {
         return std::string_view("test");
+    }
+};
+
+
+template <typename BaseContainerType>
+using GuardedSequenceContainerMovableTests = GuardedSequenceContainerTests<BaseContainerType>;
+
+template <typename BaseContainerType>
+class GuardedSequenceContainerViewTests : public GuardedSequenceContainerTests<BaseContainerType>
+{
+protected:
+    void SetUp() override
+    {
+        GuardedSequenceContainerTests<BaseContainerType>::SetUp();
+        this->fillUp(10);
     }
 };
 
@@ -321,6 +343,18 @@ TYPED_TEST(GuardedSequenceContainerTests, clearNotEmptyGuarded)
     EXPECT_EQ(0u, this->m_container->size());
 }
 
+TYPED_TEST(GuardedSequenceContainerTests, clearNotEmptyGuardedEffectiveSizeDiffers)
+{
+    this->fillUp(10);
+    {
+        auto guard = typename TestFixture::Guard(*this->m_container);
+        this->m_container->clear();
+        EXPECT_EQ(0u, this->m_container->size());
+        EXPECT_EQ(10u, this->m_container->effectiveSize());
+    }
+    EXPECT_EQ(0u, this->m_container->effectiveSize());
+}
+
 // Erase
 TYPED_TEST(GuardedSequenceContainerTests, eraseNotGuarded)
 {
@@ -364,4 +398,236 @@ TYPED_TEST(GuardedSequenceContainerTests, eraseOuterGuardedArea)
     auto result = this->m_container->erase(pos);
     EXPECT_EQ(std::nullopt, result);
     EXPECT_EQ(19, this->m_container->size());
+}
+
+/********************************************************************************************************************************
+ * Non-movable container tests.
+ */
+using MovableContainerTypes = ::testing::Types<
+    std::vector<std::unique_ptr<UserType>>,
+    std::deque<std::unique_ptr<UserType>>
+    >;
+TYPED_TEST_SUITE(GuardedSequenceContainerMovableTests, MovableContainerTypes);
+
+// Size
+TYPED_TEST(GuardedSequenceContainerMovableTests, size)
+{
+    EXPECT_EQ(0u, this->m_initialSize);
+}
+
+// Push back
+TYPED_TEST(GuardedSequenceContainerMovableTests, push_back)
+{
+    this->m_container->push_back(this->generateValue());
+    EXPECT_GT(this->m_container->size(), this->m_initialSize);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, push_back_whenGuarded)
+{
+    auto guard = typename TestFixture::Guard(*this->m_container);
+    this->m_container->push_back(this->generateValue());
+    EXPECT_GT(this->m_container->size(), this->m_initialSize);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, insertMove)
+{
+    auto result = this->m_container->insert(this->m_container->cbegin(), std::move(this->generateValue()));
+    ASSERT_NE(std::nullopt, result);
+    EXPECT_EQ(this->m_container->begin(), *result);
+    EXPECT_EQ(this->m_container->size(), this->m_initialSize + 1);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, insertMoveInGuardedAreaWhenEmpty)
+{
+    auto guard = typename TestFixture::Guard(*this->m_container);
+    auto result = this->m_container->insert(this->m_container->cbegin(), std::move(this->generateValue()));
+    ASSERT_NE(std::nullopt, result);
+    EXPECT_EQ(this->m_container->begin(), *result);
+    EXPECT_EQ(this->m_container->size(), this->m_initialSize + 1);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, insertMoveInGuardedAreaWhenNotEmpty)
+{
+    this->fillUp(1);
+    this->m_initialSize = this->m_container->size();
+    auto guard = typename TestFixture::Guard(*this->m_container);
+
+    auto result = this->m_container->insert(this->m_container->cbegin(), std::move(this->generateValue()));
+    ASSERT_EQ(std::nullopt, result);
+    EXPECT_EQ(this->m_container->size(), this->m_initialSize);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, insertMoveOuterGuardedAreaWhenNotEmpty)
+{
+    this->fillUp(1);
+    this->m_initialSize = this->m_container->size();
+    auto guard = typename TestFixture::Guard(*this->m_container);
+
+    auto result = this->m_container->insert(this->m_container->cend(), std::move(this->generateValue()));
+    ASSERT_NE(std::nullopt, result);
+    EXPECT_EQ(this->m_container->size(), this->m_initialSize + 1);
+}
+
+// Clear
+TYPED_TEST(GuardedSequenceContainerMovableTests, clearEmpty)
+{
+    EXPECT_EQ(0u, this->m_container->size());
+    this->m_container->clear();
+    EXPECT_EQ(0u, this->m_container->size());
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, clearNotEmpty)
+{
+    this->fillUp(1);
+
+    EXPECT_NE(0u, this->m_container->size());
+    this->m_container->clear();
+    EXPECT_EQ(0u, this->m_container->size());
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, clearNotEmptyGuarded)
+{
+    this->fillUp(10);
+    auto guard = typename TestFixture::Guard(*this->m_container);
+
+    EXPECT_NE(0u, this->m_container->size());
+    this->m_container->clear();
+    EXPECT_EQ(0u, this->m_container->size());
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, clearNotEmptyGuardedEffectiveSizeDiffers)
+{
+    this->fillUp(10);
+    {
+        auto guard = typename TestFixture::Guard(*this->m_container);
+        this->m_container->clear();
+        EXPECT_EQ(0u, this->m_container->size());
+        EXPECT_EQ(10u, this->m_container->effectiveSize());
+    }
+    EXPECT_EQ(0u, this->m_container->effectiveSize());
+}
+
+// Erase
+TYPED_TEST(GuardedSequenceContainerMovableTests, eraseNotGuarded)
+{
+    this->fillUp(10);
+    auto pos = this->m_container->cbegin() + 4;
+
+    auto result = this->m_container->erase(pos);
+    ASSERT_NE(std::nullopt, result);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, eraseInGuardedArea)
+{
+    this->fillUp(10);
+    auto pos = this->m_container->cbegin() + 4;
+    auto guard = typename TestFixture::Guard(*this->m_container);
+
+    auto result = this->m_container->erase(pos);
+    ASSERT_NE(std::nullopt, result);
+}
+
+TYPED_TEST(GuardedSequenceContainerMovableTests, eraseOuterGuardedArea)
+{
+    this->fillUp(10);
+    auto guard = typename TestFixture::Guard(*this->m_container);
+    this->fillUp(10);
+    ASSERT_EQ(20, this->m_container->size());
+
+    auto pos = this->m_container->cbegin() + 12;
+
+    auto result = this->m_container->erase(pos);
+    EXPECT_EQ(std::nullopt, result);
+    EXPECT_EQ(19, this->m_container->size());
+}
+
+/********************************************************************************************************************************
+ * Iterator and view tests.
+ */
+using ViewContainerTypes = ::testing::Types<
+    std::vector<int>,
+    std::vector<float>,
+    std::vector<char>,
+    std::vector<EnumType>,
+    std::vector<std::string>,
+    std::vector<std::string_view>,
+    std::vector<std::shared_ptr<UserType>>,
+    std::vector<std::unique_ptr<UserType>>,
+
+    std::deque<int>,
+    std::deque<float>,
+    std::deque<char>,
+    std::deque<EnumType>,
+    std::deque<std::string>,
+    std::deque<std::string_view>,
+    std::deque<std::shared_ptr<UserType>>
+    >;
+TYPED_TEST_SUITE(GuardedSequenceContainerViewTests, ViewContainerTypes);
+// Iterators
+TYPED_TEST(GuardedSequenceContainerViewTests, iterate)
+{
+    auto count = 0;
+    for (auto& it : *(this->m_container))
+    {
+        MAYBE_UNUSED(it);
+        ++count;
+    }
+    EXPECT_EQ(10, count);
+}
+
+TYPED_TEST(GuardedSequenceContainerViewTests, iteratorWalksThruValidElements)
+{
+    this->m_container->invalidate(this->at(5));
+
+    auto count = 0;
+    for (auto& it : *(this->m_container))
+    {
+        MAYBE_UNUSED(it);
+        ++count;
+    }
+    EXPECT_EQ(9, count);
+}
+
+// Views
+TYPED_TEST(GuardedSequenceContainerViewTests, viewAPI)
+{
+    auto view = containers::View<typename TestFixture::GuardedContainer, typename TestFixture::GuardedContainer::iterator>(this->m_container->begin(), this->m_container->end());
+    EXPECT_EQ(10, view.size());
+    EXPECT_EQ(view.begin(), this->m_container->begin());
+    EXPECT_EQ(view.end(), this->m_container->end());
+}
+
+TYPED_TEST(GuardedSequenceContainerViewTests, const_viewAPI)
+{
+    auto view = containers::View<typename TestFixture::GuardedContainer, typename TestFixture::GuardedContainer::const_iterator>(this->m_container->cbegin(), this->m_container->cend());
+    EXPECT_EQ(10, view.size());
+    EXPECT_EQ(view.begin(), this->m_container->cbegin());
+    EXPECT_EQ(view.end(), this->m_container->cend());
+}
+
+TYPED_TEST(GuardedSequenceContainerViewTests, reverse_viewAPI)
+{
+    auto view = containers::View<typename TestFixture::GuardedContainer, typename TestFixture::GuardedContainer::reverse_iterator>(this->m_container->rbegin(), this->m_container->rend());
+    EXPECT_EQ(10, view.size());
+    EXPECT_EQ(view.begin(), this->m_container->rbegin());
+    EXPECT_EQ(view.end(), this->m_container->rend());
+}
+
+TYPED_TEST(GuardedSequenceContainerViewTests, const_reverse_viewAPI)
+{
+    auto view = containers::View<typename TestFixture::GuardedContainer, typename TestFixture::GuardedContainer::const_reverse_iterator>(this->m_container->crbegin(), this->m_container->crend());
+    EXPECT_EQ(10, view.size());
+    EXPECT_EQ(view.begin(), this->m_container->crbegin());
+    EXPECT_EQ(view.end(), this->m_container->crend());
+}
+
+
+TYPED_TEST(GuardedSequenceContainerViewTests, expandGuardedContainerExcludedFromView)
+{
+    auto guard = typename TestFixture::Guard(*this->m_container);
+    this->fillUp(5);
+    EXPECT_EQ(10u, guard.size());
+
+    this->m_container->invalidate(this->at(8));
+    EXPECT_EQ(9u, guard.size());
 }

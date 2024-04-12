@@ -161,6 +161,23 @@ public:
         return diff;
     }
 
+    friend bool operator <(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos < rhs.m_pos;
+    }
+    friend bool operator <=(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos <= rhs.m_pos;
+    }
+    friend bool operator >(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos > rhs.m_pos;
+    }
+    friend bool operator >=(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos >= rhs.m_pos;
+    }
+
 private:
     Container* m_container = nullptr;
     BaseIterator m_pos;

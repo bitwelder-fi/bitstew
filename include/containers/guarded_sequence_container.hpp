@@ -39,10 +39,10 @@ namespace
 template <class T>
 concept generic_resetable = !concepts::smart_pointer<T>;
 
-}
-
 template <class T>
 concept guardable_sequence_container = !traits::is_list<T>::value;
+
+}
 
 /// A guarded sequence container is a reference counted sequence container, which guards the container against
 /// deep content changes. Used together with views and locks, you can build logic where you can safely remove
@@ -60,30 +60,6 @@ class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSeq
     friend class utils::ReferenceCountLockable<SelfType>;
 
     ContainerType m_container;
-
-    /// Forward iterator traits.
-    template <class TContainer>
-    struct ForwardIteratorTraits
-    {
-        static constexpr bool isConst = std::is_const_v<TContainer>;
-
-        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_iterator, typename ContainerType::iterator>;
-        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
-        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
-        using SizeType = typename TContainer::size_type;
-    };
-
-    /// Reverse iterator traits.
-    template <class TContainer>
-    struct ReverseIteratorTraits
-    {
-        static constexpr bool isConst = std::is_const_v<TContainer>;
-
-        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_reverse_iterator, typename ContainerType::reverse_iterator>;
-        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
-        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
-        using SizeType = typename TContainer::size_type;
-    };
 
 public:
     using GuardedContainer  = ContainerType;
@@ -250,7 +226,6 @@ public:
     /// otgherwise it removes the elements of the container. The container will get cleared once it
     /// gets unguarded.
     void clear()
-        // requires std::is_const_v<value_type>
     {
         if (m_guard)
         {
@@ -309,9 +284,7 @@ public:
     ///         position falls outside of the locked view, returns std::nullopt.
     std::optional<iterator> erase(iterator position)
     {
-        // Convert to const_iterator, then erase.
-        auto pos = toConstIterator(position);
-        return erase(pos);
+        return erase(static_cast<const_iterator>(position));
     }
 
     /// Erases or resets the item at position.
@@ -389,6 +362,6 @@ private:
     }
 };
 
-} // namespace utils
+} // namespace containers
 
 #endif // CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP

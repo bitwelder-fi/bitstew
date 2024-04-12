@@ -26,6 +26,7 @@
 #include <utils/reference_counted.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <utility>
 

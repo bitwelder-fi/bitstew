@@ -34,16 +34,6 @@ namespace
 template <class IL, class IR>
 concept same_iterator = std::same_as<IL, IR>;
 
-// template <class IL, class IR>
-// concept lconst_iterator = std::is_const_v<IL> &&
-//                           !std::is_const_v<IR> &&
-//                           std::same_as<std::remove_cvref_t<IL>, std::remove_cv_t<IR>>;
-
-// template <class IL, class IR>
-// concept rconst_iterator = !std::is_const_v<IL> &&
-//                           std::is_const_v<IR> &&
-//                           std::same_as<std::remove_cvref_t<IL>, std::remove_cv_t<IR>>;
-
 }
 
 /// Gets a view of a container and retains the container. The view may differ from the locked view of
@@ -102,34 +92,6 @@ struct View : public std::ranges::view_interface<View<GuardedContainerType, Iter
     {
         return position >= m_viewBegin && position < m_viewEnd;
     }
-
-    // /// Checks whether an iterator is within the view.
-    // /// \tparam TIteratorType The iterator type of the position. This variant requires that the iterator
-    // ///         template argument and this iterator are of the same type, but this is const iterator and
-    // ///         the template argument is not.
-    // /// \param position The position to check.
-    // /// \return If the position is within the view, returns \e true, otherwise \e false.
-    // template <typename TIteratorType = IteratorType>
-    //     requires lconst_iterator<IteratorType, TIteratorType>
-    // bool inView(TIteratorType position)
-    // {
-    //     const auto cposition = static_cast<TIteratorType>(position);
-    //     return cposition >= m_viewBegin && cposition < m_viewEnd;
-    // }
-
-    // /// Checks whether an iterator is within the view.
-    // /// \tparam TIteratorType The iterator type of the position. This variant requires that the iterator
-    // ///         template argument and this iterator are of the same type, but this is not a const iterator
-    // ///         and the template argument is.
-    // /// \param position The position to check.
-    // /// \return If the position is within the view, returns \e true, otherwise \e false.
-    // template <typename TIteratorType = IteratorType>
-    //     requires rconst_iterator<IteratorType, TIteratorType>
-    // bool inView(TIteratorType position)
-    // {
-    //     return position >= static_cast<TIteratorType>(m_viewBegin) && position < static_cast<TIteratorType>(m_viewEnd);
-    // }
-
 private:
     iterator_type m_viewBegin;
     iterator_type m_viewEnd;

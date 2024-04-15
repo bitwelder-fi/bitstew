@@ -62,7 +62,8 @@ void Connection::reset()
 
 
 ObjectExtension::ObjectExtension(std::string_view name) :
-    MetaObject(name)
+    MetaObject(name),
+    m_connections(ConnectionPtr())
 {
 }
 
@@ -162,7 +163,7 @@ void ObjectExtension::disconnectTarget()
     utils::LockGuard<ConnectionContainer> lock(m_connections);
     // The disconnect affects the whole range, so ensure that we use the full connection range, not
     // only the locked.
-    containers::View<ConnectionContainer> view(m_connections);
+    ConnectionContainer::GuardedViewType view(m_connections.cbegin(), m_connections.cend());
     auto self = shared_from_this();
 
     for (auto connection : view)
@@ -186,7 +187,7 @@ void ObjectExtension::disconnect()
     utils::LockGuard<ConnectionContainer> lock(m_connections);
     // The disconnect affects the whole range, so ensure that we use the full connection range, not
     // only the locked.
-    containers::View<ConnectionContainer> view(m_connections);
+    ConnectionContainer::GuardedViewType view(m_connections.cbegin(), m_connections.cend());
     auto self = shared_from_this();
 
     for (auto connection : view)
@@ -212,9 +213,9 @@ void ObjectExtension::disconnect()
 }
 
 
-std::optional<ObjectExtension::ConnectionContainer::Iterator> ObjectExtension::findConnection(Connection& connection)
+std::optional<ObjectExtension::ConnectionContainer::const_iterator> ObjectExtension::findConnection(Connection& connection)
 {
-    containers::View<ConnectionContainer> view(m_connections);
+    ConnectionContainer::GuardedViewType view(m_connections.cbegin(), m_connections.cend());
     auto pos = view.find(connection.shared_from_this());
     if (pos != view.end())
     {

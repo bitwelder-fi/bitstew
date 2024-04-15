@@ -77,8 +77,7 @@ public:
 
 protected:
     /// The container of the connections.
-    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>,
-                                                                     [](const ConnectionPtr& connection) { return connection != nullptr; }>;
+    using ConnectionContainer = containers::GuardedSequenceContainer<std::deque<ConnectionPtr>>;
 
     /// Constructor, creates an object extension with a descriptor passed as argument.
     explicit ObjectExtension(std::string_view name);
@@ -93,7 +92,7 @@ protected:
     /// \param connection The connection to look for.
     /// \return If the connection is valid, and is found, returns the iterator to the connection. On
     ///         failure, returns the end iterator of the connection container.
-    std::optional<ConnectionContainer::Iterator> findConnection(Connection& connecton);
+    std::optional<ConnectionContainer::const_iterator> findConnection(Connection& connecton);
 
     /// Adds a connection to both source and target object extensions. The method fails if the connection
     /// has already been added to the object extensions. The method must be called on source extension.

@@ -21,35 +21,45 @@
 
 #include <utils/type_traits.hpp>
 
-
 namespace containers
 {
 
+namespace
+{
+
+template <class N>
+concept non_floating_point = !std::floating_point<N>;
+
+}
+
 /// An iterator which wraps an iterator type of a container. The iterator ensures that the element of
 /// the container it points to is always valid, unless it points to the end iterator.
-template <class Traits>
+template <class Container, class BaseIterator, class Pointer, class Reference>
 class IteratorWrap
 {
-    using SelfType = IteratorWrap<Traits>;
+    using SelfType = IteratorWrap<Container, BaseIterator, Pointer, Reference>;
 
 public:
-    using BaseIterator      = typename Traits::BaseIterator;
     using iterator_category = typename BaseIterator::iterator_category;
     using value_type        = typename BaseIterator::value_type;
     using difference_type   = typename BaseIterator::difference_type;
-    using pointer           = typename Traits::Pointer;
-    using reference         = typename Traits::Reference;
-    using size_type         = typename Traits::SizeType;
+    using pointer           = Pointer;
+    using reference         = Reference;
+    using size_type         = typename Container::size_type;
+
+    /// Default constructor.
+    IteratorWrap() = default;
 
     /// Constructor. Initializes the iterator for a given position. Adjusts the iterator to point to
     /// the first valid element of the container, between the pos and end.
     /// \param pos The position of the iterator.
     /// \param end The end position of the iterator.
-    IteratorWrap(BaseIterator pos, BaseIterator end) :
+    IteratorWrap(Container& container, BaseIterator pos, BaseIterator end) :
+        m_container(&container),
         m_pos(pos),
         m_end(end)
     {
-        while (m_pos != m_end && !m_traits.valid_element(*m_pos))
+        while (m_pos != m_end && !m_container->isValid(*m_pos))
         {
             ++m_pos;
         }
@@ -58,11 +68,15 @@ public:
     /// Increment operator.
     IteratorWrap& operator++()
     {
+        if (m_pos == m_end)
+        {
+            throw std::out_of_range("out of view range");
+        }
         while (++m_pos != m_end)
         {
-            if (m_traits.valid_element(*m_pos))
+            if (m_container->isValid(*m_pos))
             {
-                break;
+                return *this;
             }
         }
 
@@ -75,6 +89,35 @@ public:
         IteratorWrap retval = *this;
         ++(*this);
         return retval;
+    }
+
+    /// Decrement operator.
+    IteratorWrap& operator--()
+    {
+        while (!m_container->isValid(*(--m_pos)));
+
+        return *this;
+    }
+
+    /// Left-decrement operator.
+    IteratorWrap operator--(int)
+    {
+        IteratorWrap retval = *this;
+        --(*this);
+        return retval;
+    }
+
+    /// Advancing operator.
+    IteratorWrap& operator+=(difference_type distance)
+    {
+        if (distance > 0)
+        {
+            while (distance-- > 0)
+            {
+                ++(*this);
+            }
+        }
+        return *this;
     }
 
     /// Equality comparation operator.
@@ -108,16 +151,49 @@ public:
     }
 
     /// Difference operator.
-    friend size_type operator-(const SelfType& lhs, const SelfType& rhs)
+    friend size_type operator-(const SelfType& last, const SelfType& first)
     {
-        return lhs.m_pos - rhs.m_pos;
+        size_type diff = 0;
+        for (auto it = first; it != last; ++it)
+        {
+            ++diff;
+        }
+        return diff;
+    }
+
+    friend bool operator <(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos < rhs.m_pos;
+    }
+    friend bool operator <=(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos <= rhs.m_pos;
+    }
+    friend bool operator >(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos > rhs.m_pos;
+    }
+    friend bool operator >=(IteratorWrap lhs, IteratorWrap rhs)
+    {
+        return lhs.m_pos >= rhs.m_pos;
     }
 
 private:
-    Traits m_traits;
+    Container* m_container = nullptr;
     BaseIterator m_pos;
     BaseIterator m_end;
 };
+
+/// Increment operator, returns the iterator pointing to an element at \a distance from the position.
+/// \param position The iterator at position.
+/// \param distance The distance to which to move the position.
+/// \return The iterator pointing to the position at distance.
+template <class Iterator>
+Iterator operator+(Iterator position, typename Iterator::size_type distance)
+{
+    position += distance;
+    return position;
+}
 
 }
 

@@ -20,181 +20,217 @@
 #define CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
 
 #include <containers/iterator.hpp>
+#include <containers/view.hpp>
+#include <utils/concepts.hpp>
 #include <utils/type_traits.hpp>
 #include <utils/reference_counted.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <utility>
 
 namespace containers
 {
 
-/// A guarded sequence container is a reference counted sequence container.
-///
-/// Use views to access the container elements. It is recommended to use guard locks to do that. These guards ensure that the
-/// container gets locked before you try to access its content.
-///
-/// The container gets share-locked on read access, and exclusive-locked when you add or remove elements
-/// from the container. Whilst read operations are only possible through views, write operations are
-/// only possible through the interface of the container.
-/// \tparam ElementType
-template <class ContainerType, bool (*ValidElementFunction)(const typename ContainerType::value_type&)>
-class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType, ValidElementFunction>>
+namespace
 {
-    using SelfType = GuardedSequenceContainer<ContainerType, ValidElementFunction>;
+
+template <class T>
+concept generic_resetable = !concepts::smart_pointer<T>;
+
+template <class T>
+concept guardable_sequence_container = !traits::is_list<T>::value;
+
+}
+
+/// A guarded sequence container is a reference counted sequence container, which guards the container against
+/// deep content changes. Used together with views and locks, you can build logic where you can safely remove
+/// content from the container, and continue iterating.
+///
+/// Use views to access the container elements. It is recommended to use guard locks when creating views. These
+/// guards ensure that the container gets guarded before you try to access its content.
+///
+/// \tparam ContainerType The container to guard. This should be a sequence container such as std::vector<> or std::deque<>.
+template <class ContainerType>
+    requires guardable_sequence_container<ContainerType>
+class GuardedSequenceContainer : public utils::ReferenceCountLockable<GuardedSequenceContainer<ContainerType>>
+{
+    using SelfType = GuardedSequenceContainer<ContainerType>;
     friend class utils::ReferenceCountLockable<SelfType>;
 
     ContainerType m_container;
 
-    /// Forward iterator traits.
-    template <class TContainer>
-    struct ForwardIteratorTraits
-    {
-        static constexpr bool isConst = std::is_const_v<TContainer>;
-
-        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_iterator, typename ContainerType::iterator>;
-        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
-        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
-        using SizeType = typename TContainer::size_type;
-
-        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
-    };
-
-    /// Reverse iterator traits.
-    template <class TContainer>
-    struct ReverseIteratorTraits
-    {
-        static constexpr bool isConst = std::is_const_v<TContainer>;
-
-        using BaseIterator = std::conditional_t<isConst, typename ContainerType::const_reverse_iterator, typename ContainerType::reverse_iterator>;
-        using Pointer = std::conditional_t<isConst, typename TContainer::const_pointer, typename TContainer::pointer>;
-        using Reference = std::conditional_t<isConst, typename TContainer::const_reference, typename TContainer::reference>;
-        using SizeType = typename TContainer::size_type;
-
-        bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
-    };
-
 public:
-    using value_type        = typename ContainerType::value_type;
-    using reference         = typename ContainerType::reference;
-    using const_reference   = typename ContainerType::const_reference;
-    using size_type         = typename ContainerType::size_type;
-    using difference_type   = typename ContainerType::difference_type;
-    using pointer           = typename ContainerType::pointer;
-    using const_pointer     = typename ContainerType::const_pointer;
+    using GuardedContainer  = ContainerType;
 
-    bool (*valid_element)(const typename ContainerType::value_type&) = ValidElementFunction;
+    using value_type        = typename GuardedContainer::value_type;
+    using reference         = typename GuardedContainer::reference;
+    using const_reference   = typename GuardedContainer::const_reference;
+    using size_type         = typename GuardedContainer::size_type;
+    using difference_type   = typename GuardedContainer::difference_type;
+    using pointer           = typename GuardedContainer::pointer;
+    using const_pointer     = typename GuardedContainer::const_pointer;
 
     /// Creates a guarded vector container.
-    explicit GuardedSequenceContainer() = default;
+    explicit GuardedSequenceContainer(value_type invalidElement = value_type()) :
+        m_invalidElement(std::move(invalidElement))
+    {
+    }
 
-    /// \name View
+    /// \name Invalid element
+    /// \{
+
+    /// Initializes an element as invalid from the point of view of the container.
+    /// \param element The smart pointer element to invalidate.
+    void invalidate(concepts::smart_pointer auto& element)
+    {
+        element.reset();
+    }
+    /// Initializes an element as invalid from the point of view of the container.
+    /// \param element The non-smart pointer element to invalidate.
+    void invalidate(generic_resetable auto& element)
+    {
+        element = m_invalidElement;
+    }
+
+    /// Checks whether an element is considered as invalid by the container.
+    /// Floating-point version.
+    /// \param element The element value to check.
+    /// \return If the element is valid, returns \e true, otherwise \e false.
+    bool isValid(const std::floating_point auto& element) const
+    {
+        return std::isnan(m_invalidElement) ? !std::isnan(element) : m_invalidElement != element;
+    }
+
+    /// Checks whether an element is considered as invalid by the container.
+    /// \param element The element value to check.
+    /// \return If the element is valid, returns \e true, otherwise \e false.
+    bool isValid(const non_floating_point auto& element) const
+    {
+        return m_invalidElement != element;
+    }
+    /// \}
+
+    /// \name Iterators
     /// \{
 
     /// The forward iterator of the guarded container.
-    using Iterator = IteratorWrap<ForwardIteratorTraits<SelfType>>;
+    using iterator = IteratorWrap<SelfType, typename GuardedContainer::iterator, pointer, reference>;
 
     /// The forward const iterator of the guarded container.
-    using ConstIterator = IteratorWrap<ForwardIteratorTraits<const SelfType>>;
+    using const_iterator = IteratorWrap<const SelfType, typename GuardedContainer::const_iterator, const_pointer, const_reference>;
 
     /// The reverse iterator of the guarded container.
-    using ReverseIterator = IteratorWrap<ReverseIteratorTraits<SelfType>>;
+    using reverse_iterator = IteratorWrap<SelfType, typename GuardedContainer::reverse_iterator, pointer, reference>;
 
     /// The reverse const iterator of the guarded container.
-    using ConstReverseIterator = IteratorWrap<ReverseIteratorTraits<const SelfType>>;
+    using const_reverse_iterator = IteratorWrap<const SelfType, typename GuardedContainer::const_reverse_iterator, const_pointer, const_reference>;
 
-    /// A view of the container. The view range is marked by iterators. You can iterate through the
-    /// view elements, where each position always points to a valid element of the view.
-    template <class IteratorType>
-    struct View
+    iterator begin()
     {
-        explicit View(SelfType& self) :
-            m_viewBegin(IteratorType(self.m_container.begin(), self.m_container.end())),
-            m_viewEnd(IteratorType(self.m_container.end(), self.m_container.end()))
-        {
-        }
-        explicit View(const SelfType& self) :
-            m_viewBegin(IteratorType(self.m_container.begin(), self.m_container.end())),
-            m_viewEnd(IteratorType(self.m_container.end(), self.m_container.end()))
-        {
-        }
-
-        /// \name Iterators
-        /// \{
-        IteratorType begin() const
-        {
-            return m_viewBegin;
-        }
-        IteratorType end() const
-        {
-            return m_viewEnd;
-        }
-        bool inView(IteratorType position) const
-        {
-            for (auto it = m_viewBegin; it != m_viewEnd; ++it)
-            {
-                if (it == position)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        /// \}
-
-        /// name Capacity
-        /// \{
-        bool isEmpty() const
-        {
-            return size() == 0u;
-        }
-        size_type size() const
-        {
-            return std::distance(m_viewBegin, m_viewEnd);
-        }
-        /// \}
-
-        /// \name Element access in a view.
-        /// \{
-
-        /// Find an element in the view.
-        /// \param item The item to find in the view.
-        /// \return On success returns the iterator pointing to the position of the item. On failure
-        ///         returns the end iterator.
-        IteratorType find(const value_type& item)
-        {
-            auto pos = std::find(m_viewBegin, m_viewEnd, item);
-            return IteratorType(pos, m_viewEnd);
-        }
-        /// \}
-
-    protected:
-        IteratorType m_viewBegin;
-        IteratorType m_viewEnd;
-    };
-
-    /// The locked view type of the container.
-    using LockedView = std::optional<View<Iterator>>;
-
-    /// Returns the locked view of the container.
-    LockedView getLockedView() const
+        return iterator(*this, m_container.begin(), m_container.end());
+    }
+    const_iterator begin() const
     {
-        return m_lockedView;
+        return cbegin();
+    }
+    const_iterator cbegin() const
+    {
+        return const_iterator(*this, m_container.cbegin(), m_container.cend());
+    }
+    reverse_iterator rbegin()
+    {
+        return reverse_iterator(*this, m_container.rbegin(), m_container.rend());
+    }
+    const_reverse_iterator rbegin() const
+    {
+        return crbegin();
+    }
+    const_reverse_iterator crbegin() const
+    {
+        return const_reverse_iterator(*this, m_container.crbegin(), m_container.crend());
+    }
+    iterator end()
+    {
+        return iterator(*this, m_container.end(), m_container.end());
+    }
+    const_iterator end() const
+    {
+        return cend();
+    }
+    const_iterator cend() const
+    {
+        return const_iterator(*this, m_container.cend(), m_container.cend());
+    }
+    reverse_iterator rend()
+    {
+        return reverse_iterator(*this, m_container.rend(), m_container.rend());
+    }
+    const_reverse_iterator rend() const
+    {
+        return crend();
+    }
+    const_reverse_iterator crend() const
+    {
+        return const_reverse_iterator(*this, m_container.crend(), m_container.crend());
+    }
+
+    /// Converts a const iterator to a non-const iterator.
+    iterator toIterator(const_iterator position)
+    {
+        auto dist = std::distance(cbegin(), position);
+        auto pos = begin();
+        std::advance(pos, dist);
+        return pos;
+    }
+
+    /// Converts a non-const iterator to a const iterator.
+    const_iterator toConstIterator(iterator position)
+    {
+        auto dist = std::distance(begin(), position);
+        auto pos = cbegin();
+        std::advance(pos, dist);
+        return pos;
+    }
+
+    /// The guarded view type of the container.
+    using GuardedViewType = View<ContainerType, const_iterator>;
+    using GuardedView = std::optional<GuardedViewType>;
+
+    /// Returns the guarded view of the container.
+    GuardedView getGuardedView() const
+    {
+        return m_guard;
     }
 
     /// \}
 
+    /// Returns the size of the container, i.e. the number of valid elements in the container.
+    size_type size() const
+    {
+        return std::distance(begin(), end());
+    }
+
+    /// Returns the effective size of the container, which is the size of the guarded container that
+    /// includes the invalid elements.
+    size_type effectiveSize() const
+    {
+        return m_container.size();
+    }
+
     /// \name Modifiers
     /// \{
 
-    /// Clears the container. If the container is locked, it resets the elements of the container.
-    /// The container will get cleared once it gets fully unlocked.
+    /// Clears the container. If the container is guarded, it resets the elements of the container,
+    /// otgherwise it removes the elements of the container. The container will get cleared once it
+    /// gets unguarded.
     void clear()
     {
-        if (this->isLocked())
+        if (m_guard)
         {
-            std::for_each(m_lockedView->begin(), m_lockedView->end(), [](auto& item) { item = value_type(); });
+            std::for_each(m_container.begin(), m_container.end(),
+                          [this](auto& item) { resetElement(item); });
         }
         else
         {
@@ -203,91 +239,70 @@ public:
     }
 
     /// Inserts a copy of an item at position. The operation fails if the insert position is inside
-    /// the locked view of the container.
+    /// the guarded view of the container.
     ///
     /// \param position The position where to insert the item.
     /// \param item The item to insert.
     /// \return On success, returns the iterator pointing to the inserted item. On failure returns a
     ///         nullopt.
-    std::optional<Iterator> insert(Iterator position, const value_type& item)
+    std::optional<iterator> insert(const_iterator position, const value_type& item)
+        requires std::is_copy_constructible_v<value_type>
     {
-        if (m_lockedView)
+        if (m_guard && m_guard->inView(position))
         {
-            if (m_lockedView->inView(position))
-            {
-                return {};
-            }
-            auto result = m_container.insert(position, item);
-            return Iterator(result, m_container.end());
+            return {};
         }
 
-        return insert(position, item);
+        auto result = m_container.insert(position, item);
+        return iterator(*this, result, m_container.end());
     }
 
     /// Inserts an item at position. The operation fails if the insert position is inside
-    /// the locked view of the container.
+    /// the guarded view of the container.
     ///
     /// \param position The position where to insert the item.
     /// \param item The item to insert.
     /// \return On success, returns the iterator pointing to the inserted item. On failure returns a
     ///         std::nullopt.
-    std::optional<Iterator> insert(Iterator position, value_type&& item)
+    std::optional<iterator> insert(const_iterator position, value_type&& item)
     {
-        if (m_lockedView)
+        if (m_guard && m_guard->inView(position))
         {
-            if (m_lockedView->inView(position))
-            {
-                return {};
-            }
-
-            auto result = m_container.insert(position, std::forward<value_type>(item));
-            return Iterator(result, m_container.end());
-        }
-
-        return insert(position, std::forward<value_type>(item));
-    }
-
-    /// Erases or resets the item at position.
-    /// - The element is reset if the position is within the locked view of the container.
-    /// - The element is removed if the position is outside of the locked view.
-    ///
-    /// \param position The position of the element to erase.
-    /// \return The iterator which follows the erased element. If the container is locked, and the
-    ///         position falls outside of the locked view, returns std::nullopt.
-    std::optional<Iterator> erase(Iterator position)
-    {
-        if (m_lockedView)
-        {
-            if (m_lockedView->inView(position))
-            {
-                *position = value_type();
-                return Iterator(position, m_container.end());
-            }
-
-            // Erase outside of the view.
-            m_container.erase(static_cast<typename ContainerType::iterator>(position));
             return {};
         }
 
-        auto it = m_container.erase(static_cast<typename ContainerType::iterator>(position));
-        return Iterator(it, m_container.end());
+        auto result = m_container.insert(position, std::forward<value_type>(item));
+        return iterator(*this, result, m_container.end());
     }
 
     /// Erases or resets the item at position.
-    /// - The element is reset if the position is within the locked view of the container.
-    /// - The element is removed if the position is outside of the locked view.
+    /// - The element is reset if the position is within the guarded view of the container.
+    /// - The element is removed if the position is outside of the guarded view.
     ///
     /// \param position The position of the element to erase.
-    /// \return The iterator which follows the erased element. If the container is locked, and the
+    /// \return The iterator which follows the erased element. If the container is guarded, and the
     ///         position falls outside of the locked view, returns std::nullopt.
-    std::optional<Iterator> erase(ConstIterator position)
+    std::optional<iterator> erase(iterator position)
     {
-        if (m_lockedView)
+        return erase(static_cast<const_iterator>(position));
+    }
+
+    /// Erases or resets the item at position.
+    /// - The element is reset if the position is within the guarded view of the container.
+    /// - The element is removed if the position is outside of the guarded view.
+    ///
+    /// \param position The position of the element to erase.
+    /// \return The iterator which follows the erased element. If the container is guarded, and the
+    ///         position falls outside of the locked view, returns std::nullopt.
+    std::optional<iterator> erase(const_iterator position)
+    {
+        if (m_guard)
         {
-            if (m_lockedView->inView(position))
+            if (m_guard->inView(position))
             {
-                *position = value_type();
-                return Iterator(position, m_container.end());
+                auto pos = toIterator(position);
+                resetElement(*pos);
+                return iterator(*this, pos, m_container.end());
             }
 
             // Erase outside of the view.
@@ -296,7 +311,7 @@ public:
         }
 
         auto it = m_container.erase(static_cast<typename ContainerType::const_iterator>(position));
-        return Iterator(it, m_container.end());
+        return iterator(*this, it, m_container.end());
     }
 
     /// Adds an element at the end of the container.
@@ -315,28 +330,38 @@ public:
     /// \}
 
 private:
-    LockedView m_lockedView;
+    GuardedView m_guard;
+    value_type m_invalidElement = {};
+
+    void resetElement(concepts::smart_pointer auto& element)
+    {
+        element.reset();
+    }
+    void resetElement(generic_resetable auto& element)
+    {
+        element = m_invalidElement;
+    }
 
     /// Method called by ReferenceCountLockable<> when the container gets locked the first time.
-    View<Iterator> acquireResources()
+    GuardedViewType acquireResources()
     {
-        if (!m_lockedView)
+        if (!m_guard)
         {
-            m_lockedView = std::move(std::make_optional(View<Iterator>(*this)));
+            m_guard = std::move(std::make_optional(GuardedViewType(cbegin(), cend())));
         }
-        return *m_lockedView;
+        return *m_guard;
     }
 
     /// Method called by ReferenceCountLockable<> when the container gets fully unlocked.
     void releaseResources()
     {
-        auto predicate = [this](auto& item) { return !valid_element(item); };
+        auto predicate = [this](auto& item) { return !this->isValid(item); };
         m_container.erase(std::remove_if(m_container.begin(), m_container.end(), predicate), m_container.end());
 
-        m_lockedView.reset();
+        m_guard.reset();
     }
 };
 
-} // namespace utils
+} // namespace containers
 
 #endif // CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP

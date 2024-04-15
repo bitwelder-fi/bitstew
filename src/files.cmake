@@ -39,6 +39,7 @@ template.cpp
 ../include/meta/tasks/thread_pool.hpp
 ../include/pimpl.hpp
 ../include/preprocessor.hpp
+../include/utils/concepts.hpp
 ../include/utils/function_traits.hpp
 ../include/utils/lockable.hpp
 ../include/utils/locks.hpp

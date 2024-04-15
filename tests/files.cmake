@@ -1,5 +1,6 @@
 set(SOURCES
 test_argument_type.cpp
+test_guarded_sequence_container.cpp
 test_invokable.cpp
 test_log.cpp
 test_main.cpp

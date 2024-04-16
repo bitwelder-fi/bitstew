@@ -19,6 +19,8 @@
 #ifndef META_ALGORITHM_HPP
 #define META_ALGORITHM_HPP
 
+#include <vector>
+
 namespace meta
 {
 

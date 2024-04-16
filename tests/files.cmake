@@ -3,6 +3,7 @@ test_argument_type.cpp
 test_guarded_sequence_container.cpp
 test_invokable.cpp
 test_log.cpp
+test_lru_cache.cpp
 test_main.cpp
 test_meta_class.cpp
 test_object.cpp

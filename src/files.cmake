@@ -17,6 +17,8 @@ template.cpp
 ../include/containers/view.hpp
 ../include/meta/arguments/argument.hpp
 ../include/meta/arguments/packaged_arguments.hpp
+../include/meta/cache/lru_cache.hpp
+../include/meta/detail/lru_cache.hpp
 ../include/meta/detail/packaged_arguments.hpp
 ../include/meta/detail/safe_queue.hpp
 ../include/meta/forwards.hpp

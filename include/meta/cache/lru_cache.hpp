@@ -24,7 +24,6 @@
 
 #include <chrono>
 #include <utility>
-#include <vector>
 
 namespace meta
 {
@@ -124,8 +123,7 @@ public:
     std::size_t size()
     {
         std::lock_guard<Mutex> lock(m_mutex);
-        m_cache.purge();
-        return m_cache.size();
+        return m_cache.cacheCount.load();
     }
 
     /// Returns the non-expired cached elements.

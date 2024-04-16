@@ -22,6 +22,7 @@
 #include <meta/meta_api.hpp>
 #include <meta/utility/scope_value.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <map>
@@ -66,6 +67,7 @@ struct META_TEMPLATE_API TtlCache
 
     const std::size_t capacity;
     const TtlClock::duration ttl;
+    std::atomic_size_t cacheCount = 0u;
 
     explicit TtlCache(std::size_t capacity, TtlClock::duration ttl) :
         capacity(capacity),
@@ -88,6 +90,7 @@ struct META_TEMPLATE_API TtlCache
             const auto expiryTime = node.expiryTime;
             m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
             m_timeBuffer.insert(std::make_pair(expiryTime, key));
+            ++cacheCount;
             return true;
         }
 
@@ -107,6 +110,7 @@ struct META_TEMPLATE_API TtlCache
     {
         if (auto cacheIt = m_cache.find(key); cacheIt != m_cache.end())
         {
+            // TODO: if the value had expired, remove and leave.
             m_timeBuffer.erase(cacheIt->second.expiryTime);
             cacheIt->second.update();
             m_timeBuffer.insert(std::make_pair(cacheIt->second.expiryTime, key));
@@ -122,13 +126,14 @@ struct META_TEMPLATE_API TtlCache
         if (pos == m_timeBuffer.end())
         {
             // All expired.
-            m_timeBuffer.clear();
-            m_cache.clear();
+            clear();
             return;
         }
+
         for (auto it = m_timeBuffer.begin(); it != pos; ++it)
         {
             m_cache.erase(it->second);
+            --cacheCount;
         }
         // Remove time stamps.
         m_timeBuffer.erase(m_timeBuffer.begin(), pos);
@@ -138,6 +143,7 @@ struct META_TEMPLATE_API TtlCache
     {
         m_cache.clear();
         m_timeBuffer.clear();
+        cacheCount = 0u;
     }
 
     bool isEmpty() const

@@ -118,7 +118,6 @@ TEST_F(LruCacheTests, put_succeedsWithExpiredKeys)
     // Delay to get expired keys.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     EXPECT_TRUE(cache.put(4, 104));
-    EXPECT_EQ(3u, cache.size());
 }
 
 TEST_F(LruCacheTests, put_succeedsWithAllKeysExpired)

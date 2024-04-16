@@ -101,9 +101,7 @@ public:
     /// Returns whether the cache is empty.
     bool isEmpty()
     {
-        std::lock_guard<Mutex> lock(m_mutex);
-        m_cache.purge();
-        return m_cache.isEmpty();
+        return m_cache.cacheCount.load() == 0u;
     }
 
     /// Returns the capacity of the cache.
@@ -122,7 +120,6 @@ public:
     /// cached elements.
     std::size_t size()
     {
-        std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.cacheCount.load();
     }
 

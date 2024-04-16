@@ -95,15 +95,16 @@ struct META_TEMPLATE_API TtlCache
         }
 
         // Eviction. Purge the expired elements, and retry.
-        if (m_putGuard)
+        if (purgeOne())
         {
-            // The purge has been called, return.
-            return false;
+            const auto expiryTime = node.expiryTime;
+            m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
+            m_timeBuffer.insert(std::make_pair(expiryTime, key));
+            ++cacheCount;
+            return true;
         }
 
-        utils::ScopeValue<bool> guard(m_putGuard, true);
-        purge();
-        return put(key, std::forward<CacheNode>(node));
+        return false;
     }
 
     std::optional<Element> get(const Key& key)
@@ -146,11 +147,6 @@ struct META_TEMPLATE_API TtlCache
         cacheCount = 0u;
     }
 
-    bool isEmpty() const
-    {
-        return m_cache.empty();
-    }
-
     std::size_t size() const
     {
         return m_cache.size();
@@ -167,13 +163,30 @@ struct META_TEMPLATE_API TtlCache
     }
 
 private:
+
+    bool purgeOne()
+    {
+        const auto timeStamp = TtlClock::now() - ttl;
+        auto pos = m_timeBuffer.upper_bound(timeStamp);
+
+        if (pos == m_timeBuffer.begin())
+        {
+            // Nothing expired.
+            return false;
+        }
+
+        // Remove the first element.
+        m_cache.erase(m_timeBuffer.begin()->second);
+        m_timeBuffer.erase(m_timeBuffer.begin());
+        --cacheCount;
+        return true;
+    }
+
     using CacheContainer = std::unordered_map<Key, CacheNode>;
     using TtlKeys = std::map<TimePoint, Key>;
 
-
     CacheContainer m_cache;
     TtlKeys m_timeBuffer;
-    bool m_putGuard = false;
 };
 
 }}

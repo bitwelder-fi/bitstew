@@ -120,7 +120,8 @@ public:
     /// cached elements.
     std::size_t size()
     {
-        return m_cache.cacheCount.load();
+        std::lock_guard<Mutex> lock(m_mutex);
+        return m_cache.size();
     }
 
     /// Returns the non-expired cached elements.
@@ -129,7 +130,6 @@ public:
     auto getContent()
     {
         std::lock_guard<Mutex> lock(m_mutex);
-        m_cache.purge();
         return m_cache.content();
     }
 

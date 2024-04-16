@@ -132,13 +132,13 @@ TEST_F(LruCacheTests, put_succeedsWithAllKeysExpired)
     // Delay to get expired keys.
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     EXPECT_TRUE(cache.put(4, 104));
-    EXPECT_EQ(3u, cache.size());
+    EXPECT_EQ(1u, cache.size());
 }
 
 TEST_F(LruCacheTests, getContent)
 {
     TestCache cache(3, std::chrono::milliseconds(20));
-    std::vector<std::pair<int, int>> contentMatch({{4, 104}, {3, 103}, {2, 102}});
+    std::vector<std::pair<int, int>> contentMatch({{2, 102}, {3, 103}, {4, 104}});
 
     EXPECT_TRUE(cache.put(1, 101));
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -155,7 +155,7 @@ TEST_F(LruCacheTests, getContent)
 TEST_F(LruCacheTests, get_savesFromExpiry)
 {
     TestCache cache(3, std::chrono::milliseconds(20));
-    std::vector<std::pair<int, int>> contentMatch({{3, 103}, {2, 102}, {1, 101}});
+    std::vector<std::pair<int, int>> contentMatch({{2, 102}, {3, 103}, {1, 101}});
     std::vector<std::pair<int, int>> contentMatch2({{3, 103}, {1, 101}});
 
     EXPECT_TRUE(cache.put(1, 101));

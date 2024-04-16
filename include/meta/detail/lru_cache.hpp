@@ -22,7 +22,6 @@
 #include <meta/meta_api.hpp>
 #include <meta/utility/scope_value.hpp>
 
-#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <map>
@@ -67,7 +66,6 @@ struct META_TEMPLATE_API TtlCache
 
     const std::size_t capacity;
     const TtlClock::duration ttl;
-    std::atomic_size_t cacheCount = 0u;
 
     explicit TtlCache(std::size_t capacity, TtlClock::duration ttl) :
         capacity(capacity),
@@ -90,7 +88,6 @@ struct META_TEMPLATE_API TtlCache
             const auto expiryTime = node.expiryTime;
             m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
             m_timeBuffer.insert(std::make_pair(expiryTime, key));
-            ++cacheCount;
             return true;
         }
 
@@ -100,7 +97,6 @@ struct META_TEMPLATE_API TtlCache
             const auto expiryTime = node.expiryTime;
             m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
             m_timeBuffer.insert(std::make_pair(expiryTime, key));
-            ++cacheCount;
             return true;
         }
 
@@ -134,7 +130,6 @@ struct META_TEMPLATE_API TtlCache
         for (auto it = m_timeBuffer.begin(); it != pos; ++it)
         {
             m_cache.erase(it->second);
-            --cacheCount;
         }
         // Remove time stamps.
         m_timeBuffer.erase(m_timeBuffer.begin(), pos);
@@ -144,20 +139,25 @@ struct META_TEMPLATE_API TtlCache
     {
         m_cache.clear();
         m_timeBuffer.clear();
-        cacheCount = 0u;
     }
 
     std::size_t size() const
     {
-        return m_cache.size();
+        const auto timeStamp = TtlClock::now() - ttl;
+        auto first = m_timeBuffer.upper_bound(timeStamp);
+        return std::distance(first, m_timeBuffer.end());
     }
 
     std::vector<std::pair<Key, Element>> content() const
     {
+        const auto timeStamp = TtlClock::now() - ttl;
+        auto begin = m_timeBuffer.upper_bound(timeStamp);
+
         std::vector<std::pair<Key, Element>> result;
-        for (auto it = m_cache.begin(); it != m_cache.end(); ++it)
+        for (auto it = begin; it != m_timeBuffer.end(); ++it)
         {
-            result.push_back(std::make_pair(it->first, it->second.element));
+            auto node = m_cache.find(it->second);
+            result.push_back(std::make_pair(node->first, node->second.element));
         }
         return result;
     }
@@ -178,7 +178,6 @@ private:
         // Remove the first element.
         m_cache.erase(m_timeBuffer.begin()->second);
         m_timeBuffer.erase(m_timeBuffer.begin());
-        --cacheCount;
         return true;
     }
 

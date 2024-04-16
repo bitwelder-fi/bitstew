@@ -21,7 +21,7 @@
 
 #include <meta/meta_api.hpp>
 #include <meta/arguments/argument.hpp>
-#include <utils/function_traits.hpp>
+#include <meta/utility/function_traits.hpp>
 
 #include <memory>
 #include <vector>

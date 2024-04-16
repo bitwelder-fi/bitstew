@@ -20,7 +20,7 @@
 #define UTIL_CONCEPTS_HPP
 
 #include <concepts>
-#include <utils/type_traits.hpp>
+#include <meta/utility/type_traits.hpp>
 
 namespace concepts
 {

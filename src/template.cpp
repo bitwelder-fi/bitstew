@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,11 +19,9 @@
 #include <assert.hpp>
 #include <pimpl.hpp>
 #include <preprocessor.hpp>
-#include <utils/function_traits.hpp>
-#include <utils/lockable.hpp>
-#include <utils/scope_value.hpp>
-#include <utils/utility.hpp>
-#include <utils/vector.hpp>
+#include <meta/utility/function_traits.hpp>
+#include <meta/utility/scope_value.hpp>
+#include <meta/utility/algorithm.hpp>
 
 #include <meta/library_config.hpp>
 #include <meta/meta.hpp>

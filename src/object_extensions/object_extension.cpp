@@ -21,7 +21,7 @@
 #include <meta/object_extensions/signal.hpp>
 #include <meta/meta.hpp>
 #include <meta/object.hpp>
-#include <containers/view.hpp>
+#include <meta/containers/view.hpp>
 
 #include <meta/log/trace.hpp>
 

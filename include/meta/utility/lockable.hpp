@@ -19,24 +19,23 @@
 #ifndef LOCKABLE_HPP
 #define LOCKABLE_HPP
 
+#include <meta/meta_api.hpp>
 #include <cstddef>
-#include <assert.hpp>
-#include <preprocessor.hpp>
-
-namespace utils
-{
-
-#ifdef PLATFORM_CONFIG_THREAD_ENABLED
-
 #include <mutex>
-using mutex_type = std::mutex;
 
-#else
+#include <assert.hpp>
 
-struct PROJECT_API mutex_type
+namespace meta
 {
-    explicit mutex_type() = default;
-    ~mutex_type() = default;
+
+/// Mutex type brought into the meta namespace.
+using mutex = std::mutex;
+
+/// A non-lockable structure for testing purposes.
+struct META_API no_lock
+{
+    explicit no_lock() = default;
+    ~no_lock() = default;
 
     void lock()
     {
@@ -61,14 +60,12 @@ struct PROJECT_API mutex_type
     }
 
 private:
-    DISABLE_COPY(mutex_type);
-    DISABLE_MOVE(mutex_type);
+    DISABLE_COPY(no_lock);
+    DISABLE_MOVE(no_lock);
 
     std::size_t m_lockCount = 0u;
 };
 
-#endif
-
-} // namespace utils
+} // namespace meta
 
 #endif // LOCKABLE_HPP

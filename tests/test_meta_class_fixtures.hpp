@@ -27,7 +27,7 @@
 #include <meta/library_config.hpp>
 #include <meta/object.hpp>
 #include <meta/object_extensions/invokable.hpp>
-#include <utils/scope_value.hpp>
+#include <meta/utility/scope_value.hpp>
 
 #include "utils/domain_test_environment.hpp"
 

@@ -18,15 +18,14 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <containers/guarded_sequence_container.hpp>
+#include <meta/containers/guarded_sequence_container.hpp>
 
 #include <concepts>
 #include <cstdlib>
 #include <deque>
 #include <limits>
-#include <list>
 #include <memory>
-#include <utils/concepts.hpp>
+#include <meta/utility/concepts.hpp>
 #include <vector>
 
 namespace

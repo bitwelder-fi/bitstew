@@ -19,11 +19,8 @@
 #ifndef META_LRU_CACHE_HPP
 #define META_LRU_CACHE_HPP
 
-#include <meta/meta_api.hpp>
-
 #include <meta/detail/lru_cache.hpp>
-
-#include <utils/lockable.hpp>
+#include <meta/utility/lockable.hpp>
 
 #include <chrono>
 #include <utility>
@@ -32,23 +29,18 @@
 namespace meta
 {
 
-namespace detail
-{
-
-}
-
 /// A Least Recent Used cache with Time To Leave.
 ///
 /// \tparam Key The key type. Must support std::hash().
 /// \tparam Element The element type. Must be copy-constructible and copy-assignable.
-template <class Key, class ValueType>
+template <class Key, class ValueType, typename Mutex = meta::mutex>
     requires std::is_copy_constructible_v<ValueType> &&
              std::is_copy_constructible_v<ValueType>
 class META_TEMPLATE_API LruCache
 {
     using Base = detail::TtlCache<Key, ValueType>;
 
-    utils::mutex_type m_mutex;
+    Mutex m_mutex;
     Base m_cache;
 
 public:
@@ -78,7 +70,7 @@ public:
     bool put(const key_type& key, const cached_type& element)
     {
         auto cacheNode = typename Base::CacheNode(element);
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.put(key, std::move(cacheNode));
     }
 
@@ -93,7 +85,7 @@ public:
     bool put(const key_type& key, cached_type&& element)
     {
         auto cacheNode = typename Base::CacheNode(std::forward<cached_type>(element));
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.put(key, std::move(cacheNode));
     }
 
@@ -103,14 +95,14 @@ public:
     ///         or the cached element expired, returns \e nullopt.
     std::optional<cached_type> get(const key_type& key)
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.get(key);
     }
 
     /// Returns whether the cache is empty.
     bool isEmpty()
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         m_cache.purge();
         return m_cache.isEmpty();
     }
@@ -131,7 +123,7 @@ public:
     /// cached elements.
     std::size_t size()
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         m_cache.purge();
         return m_cache.size();
     }
@@ -139,9 +131,9 @@ public:
     /// Returns the non-expired cached elements.
     /// \return The vector with non-expired elements with keys. Returns an empty vector if the cache
     ///         has no elements or all elements are expired.
-    std::vector<value_type> getContent()
+    auto getContent()
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         m_cache.purge();
         return m_cache.content();
     }
@@ -149,14 +141,14 @@ public:
     /// Purges the cache. Removes the expired cache elements.
     void purge()
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         m_cache.purge();
     }
 
     /// Clears the cache.
     void clear()
     {
-        std::lock_guard<utils::mutex_type> lock(m_mutex);
+        std::lock_guard<Mutex> lock(m_mutex);
         m_cache.clear();
     }
 };

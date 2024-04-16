@@ -20,7 +20,6 @@
 #define UTILS_REFERENCE_COUNTED_HPP
 
 #include <assert.hpp>
-#include <utils/lockable.hpp>
 
 #include <atomic>
 #include <cstddef>

@@ -36,7 +36,11 @@ protected:
         initializeDomain(true, true);
     }
 };
-using LruCacheTests = LruCacheTestBase;
+class LruCacheTests : public LruCacheTestBase
+{
+protected:
+    using TestCache = meta::LruCache<int, int, meta::no_lock>;
+};
 
 template <class TestTraits>
 class LruCacheCreateTests : public LruCacheTestBase
@@ -74,7 +78,7 @@ TYPED_TEST(LruCacheCreateTests, create)
 
 TEST_F(LruCacheTests, put_whenSpaceEnough)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, std::chrono::milliseconds(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_EQ(1u, cache.size());
@@ -82,7 +86,7 @@ TEST_F(LruCacheTests, put_whenSpaceEnough)
 
 TEST_F(LruCacheTests, put_whenKeyIsSame)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, std::chrono::milliseconds(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_TRUE(cache.put(2, 102));
@@ -93,7 +97,7 @@ TEST_F(LruCacheTests, put_whenKeyIsSame)
 
 TEST_F(LruCacheTests, put_failsWhenCapacityReachedAndNoExpiredKeys)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, std::chrono::milliseconds(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_TRUE(cache.put(2, 102));
@@ -104,7 +108,7 @@ TEST_F(LruCacheTests, put_failsWhenCapacityReachedAndNoExpiredKeys)
 
 TEST_F(LruCacheTests, put_succeedsWithExpiredKeys)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, std::chrono::milliseconds(20));
 
     EXPECT_TRUE(cache.put(1, 101));
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -119,7 +123,7 @@ TEST_F(LruCacheTests, put_succeedsWithExpiredKeys)
 
 TEST_F(LruCacheTests, put_succeedsWithAllKeysExpired)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, std::chrono::milliseconds(20));
 
     EXPECT_TRUE(cache.put(1, 101));
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -134,7 +138,7 @@ TEST_F(LruCacheTests, put_succeedsWithAllKeysExpired)
 
 TEST_F(LruCacheTests, getContent)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, std::chrono::milliseconds(20));
     std::vector<std::pair<int, int>> contentMatch({{4, 104}, {3, 103}, {2, 102}});
 
     EXPECT_TRUE(cache.put(1, 101));
@@ -151,7 +155,7 @@ TEST_F(LruCacheTests, getContent)
 
 TEST_F(LruCacheTests, get_savesFromExpiry)
 {
-    meta::LruCache<int, int> cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, std::chrono::milliseconds(20));
     std::vector<std::pair<int, int>> contentMatch({{3, 103}, {2, 102}, {1, 101}});
     std::vector<std::pair<int, int>> contentMatch2({{3, 103}, {1, 101}});
 

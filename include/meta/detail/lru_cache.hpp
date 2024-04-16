@@ -20,8 +20,7 @@
 #define META_DETAIL_LRU_CACHE_HPP
 
 #include <meta/meta_api.hpp>
-
-#include <utils/scope_value.hpp>
+#include <meta/utility/scope_value.hpp>
 
 #include <chrono>
 #include <cstdlib>

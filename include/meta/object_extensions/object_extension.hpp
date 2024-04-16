@@ -23,7 +23,7 @@
 #include <meta/forwards.hpp>
 #include <meta/meta_api.hpp>
 #include <meta/metadata/meta_object.hpp>
-#include <containers/guarded_sequence_container.hpp>
+#include <meta/containers/guarded_sequence_container.hpp>
 
 #include <pimpl.hpp>
 

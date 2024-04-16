@@ -19,7 +19,7 @@
 #include <meta/tasks/job.hpp>
 #include <meta/tasks/thread_pool.hpp>
 #include <assert.hpp>
-#include <utils/scope_value.hpp>
+#include <meta/utility/scope_value.hpp>
 
 #include <atomic>
 #include <condition_variable>

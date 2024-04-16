@@ -20,7 +20,7 @@
 #define META_DETAIL_PACKAGED_ARGUMENTS_HPP
 
 #include <tuple>
-#include <utils/function_traits.hpp>
+#include <meta/utility/function_traits.hpp>
 
 namespace meta {
 

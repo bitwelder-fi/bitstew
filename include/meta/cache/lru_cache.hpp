@@ -19,39 +19,14 @@
 #ifndef META_LRU_CACHE_HPP
 #define META_LRU_CACHE_HPP
 
+#include <meta/cache/ttl_clock.hpp>
 #include <meta/detail/lru_cache.hpp>
 #include <meta/utility/lockable.hpp>
 
-#include <chrono>
 #include <utility>
 
 namespace meta
 {
-
-/// The clock object which provides the Time To Leave values for a cache.
-class META_API TtlClock
-{
-public:
-    using clock         = std::chrono::steady_clock;
-    using duration      = clock::duration;
-    using time_point    = clock::time_point;
-
-    /// Returns the duration value of the given milliseconds.
-    /// \param ms The milliseconds for which to provide the duration.
-    /// \return The duration.
-    inline static auto msecs(std::size_t ms)
-    {
-        return std::chrono::milliseconds(ms);
-    }
-
-    /// Returns the current time.
-    /// \return The current time.
-    inline static auto now()
-    {
-        return clock::now();
-    }
-};
-
 
 /// A Least Recent Used cache with Time To Leave.
 ///
@@ -170,6 +145,13 @@ public:
     {
         std::lock_guard<Mutex> lock(m_mutex);
         m_cache.clear();
+    }
+
+    /// Returns the element count of the cache. This number includes the expired cache elements as well.
+    std::size_t getElementCount()
+    {
+        std::lock_guard<Mutex> lock(m_mutex);
+        return m_cache.getElementCount();
     }
 };
 

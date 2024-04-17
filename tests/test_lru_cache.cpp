@@ -51,7 +51,7 @@ public:
         return inst;
     }
 
-    void sleep(std::size_t msecs)
+    void sleep(duration msecs)
     {
         m_count += msecs;
     }
@@ -102,7 +102,7 @@ protected:
     {
         if constexpr (std::is_same_v<CacheClock, TestClock>)
         {
-            TestClock::instance().sleep(msecs);
+            TestClock::instance().sleep(TestClock::msecs(msecs));
         }
         else
         {
@@ -244,3 +244,35 @@ TEST_F(LruCacheTests, get_savesFromExpiry)
     sleep(15);
     EXPECT_EQ(contentMatch2, cache.getContent());
 }
+
+TEST_F(LruCacheTests, purge)
+{
+    TestCache cache(3, CacheClock::msecs(20));
+
+    EXPECT_TRUE(cache.put(1, 101));
+    EXPECT_TRUE(cache.put(2, 102));
+    EXPECT_TRUE(cache.put(3, 103));
+    EXPECT_EQ(3u, cache.size());
+
+    sleep(20);
+    EXPECT_EQ(0u, cache.size());
+    EXPECT_EQ(3u, cache.getElementCount());
+    cache.purge();
+    EXPECT_EQ(0u, cache.getElementCount());
+}
+
+TEST_F(LruCacheTests, clear)
+{
+    TestCache cache(3, CacheClock::msecs(20));
+
+    EXPECT_TRUE(cache.put(1, 101));
+    EXPECT_TRUE(cache.put(2, 102));
+    EXPECT_TRUE(cache.put(3, 103));
+    EXPECT_EQ(3u, cache.size());
+    EXPECT_EQ(3u, cache.getElementCount());
+
+    cache.clear();
+    EXPECT_EQ(0u, cache.size());
+    EXPECT_EQ(0u, cache.getElementCount());
+}
+

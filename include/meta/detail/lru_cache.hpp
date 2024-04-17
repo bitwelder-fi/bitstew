@@ -139,6 +139,11 @@ struct META_TEMPLATE_API TtlCache
         return std::distance(first, m_timeBuffer.end());
     }
 
+    std::size_t getElementCount() const
+    {
+        return m_cache.size();
+    }
+
     std::vector<std::pair<Key, Element>> content() const
     {
         const auto timeStamp = Clock::now();

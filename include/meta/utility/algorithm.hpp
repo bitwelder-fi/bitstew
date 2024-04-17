@@ -16,14 +16,24 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef UTILS_VECTOR_HPP
-#define UTILS_VECTOR_HPP
+#ifndef META_ALGORITHM_HPP
+#define META_ALGORITHM_HPP
 
 #include <vector>
-#include <algorithm>
 
-namespace utils
+namespace meta
 {
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+
+/// Template function to call a function \a f on an argument pack.
+template <class Function, class... Arguments>
+void for_each_arg(Function f, Arguments... args)
+{
+    (f(args),...);
+}
+#pragma GCC diagnostic pop
 
 /// Vector utility, loops a \a predicate through a \a vector.
 template <typename Type, typename Allocator, typename Predicate>
@@ -81,6 +91,6 @@ void erase_if(std::vector<Type, Allocator>& v, const Predicate& predicate)
     v.erase(remove_if(v.begin(), v.end(), predicate), v.end());
 }
 
-} // namespace utils
+}
 
-#endif // UTILS_VECTOR_HPP
+#endif

@@ -21,7 +21,7 @@
 #include <meta/metadata/metaclass.hpp>
 #include <meta/object.hpp>
 #include <meta/object_extensions/object_extension.hpp>
-#include <utils/scope_value.hpp>
+#include <meta/utility/scope_value.hpp>
 
 namespace meta
 {

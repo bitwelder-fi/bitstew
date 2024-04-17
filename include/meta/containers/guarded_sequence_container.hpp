@@ -16,14 +16,14 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
-#define CONTAINERS_GUARDED_SEQUENCE_CONTAINER_HPP
+#ifndef META_GUARDED_SEQUENCE_CONTAINER_HPP
+#define META_GUARDED_SEQUENCE_CONTAINER_HPP
 
-#include <containers/iterator.hpp>
-#include <containers/view.hpp>
-#include <utils/concepts.hpp>
-#include <utils/type_traits.hpp>
-#include <utils/reference_counted.hpp>
+#include <meta/containers/iterator.hpp>
+#include <meta/containers/view.hpp>
+#include <meta/utility/concepts.hpp>
+#include <meta/utility/type_traits.hpp>
+#include <meta/utility/reference_counted.hpp>
 
 #include <algorithm>
 #include <cmath>

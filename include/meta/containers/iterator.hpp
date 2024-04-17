@@ -16,10 +16,10 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef CONTAINERS_ITERATOR_HPP
-#define CONTAINERS_ITERATOR_HPP
+#ifndef META_ITERATOR_HPP
+#define META_ITERATOR_HPP
 
-#include <utils/type_traits.hpp>
+#include <meta/utility/type_traits.hpp>
 
 namespace containers
 {
@@ -197,4 +197,4 @@ Iterator operator+(Iterator position, typename Iterator::size_type distance)
 
 }
 
-#endif // CONTAINERS_ITERATOR_HPP
+#endif // META_ITERATOR_HPP

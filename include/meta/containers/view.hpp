@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef CONTAINERS_VIEW_HPP
-#define CONTAINERS_VIEW_HPP
+#ifndef META_VIEW_HPP
+#define META_VIEW_HPP
 
 #include <meta/meta_api.hpp>
 
@@ -152,4 +152,4 @@ private:
 
 }
 
-#endif // UTILS_CONTAINER_VIEW_HPP
+#endif // META_VIEW_HPP

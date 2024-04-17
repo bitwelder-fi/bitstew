@@ -19,7 +19,7 @@
 #include <meta/object.hpp>
 #include <meta/object_extensions/connection.hpp>
 #include <meta/object_extensions/signal.hpp>
-#include <containers/view.hpp>
+#include <meta/containers/view.hpp>
 
 namespace meta
 {

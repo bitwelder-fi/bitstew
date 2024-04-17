@@ -17,7 +17,7 @@
  */
 
 #include <array>
-#include <utils/utility.hpp>
+#include <meta/utility/algorithm.hpp>
 #include <meta/metadata/metaclass.hpp>
 
 namespace meta
@@ -65,7 +65,7 @@ protected:
                 }
                 result = metaClass->visit(visitor);
             };
-            utils::for_each_arg(predicate, SuperClasses::getStaticMetaClass()...);
+            for_each_arg(predicate, SuperClasses::getStaticMetaClass()...);
 
             return result;
         }

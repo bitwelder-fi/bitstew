@@ -22,7 +22,6 @@
 #include <meta/meta_api.hpp>
 #include <meta/utility/scope_value.hpp>
 
-#include <chrono>
 #include <cstdlib>
 #include <map>
 #include <optional>
@@ -33,41 +32,33 @@
 namespace meta
 {
 
-using TtlClock = std::chrono::steady_clock;
-
 namespace detail
 {
 
-template <class Key, class Element>
+template <class Key, class Element, class Clock>
 struct META_TEMPLATE_API TtlCache
 {
-    using TimePoint = TtlClock::time_point;
     struct META_TEMPLATE_API CacheNode
     {
         Element element;
-        TimePoint expiryTime;
+        Clock::time_point ttl;
 
-        CacheNode(const Element& element) :
+        CacheNode(const Element& element, Clock::time_point ttl) :
             element(element),
-            expiryTime(TtlClock::now())
+            ttl(ttl)
         {
         }
-        CacheNode(Element&& element) :
+        CacheNode(Element&& element, Clock::time_point ttl) :
             element(std::forward<Element>(element)),
-            expiryTime(TtlClock::now())
+            ttl(ttl)
         {
-        }
-
-        void update()
-        {
-            expiryTime = TtlClock::now();
         }
     };
 
     const std::size_t capacity;
-    const TtlClock::duration ttl;
+    const Clock::duration ttl;
 
-    explicit TtlCache(std::size_t capacity, TtlClock::duration ttl) :
+    explicit TtlCache(std::size_t capacity, Clock::duration ttl) :
         capacity(capacity),
         ttl(ttl)
     {
@@ -77,26 +68,26 @@ struct META_TEMPLATE_API TtlCache
     {
         if (auto cacheIt = m_cache.find(key); cacheIt != m_cache.end())
         {
-            m_timeBuffer.erase(cacheIt->second.expiryTime);
-            m_timeBuffer.insert(std::make_pair(node.expiryTime, key));
+            m_timeBuffer.erase(cacheIt->second.ttl);
+            m_timeBuffer.insert(std::make_pair(node.ttl, key));
             cacheIt->second = std::move(node);
             return true;
         }
 
         if (m_cache.size() < capacity)
         {
-            const auto expiryTime = node.expiryTime;
+            const auto ttl = node.ttl;
             m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
-            m_timeBuffer.insert(std::make_pair(expiryTime, key));
+            m_timeBuffer.insert(std::make_pair(ttl, key));
             return true;
         }
 
         // Eviction. Purge the expired elements, and retry.
         if (purgeOne())
         {
-            const auto expiryTime = node.expiryTime;
+            const auto ttl = node.ttl;
             m_cache.insert(std::make_pair(key, std::forward<CacheNode>(node)));
-            m_timeBuffer.insert(std::make_pair(expiryTime, key));
+            m_timeBuffer.insert(std::make_pair(ttl, key));
             return true;
         }
 
@@ -108,9 +99,9 @@ struct META_TEMPLATE_API TtlCache
         if (auto cacheIt = m_cache.find(key); cacheIt != m_cache.end())
         {
             // TODO: if the value had expired, remove and leave.
-            m_timeBuffer.erase(cacheIt->second.expiryTime);
-            cacheIt->second.update();
-            m_timeBuffer.insert(std::make_pair(cacheIt->second.expiryTime, key));
+            m_timeBuffer.erase(cacheIt->second.ttl);
+            cacheIt->second.ttl = Clock::now() + ttl;
+            m_timeBuffer.insert(std::make_pair(cacheIt->second.ttl, key));
             return cacheIt->second.element;
         }
         return std::nullopt;
@@ -118,7 +109,7 @@ struct META_TEMPLATE_API TtlCache
 
     void purge()
     {
-        const auto timeStamp = TtlClock::now() - ttl;
+        const auto timeStamp = Clock::now();
         auto pos = m_timeBuffer.upper_bound(timeStamp);
         if (pos == m_timeBuffer.end())
         {
@@ -143,14 +134,14 @@ struct META_TEMPLATE_API TtlCache
 
     std::size_t size() const
     {
-        const auto timeStamp = TtlClock::now() - ttl;
+        const auto timeStamp = Clock::now();
         auto first = m_timeBuffer.upper_bound(timeStamp);
         return std::distance(first, m_timeBuffer.end());
     }
 
     std::vector<std::pair<Key, Element>> content() const
     {
-        const auto timeStamp = TtlClock::now() - ttl;
+        const auto timeStamp = Clock::now();
         auto begin = m_timeBuffer.upper_bound(timeStamp);
 
         std::vector<std::pair<Key, Element>> result;
@@ -166,7 +157,7 @@ private:
 
     bool purgeOne()
     {
-        const auto timeStamp = TtlClock::now() - ttl;
+        const auto timeStamp = Clock::now();
         auto pos = m_timeBuffer.upper_bound(timeStamp);
 
         if (pos == m_timeBuffer.begin())
@@ -182,7 +173,7 @@ private:
     }
 
     using CacheContainer = std::unordered_map<Key, CacheNode>;
-    using TtlKeys = std::map<TimePoint, Key>;
+    using TtlKeys = std::map<typename Clock::time_point, Key>;
 
     CacheContainer m_cache;
     TtlKeys m_timeBuffer;

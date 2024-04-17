@@ -28,16 +28,41 @@
 namespace meta
 {
 
+/// The clock object which provides the Time To Leave values for a cache.
+class META_API TtlClock
+{
+public:
+    using clock         = std::chrono::steady_clock;
+    using duration      = clock::duration;
+    using time_point    = clock::time_point;
+
+    /// Returns the duration value of the given milliseconds.
+    /// \param ms The milliseconds for which to provide the duration.
+    /// \return The duration.
+    inline static auto msecs(std::size_t ms)
+    {
+        return std::chrono::milliseconds(ms);
+    }
+
+    /// Returns the current time.
+    /// \return The current time.
+    inline static auto now()
+    {
+        return clock::now();
+    }
+};
+
+
 /// A Least Recent Used cache with Time To Leave.
 ///
 /// \tparam Key The key type. Must support std::hash().
 /// \tparam Element The element type. Must be copy-constructible and copy-assignable.
-template <class Key, class ValueType, typename Mutex = meta::mutex>
+template <class Key, class ValueType, typename Mutex = meta::mutex, typename Clock = TtlClock>
     requires std::is_copy_constructible_v<ValueType> &&
              std::is_copy_constructible_v<ValueType>
 class META_TEMPLATE_API LruCache
 {
-    using Base = detail::TtlCache<Key, ValueType>;
+    using Base = detail::TtlCache<Key, ValueType, Clock>;
 
     Mutex m_mutex;
     Base m_cache;
@@ -53,7 +78,7 @@ public:
     /// Constructor, creates a least recently used cache with a capacity and a TTL duration.
     /// \param capacity The capacity of the cache.
     /// \param ttl The time-to-leave of the cached elements.
-    explicit LruCache(std::size_t capacity, TtlClock::duration ttl = std::chrono::milliseconds(3600)) :
+    explicit LruCache(std::size_t capacity, Clock::duration ttl = Clock::msecs(3600)) :
         m_cache(capacity, ttl)
     {
     }
@@ -68,7 +93,7 @@ public:
     /// \param element The element to put in the cache.
     bool put(const key_type& key, const cached_type& element)
     {
-        auto cacheNode = typename Base::CacheNode(element);
+        auto cacheNode = typename Base::CacheNode(element, Clock::now() + m_cache.ttl);
         std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.put(key, std::move(cacheNode));
     }
@@ -83,7 +108,7 @@ public:
     /// \param element The element to put in the cache.
     bool put(const key_type& key, cached_type&& element)
     {
-        auto cacheNode = typename Base::CacheNode(std::forward<cached_type>(element));
+        auto cacheNode = typename Base::CacheNode(std::forward<cached_type>(element), Clock::now() + m_cache.ttl);
         std::lock_guard<Mutex> lock(m_mutex);
         return m_cache.put(key, std::move(cacheNode));
     }

@@ -28,6 +28,53 @@ namespace
 
 struct UserType {};
 
+class META_API TestClock
+{
+public:
+    using duration      = std::size_t;
+    using time_point    = std::size_t;
+
+    inline static auto msecs(std::size_t ms)
+    {
+        return ms;
+    }
+
+    inline static auto now()
+    {
+        return instance().m_count++;
+    }
+
+    // Local test API
+    static TestClock& instance()
+    {
+        static TestClock inst;
+        return inst;
+    }
+
+    void sleep(std::size_t msecs)
+    {
+        m_count += msecs;
+    }
+
+    void reset()
+    {
+        m_count = 0u;
+    }
+
+private:
+    std::size_t m_count = 0u;
+};
+
+#ifdef META_TEST_MOCK_TTL_CLOCK
+
+using CacheClock = TestClock;
+
+#else
+
+using CacheClock = meta::TtlClock;
+
+#endif
+
 class LruCacheTestBase : public DomainTestEnvironment
 {
 protected:
@@ -36,10 +83,32 @@ protected:
         initializeDomain(true, true);
     }
 };
+
 class LruCacheTests : public LruCacheTestBase
 {
 protected:
-    using TestCache = meta::LruCache<int, int, meta::no_lock>;
+    using TestCache = meta::LruCache<int, int, meta::no_lock, CacheClock>;
+
+    void SetUp() override
+    {
+        LruCacheTestBase::SetUp();
+        if constexpr (std::is_same_v<TestClock, CacheClock>)
+        {
+            TestClock::instance().reset();
+        }
+    }
+
+    void sleep(std::size_t msecs)
+    {
+        if constexpr (std::is_same_v<CacheClock, TestClock>)
+        {
+            TestClock::instance().sleep(msecs);
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(msecs));
+        }
+    }
 };
 
 template <class TestTraits>
@@ -71,14 +140,17 @@ TYPED_TEST_SUITE(LruCacheCreateTests, LruCacheTypes);
 
 TYPED_TEST(LruCacheCreateTests, create)
 {
-    typename TestFixture::CacheType cache(5u, std::chrono::milliseconds(10));
+    constexpr auto ttl = std::chrono::milliseconds(10);
+    typename TestFixture::CacheType cache(5u, ttl);
+
     EXPECT_EQ(5u, cache.capacity());
-    EXPECT_EQ(std::chrono::milliseconds(10), cache.ttl());
+    EXPECT_EQ(ttl, cache.ttl());
 }
+
 
 TEST_F(LruCacheTests, put_whenSpaceEnough)
 {
-    TestCache cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, CacheClock::msecs(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_EQ(1u, cache.size());
@@ -86,7 +158,7 @@ TEST_F(LruCacheTests, put_whenSpaceEnough)
 
 TEST_F(LruCacheTests, put_whenKeyIsSame)
 {
-    TestCache cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, CacheClock::msecs(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_TRUE(cache.put(2, 102));
@@ -97,7 +169,7 @@ TEST_F(LruCacheTests, put_whenKeyIsSame)
 
 TEST_F(LruCacheTests, put_failsWhenCapacityReachedAndNoExpiredKeys)
 {
-    TestCache cache(3, std::chrono::milliseconds(100));
+    TestCache cache(3, CacheClock::msecs(100));
 
     EXPECT_TRUE(cache.put(1, 101));
     EXPECT_TRUE(cache.put(2, 102));
@@ -108,45 +180,46 @@ TEST_F(LruCacheTests, put_failsWhenCapacityReachedAndNoExpiredKeys)
 
 TEST_F(LruCacheTests, put_succeedsWithExpiredKeys)
 {
-    TestCache cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, CacheClock::msecs(20));
 
     EXPECT_TRUE(cache.put(1, 101));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(2, 102));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(3, 103));
+
     // Delay to get expired keys.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    sleep(10);
     EXPECT_TRUE(cache.put(4, 104));
 }
 
 TEST_F(LruCacheTests, put_succeedsWithAllKeysExpired)
 {
-    TestCache cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, CacheClock::msecs(20));
 
     EXPECT_TRUE(cache.put(1, 101));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(2, 102));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(3, 103));
     // Delay to get expired keys.
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    sleep(20);
     EXPECT_TRUE(cache.put(4, 104));
     EXPECT_EQ(1u, cache.size());
 }
 
 TEST_F(LruCacheTests, getContent)
 {
-    TestCache cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, CacheClock::msecs(20));
     std::vector<std::pair<int, int>> contentMatch({{2, 102}, {3, 103}, {4, 104}});
 
     EXPECT_TRUE(cache.put(1, 101));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(2, 102));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(3, 103));
     // Delay to get expired keys.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    sleep(10);
     EXPECT_TRUE(cache.put(4, 104));
 
     EXPECT_EQ(contentMatch, cache.getContent());
@@ -154,21 +227,20 @@ TEST_F(LruCacheTests, getContent)
 
 TEST_F(LruCacheTests, get_savesFromExpiry)
 {
-    TestCache cache(3, std::chrono::milliseconds(20));
+    TestCache cache(3, CacheClock::msecs(20));
     std::vector<std::pair<int, int>> contentMatch({{2, 102}, {3, 103}, {1, 101}});
     std::vector<std::pair<int, int>> contentMatch2({{3, 103}, {1, 101}});
 
     EXPECT_TRUE(cache.put(1, 101));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(2, 102));
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    sleep(5);
     EXPECT_TRUE(cache.put(3, 103));
 
     EXPECT_NE(std::nullopt, cache.get(1));
     EXPECT_EQ(contentMatch, cache.getContent());
 
     // Delay a bit more to get expired elements
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    sleep(15);
     EXPECT_EQ(contentMatch2, cache.getContent());
-
 }

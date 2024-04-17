@@ -3,6 +3,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_LIST_DIR}/../cmake.m
 project(test CXX)
 enable_testing()
 
+option(META_TEST_MOCK_TTL_CLOCK "Mock TTL caches clock" ON)
+
 include(configure-target)
 
 # get the files
@@ -25,6 +27,11 @@ FetchContent_MakeAvailable(googletest)
 # Now simply link against gtest or gtest_main as needed.
 add_executable(unittests ${SOURCES})
 target_link_libraries(unittests gtest_main gmock_main ${PROJECT_LIBRARY})
+
+if (META_TEST_MOCK_TTL_CLOCK)
+    target_compile_definitions(unittests PUBLIC META_TEST_MOCK_TTL_CLOCK)
+endif()
+
 include(GoogleTest)
 gtest_discover_tests(unittests)
 configure_target(unittests)

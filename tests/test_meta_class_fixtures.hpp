@@ -16,26 +16,26 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef META_TEST_META_CLASS_FIXTURES_HPP
-#define META_TEST_META_CLASS_FIXTURES_HPP
+#ifndef STEW_TEST_STEW_CLASS_FIXTURES_HPP
+#define STEW_TEST_STEW_CLASS_FIXTURES_HPP
 
 #include <gtest/gtest.h>
 
-#include <meta/meta.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaclass.hpp>
-#include <meta/library_config.hpp>
-#include <meta/object.hpp>
-#include <meta/object_extensions/invokable.hpp>
-#include <meta/utility/scope_value.hpp>
+#include <stew/stew.hpp>
+#include <stew/metadata/factory.hpp>
+#include <stew/metadata/metaclass.hpp>
+#include <stew/library_config.hpp>
+#include <stew/object.hpp>
+#include <stew/object_extensions/invokable.hpp>
+#include <stew/utility/scope_value.hpp>
 
 #include "utils/domain_test_environment.hpp"
 
 
-class AbstractClass : public meta::Object
+class AbstractClass : public stew::Object
 {
 public:
-    META_CLASS("AbstractClass", AbstractClass, meta::Object)
+    STEW_CLASS("AbstractClass", AbstractClass, stew::Object)
     {
     };
 
@@ -43,7 +43,7 @@ public:
 
 protected:
     explicit AbstractClass(std::string_view name) :
-        meta::Object(name)
+        stew::Object(name)
     {
     }
 };
@@ -54,15 +54,15 @@ public:
     virtual ~Interface() = default;
     virtual void text() = 0;
 
-    STATIC_META_CLASS("Interface", Interface)
+    STATIC_STEW_CLASS("Interface", Interface)
     {
     };
 };
 
-class OverrideClass : public meta::Object, public Interface
+class OverrideClass : public stew::Object, public Interface
 {
 public:
-    META_CLASS("AbstractClass", OverrideClass, meta::Object, Interface)
+    STEW_CLASS("AbstractClass", OverrideClass, stew::Object, Interface)
     {
     };
 
@@ -70,7 +70,7 @@ public:
 
 protected:
     explicit OverrideClass(std::string_view name) :
-        meta::Object(name)
+        stew::Object(name)
     {
     }
 };
@@ -78,7 +78,7 @@ protected:
 class PreObject : public AbstractClass
 {
 public:
-    META_CLASS("PreObject", PreObject, AbstractClass)
+    STEW_CLASS("PreObject", PreObject, AbstractClass)
     {
     };
     virtual void func3() = 0;
@@ -100,7 +100,7 @@ public:
     void func3() final
     {}
 
-    META_CLASS("TestObject", Object, PreObject, Interface)
+    STEW_CLASS("TestObject", Object, PreObject, Interface)
     {
     };
 
@@ -122,9 +122,9 @@ class ExtendedObject : public Object
 {
 public:
     DECLARE_INVOKABLE(MetaGetName, "getName", &ExtendedObject::getName);
-    META_CLASS("ExtendedObject", ExtendedObject, Object)
+    STEW_CLASS("ExtendedObject", ExtendedObject, Object)
     {
-        META_EXTENSION(MetaGetName);
+        STEW_EXTENSION(MetaGetName);
     };
 
     static std::shared_ptr<ExtendedObject> create(std::string_view name)
@@ -144,7 +144,7 @@ protected:
 class DynamicObject : public ExtendedObject
 {
 public:
-    STATIC_META_CLASS("DynamicObject", DynamicObject, ExtendedObject)
+    STATIC_STEW_CLASS("DynamicObject", DynamicObject, ExtendedObject)
     {
     };
 
@@ -157,7 +157,7 @@ public:
             m_descriptor->sealed = false;
         }
     };
-    const meta::MetaClass* getDynamicMetaClass() const override
+    const stew::MetaClass* getDynamicMetaClass() const override
     {
         auto metaClass = getFactory();
         if (!metaClass)
@@ -167,7 +167,7 @@ public:
         return metaClass;
     }
 
-    static meta::MetaClass* getExtendableMetaClass()
+    static stew::MetaClass* getExtendableMetaClass()
     {
         static DynamicExtendedObject dynamicClass("DynamicExtendedObject");
         return &dynamicClass;
@@ -187,15 +187,15 @@ protected:
     }
 };
 
-void extendObjects(meta::ObjectExtension* self)
+void extendObjects(stew::ObjectExtension* self)
 {
-    META_LOG_INFO("extends " << self->getObject()->getName());
+    STEW_LOG_INFO("extends " << self->getObject()->getName());
 }
 DECLARE_INVOKABLE(ExtendObjectFunction, "extendObjects", &extendObjects);
 
-auto globalLambda = [](meta::ObjectExtension* self)
+auto globalLambda = [](stew::ObjectExtension* self)
 {
-    META_LOG_INFO(self->getObject()->getName());
+    STEW_LOG_INFO(self->getObject()->getName());
 };
 DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
 
@@ -204,13 +204,13 @@ DECLARE_INVOKABLE(LambdaInvokable, "lambda", globalLambda);
 // Test fixtures.
 struct MetaClassTestHelpers
 {
-    std::size_t getBaseClassCount(const meta::MetaClass* metaClass) const
+    std::size_t getBaseClassCount(const stew::MetaClass* metaClass) const
     {
         auto count = std::size_t(0);
         auto visitor = [&count](auto)
         {
             ++count;
-            return meta::MetaClass::VisitResult::Continue;
+            return stew::MetaClass::VisitResult::Continue;
         };
         metaClass->visitSuper(visitor);
         return count;
@@ -240,7 +240,7 @@ protected:
 template <typename Param>
 struct MetaClassParam
 {
-    const meta::MetaClass* metaClass;
+    const stew::MetaClass* metaClass;
     Param param;
 };
 template <typename Param, typename TestBase>
@@ -261,13 +261,13 @@ protected:
 class ObjectFactoryTest : public DomainTestEnvironment, public MetaClassTestHelpers
 {
 protected:
-    meta::ObjectFactory* m_factory = nullptr;
+    stew::ObjectFactory* m_factory = nullptr;
     std::size_t m_registrySize = 0u;
 
     void SetUp() override
     {
         initializeDomain(false, true);
-        m_factory = meta::Library::instance().objectFactory();
+        m_factory = stew::Library::instance().objectFactory();
         m_registrySize = std::distance(m_factory->begin(), m_factory->end());
     }
 
@@ -312,4 +312,4 @@ protected:
     }
 };
 
-#endif // META_TEST_META_CLASS_FIXTURES_HPP
+#endif // STEW_TEST_STEW_CLASS_FIXTURES_HPP

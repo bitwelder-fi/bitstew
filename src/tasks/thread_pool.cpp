@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,10 +16,10 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/tasks/job.hpp>
-#include <meta/tasks/thread_pool.hpp>
+#include <stew/tasks/job.hpp>
+#include <stew/tasks/thread_pool.hpp>
 #include <assert.hpp>
-#include <meta/utility/scope_value.hpp>
+#include <stew/utility/scope_value.hpp>
 
 #include <atomic>
 #include <condition_variable>
@@ -27,7 +27,7 @@
 #include <thread>
 #include <mutex>
 
-namespace meta
+namespace stew
 {
 
 struct ThreadPool::Descriptor
@@ -329,4 +329,4 @@ void yield(const std::chrono::nanoseconds& delay)
     }
 }
 
-} // namespace meta
+} // namespace stew

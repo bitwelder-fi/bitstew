@@ -18,10 +18,10 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/object.hpp>
-#include <meta/object_extensions/invokable.hpp>
-#include <meta/object_extensions/connection.hpp>
-#include <meta/object_extensions/signal.hpp>
+#include <stew/object.hpp>
+#include <stew/object_extensions/invokable.hpp>
+#include <stew/object_extensions/connection.hpp>
+#include <stew/object_extensions/signal.hpp>
 
 #include <sstream>
 #include <chrono>
@@ -31,27 +31,27 @@ namespace
 
 void function()
 {
-    META_LOG_INFO(__FUNCTION__);
+    STEW_LOG_INFO(__FUNCTION__);
 }
 
 void function(int i)
 {
-    META_LOG_INFO(__FUNCTION__ << "(" << i << ")");
+    STEW_LOG_INFO(__FUNCTION__ << "(" << i << ")");
 }
 
-void selfDisconnect(meta::ObjectExtension* self)
+void selfDisconnect(stew::ObjectExtension* self)
 {
     self->disconnectTarget();
 }
 
-using VoidSignal = meta::Signal<void()>;
-using IntSignal = meta::Signal<void(int)>;
+using VoidSignal = stew::Signal<void()>;
+using IntSignal = stew::Signal<void(int)>;
 
 DECLARE_INVOKABLE_OVERLOAD(VoidSlot, "voidSlot", void(*)(), &function);
 DECLARE_INVOKABLE_OVERLOAD(IntSlot, "intSlot", void(*)(int), &function);
 DECLARE_INVOKABLE(SelfDisconnect, "selfDisconnect", &selfDisconnect);
 
-class Object : public meta::Object
+class Object : public stew::Object
 {
 public:
     VoidSignal sigVoid{*this, "sigVoid"};
@@ -66,11 +66,11 @@ public:
 
     DECLARE_INVOKABLE(ConnectInSlot, "connectInSlot", &Object::connectInSlot);
 
-    META_CLASS("Object", Object, meta::Object)
+    STEW_CLASS("Object", Object, stew::Object)
     {
-        META_EXTENSION(VoidSignal);
-        META_EXTENSION(IntSignal);
-        META_EXTENSION(ConnectInSlot);
+        STEW_EXTENSION(VoidSignal);
+        STEW_EXTENSION(IntSignal);
+        STEW_EXTENSION(ConnectInSlot);
     };
 
     static auto create(std::string_view name)
@@ -82,7 +82,7 @@ public:
 
 protected:
     explicit Object(std::string_view name) :
-        meta::Object(name)
+        stew::Object(name)
     {
     }
 
@@ -127,7 +127,7 @@ TEST_F(GenericSignalTests, connect)
     auto slot = VoidSlot::create();
     auto connection = signal.connect(slot);
     EXPECT_TRUE(connection->isValid());
-    EXPECT_EQ(static_cast<meta::ObjectExtensionPtr>(signal), connection->getSource());
+    EXPECT_EQ(static_cast<stew::ObjectExtensionPtr>(signal), connection->getSource());
     EXPECT_EQ(slot, connection->getTarget());
 
     auto slot2 = IntSlot::create();
@@ -243,9 +243,9 @@ TEST_F(GenericSignalTests, triggerConnectionToLambda)
     VoidSignal signal;
     auto lambda = []()
     {
-        META_LOG_INFO("lambda");
+        STEW_LOG_INFO("lambda");
     };
-    using Lambda = meta::Invokable<decltype(lambda), lambda>;
+    using Lambda = stew::Invokable<decltype(lambda), lambda>;
     auto invokable = Lambda::create("slot");
 
     auto connection = signal.connect(invokable);

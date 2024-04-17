@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,14 +16,14 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/meta.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaclass.hpp>
-#include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
-#include <meta/utility/scope_value.hpp>
+#include <stew/stew.hpp>
+#include <stew/metadata/factory.hpp>
+#include <stew/metadata/metaclass.hpp>
+#include <stew/object.hpp>
+#include <stew/object_extensions/object_extension.hpp>
+#include <stew/utility/scope_value.hpp>
 
-namespace meta
+namespace stew
 {
 
 MetaObject::MetaObject(std::string_view metaName) :

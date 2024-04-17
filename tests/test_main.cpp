@@ -20,8 +20,8 @@
 #include <gtest/gtest-spi.h>
 #include <gmock/gmock.h>
 
-#include <meta/meta.hpp>
-#include <meta/library_config.hpp>
+#include <stew/stew.hpp>
+#include <stew/library_config.hpp>
 
 #include <thread>
 

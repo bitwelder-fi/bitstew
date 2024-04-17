@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,10 +16,10 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/arguments/argument.hpp>
-#include <meta/arguments/packaged_arguments.hpp>
+#include <stew/arguments/argument.hpp>
+#include <stew/arguments/packaged_arguments.hpp>
 
-namespace meta
+namespace stew
 {
 
 std::shared_ptr<PackagedArguments::Descriptor> PackagedArguments::Descriptor::clone()

@@ -17,14 +17,14 @@
  */
 
 #include <assert.hpp>
-#include <meta/log/trace.hpp>
-#include <meta/log/trace_printer.hpp>
-#include <meta/tasks/thread_pool.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/log/trace_printer.hpp>
+#include <stew/tasks/thread_pool.hpp>
 
 #include <iostream>
 #include <thread>
 
-namespace meta
+namespace stew
 {
 
 struct TracerPrivate
@@ -126,7 +126,7 @@ LogLine::LogLine(Tracer* tracer, LogLevel level, const char* function, const cha
 }
 
 LogLine::LogLine(LogLevel level, const char* function, const char* file, unsigned line) :
-    LogLine(meta::Library::instance().tracer(), level, function, file, line)
+    LogLine(stew::Library::instance().tracer(), level, function, file, line)
 {
 }
 
@@ -211,4 +211,4 @@ std::string FileLineDecorator::format(const TraceRecord& trace) const
     return ss.str();
 }
 
-} // namespace meta
+} // namespace stew

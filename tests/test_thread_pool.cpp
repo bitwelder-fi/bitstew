@@ -19,11 +19,11 @@
 #include "test_utils.hpp"
 
 #include <gtest/gtest.h>
-#include <meta/meta.hpp>
-#include <meta/library_config.hpp>
-#include <meta/tasks/job.hpp>
-#include <meta/tasks/thread_pool.hpp>
-#include <meta/safe_queue.hpp>
+#include <stew/stew.hpp>
+#include <stew/library_config.hpp>
+#include <stew/tasks/job.hpp>
+#include <stew/tasks/thread_pool.hpp>
+#include <stew/safe_queue.hpp>
 
 #include <atomic>
 #include <string>
@@ -50,7 +50,7 @@ public:
 using OutputPtr = std::shared_ptr<Output>;
 
 
-class TestJob : public meta::Job
+class TestJob : public stew::Job
 {
 public:
     explicit TestJob(OutputPtr, SecureInt& jobCount) :
@@ -60,7 +60,7 @@ public:
 
     void setStatus(Status status)
     {
-        meta::Job::setStatus(status);
+        stew::Job::setStatus(status);
     }
 
     void run() override
@@ -72,14 +72,14 @@ protected:
     SecureInt& m_jobCount;
 };
 
-class ReusableJob : public meta::Job
+class ReusableJob : public stew::Job
 {
-    meta::ThreadPool* m_scheduler = nullptr;
+    stew::ThreadPool* m_scheduler = nullptr;
     OutputPtr m_out;
 
 public:
     std::atomic_size_t rescheduleCount = 0u;
-    explicit ReusableJob(meta::ThreadPool* scheduler, OutputPtr out) :
+    explicit ReusableJob(stew::ThreadPool* scheduler, OutputPtr out) :
         m_scheduler(scheduler),
         m_out(out)
     {
@@ -123,11 +123,11 @@ protected:
         m_scheduler->tryScheduleJob(shared_from_this());
     }
 
-    meta::CircularBuffer<std::string> m_queue;
+    stew::CircularBuffer<std::string> m_queue;
 };
 
 
-class QueuedJob : public TestJob, public meta::SharedQueue<std::string, QueuedJob>
+class QueuedJob : public TestJob, public stew::SharedQueue<std::string, QueuedJob>
 {
     OutputPtr m_out;
     std::condition_variable m_signal;
@@ -135,7 +135,7 @@ class QueuedJob : public TestJob, public meta::SharedQueue<std::string, QueuedJo
 public:
     explicit QueuedJob(OutputPtr out, SecureInt& jobCount) :
         TestJob(out, jobCount),
-        meta::SharedQueue<std::string, QueuedJob>(*this),
+        stew::SharedQueue<std::string, QueuedJob>(*this),
         m_out(out)
     {
     }
@@ -183,12 +183,12 @@ protected:
 class TaskSchedulerTest : public ::testing::Test
 {
 protected:
-    std::unique_ptr<meta::ThreadPool> threadPool;
+    std::unique_ptr<stew::ThreadPool> threadPool;
     OutputPtr m_output;
 
     void SetUp() override
     {
-        threadPool = std::make_unique<meta::ThreadPool>(std::thread::hardware_concurrency());
+        threadPool = std::make_unique<stew::ThreadPool>(std::thread::hardware_concurrency());
         if (!threadPool->isRunning())
         {
             threadPool->start();
@@ -210,7 +210,7 @@ protected:
     template <class JobType>
     struct ScenarioBase
     {
-        std::vector<meta::JobPtr> jobs;
+        std::vector<stew::JobPtr> jobs;
 
         std::shared_ptr<JobType> operator[](int index)
         {

@@ -18,13 +18,13 @@
 
 #include <gtest/gtest.h>
 
-#include <meta/meta.hpp>
-#include <meta/metadata/metaclass.hpp>
-#include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
-#include <meta/library_config.hpp>
+#include <stew/stew.hpp>
+#include <stew/metadata/metaclass.hpp>
+#include <stew/object.hpp>
+#include <stew/object_extensions/object_extension.hpp>
+#include <stew/library_config.hpp>
 
-#include <meta/object_extensions/invokable.hpp>
+#include <stew/object_extensions/invokable.hpp>
 
 #include "utils/domain_test_environment.hpp"
 
@@ -40,14 +40,14 @@ protected:
     }
 };
 
-DECLARE_INVOKABLE(GetName, "getName", &meta::Object::getName);
+DECLARE_INVOKABLE(GetName, "getName", &stew::Object::getName);
 
 }
 
 
 TEST_F(ObjectTest, addExtension)
 {
-    auto object = meta::Object::create("test");
+    auto object = stew::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
 
@@ -57,7 +57,7 @@ TEST_F(ObjectTest, addExtension)
 
 TEST_F(ObjectTest, findExtension)
 {
-    auto object = meta::Object::create("test");
+    auto object = stew::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
 
@@ -66,7 +66,7 @@ TEST_F(ObjectTest, findExtension)
 
 TEST_F(ObjectTest, removeExtension)
 {
-    auto object = meta::Object::create("test");
+    auto object = stew::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
     EXPECT_EQ(object, getName->getObject());
@@ -77,7 +77,7 @@ TEST_F(ObjectTest, removeExtension)
 
 TEST_F(ObjectTest, objectInvoke_getName)
 {
-    auto object = meta::Object::create("test");
+    auto object = stew::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
 
@@ -88,11 +88,11 @@ TEST_F(ObjectTest, objectInvoke_getName)
 
 TEST_F(ObjectTest, metaInvoke_getName)
 {
-    auto object = meta::Object::create("test");
+    auto object = stew::Object::create("test");
     auto getName = GetName::create();
     object->addExtension(getName);
 
-    auto result = meta::invoke(object, "getName");
+    auto result = stew::invoke(object, "getName");
     ASSERT_NE(std::nullopt, result);
     EXPECT_EQ(std::string_view("test"), static_cast<std::string_view>(*result));
 }

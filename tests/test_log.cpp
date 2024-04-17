@@ -17,18 +17,18 @@
  */
 
 #include "test_log_fixtures.hpp"
-#include <meta/tasks/thread_pool.hpp>
+#include <stew/tasks/thread_pool.hpp>
 
-using namespace meta_test;
+using namespace stew_test;
 
 #define CORE_LOG(tracer, logLevel) \
-meta::LogLine(tracer, logLevel, __FUNCTION__, __FILE__, __LINE__)()
+stew::LogLine(tracer, logLevel, __FUNCTION__, __FILE__, __LINE__)()
 
-#define TEST_LOG_FATAL(text) CORE_LOG(m_tracer.get(), meta::LogLevel::Fatal) << text
-#define TEST_LOG_ERROR(text) CORE_LOG(m_tracer.get(), meta::LogLevel::Error) << text
-#define TEST_LOG_WARNING(text) CORE_LOG(m_tracer.get(), meta::LogLevel::Warning) << text
-#define TEST_LOG_INFO(text) CORE_LOG(m_tracer.get(), meta::LogLevel::Info) << text
-#define TEST_LOG_DEBUG(text) CORE_LOG(m_tracer.get(), meta::LogLevel::Debug) << text
+#define TEST_LOG_FATAL(text) CORE_LOG(m_tracer.get(), stew::LogLevel::Fatal) << text
+#define TEST_LOG_ERROR(text) CORE_LOG(m_tracer.get(), stew::LogLevel::Error) << text
+#define TEST_LOG_WARNING(text) CORE_LOG(m_tracer.get(), stew::LogLevel::Warning) << text
+#define TEST_LOG_INFO(text) CORE_LOG(m_tracer.get(), stew::LogLevel::Info) << text
+#define TEST_LOG_DEBUG(text) CORE_LOG(m_tracer.get(), stew::LogLevel::Debug) << text
 
 TEST_F(FakeTracerTest, testMocPrinter)
 {
@@ -47,7 +47,7 @@ TEST_F(FakeTracerTest, testMultipleLogLine)
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("debug line"));
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("first line"));
 
-    meta::LogLine log(m_tracer.get(), meta::LogLevel::Debug, __PRETTY_FUNCTION__, __FILE__, __LINE__);
+    stew::LogLine log(m_tracer.get(), stew::LogLevel::Debug, __PRETTY_FUNCTION__, __FILE__, __LINE__);
     log() << "first line";
     TEST_LOG_DEBUG("second line");
     TEST_LOG_DEBUG("debug line");
@@ -56,9 +56,9 @@ TEST_F(FakeTracerTest, testMultipleLogLine)
 TEST_F(FakeTracerTest, testFileLineDecorator)
 {
     const auto path = std::filesystem::current_path();
-    meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-    printer = std::make_shared<meta::MessageSeparator>(printer);
-    printer = std::make_unique<meta::FileLineDecorator>(printer, path.native() + std::filesystem::path::preferred_separator);
+    stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+    printer = std::make_shared<stew::MessageSeparator>(printer);
+    printer = std::make_unique<stew::FileLineDecorator>(printer, path.native() + std::filesystem::path::preferred_separator);
     m_tracer->addTracePrinter(printer);
 
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("tests/test_log.cpp:65 - decorated with file and line"));
@@ -67,9 +67,9 @@ TEST_F(FakeTracerTest, testFileLineDecorator)
 
 TEST_F(FakeTracerTest, testFunctionDecorator)
 {
-    meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-    printer = std::make_shared<meta::MessageSeparator>(printer);
-    printer = std::make_unique<meta::FunctionDecorator>(printer);
+    stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+    printer = std::make_shared<stew::MessageSeparator>(printer);
+    printer = std::make_unique<stew::FunctionDecorator>(printer);
     m_tracer->addTracePrinter(printer);
 
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("TestBody - decorated with function name"));
@@ -78,9 +78,9 @@ TEST_F(FakeTracerTest, testFunctionDecorator)
 
 TEST_F(FakeTracerTest, testLogLevelDecorator)
 {
-    meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-    printer = std::make_shared<meta::MessageSeparator>(printer);
-    printer = std::make_unique<meta::LogLevelDecorator>(printer);
+    stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+    printer = std::make_shared<stew::MessageSeparator>(printer);
+    printer = std::make_unique<stew::LogLevelDecorator>(printer);
     m_tracer->addTracePrinter(printer);
 
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[DEBUG] - decorated with log level"));
@@ -97,19 +97,19 @@ TEST_F(FakeTracerTest, testComplexDecorator)
 TEST_F(FakeTracerTest, testRestrictLogLevel)
 {
     setupLogLevelFileLineFunctionHeader();
-    m_tracer->setLogLevel(meta::LogLevel::Info);
+    m_tracer->setLogLevel(stew::LogLevel::Info);
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[DEBUG] tests/test_log.cpp:102 TestBody - testRestrictLogLevelToInfo")).Times(0);
     TEST_LOG_DEBUG("testRestrictLogLevelToInfo");
 }
 
 INSTANTIATE_TEST_SUITE_P(LogLevelTests, LogLineTestParam,
                             ::testing::Values(
-                                LogLevelTestParam(meta::LogLevel::Debug, 1, 1, 1, 1, 1),
-                                LogLevelTestParam(meta::LogLevel::Info, 1, 1, 1, 1, 0),
-                                LogLevelTestParam(meta::LogLevel::Warning, 1, 1, 1, 0, 0),
-                                LogLevelTestParam(meta::LogLevel::Error, 1, 1, 0, 0, 0),
-                                LogLevelTestParam(meta::LogLevel::Fatal, 1, 0, 0, 0, 0),
-                                LogLevelTestParam(meta::LogLevel::Suppressed, 0, 0, 0, 0, 0)));
+                                LogLevelTestParam(stew::LogLevel::Debug, 1, 1, 1, 1, 1),
+                                LogLevelTestParam(stew::LogLevel::Info, 1, 1, 1, 1, 0),
+                                LogLevelTestParam(stew::LogLevel::Warning, 1, 1, 1, 0, 0),
+                                LogLevelTestParam(stew::LogLevel::Error, 1, 1, 0, 0, 0),
+                                LogLevelTestParam(stew::LogLevel::Fatal, 1, 0, 0, 0, 0),
+                                LogLevelTestParam(stew::LogLevel::Suppressed, 0, 0, 0, 0, 0)));
 
 TEST_P(LogLineTestParam, testRestrictLogLevelToInfo)
 {
@@ -128,12 +128,12 @@ TEST_P(LogLineTestParam, testRestrictLogLevelToInfo)
 
 INSTANTIATE_TEST_SUITE_P(LogLevelTests, MetaTraceTest,
                          ::testing::Values(
-                             LogLevelTestParam(meta::LogLevel::Debug, 1, 1, 1, 1, 1),
-                             LogLevelTestParam(meta::LogLevel::Info, 1, 1, 1, 1, 0),
-                             LogLevelTestParam(meta::LogLevel::Warning, 1, 1, 1, 0, 0),
-                             LogLevelTestParam(meta::LogLevel::Error, 1, 1, 0, 0, 0),
-                             LogLevelTestParam(meta::LogLevel::Fatal, 1, 0, 0, 0, 0),
-                             LogLevelTestParam(meta::LogLevel::Suppressed, 0, 0, 0, 0, 0)));
+                             LogLevelTestParam(stew::LogLevel::Debug, 1, 1, 1, 1, 1),
+                             LogLevelTestParam(stew::LogLevel::Info, 1, 1, 1, 1, 0),
+                             LogLevelTestParam(stew::LogLevel::Warning, 1, 1, 1, 0, 0),
+                             LogLevelTestParam(stew::LogLevel::Error, 1, 1, 0, 0, 0),
+                             LogLevelTestParam(stew::LogLevel::Fatal, 1, 0, 0, 0, 0),
+                             LogLevelTestParam(stew::LogLevel::Suppressed, 0, 0, 0, 0, 0)));
 TEST_P(MetaTraceTest, testMetaTracer)
 {
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[FATAL] - testMetaTracer")).Times(fatalCount);
@@ -141,13 +141,13 @@ TEST_P(MetaTraceTest, testMetaTracer)
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[WARNING] - testMetaTracer")).Times(warningCount);
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[INFO] - testMetaTracer")).Times(infoCount);
     EXPECT_CALL(*m_tracer->getPrinterAt<MockPrinter>(0u), log("[DEBUG] - testMetaTracer")).Times(debugCount);
-    META_LOG_FATAL("testMetaTracer");
-    META_LOG_ERROR("testMetaTracer");
-    META_LOG_WARNING("testMetaTracer");
-    META_LOG_INFO("testMetaTracer");
-    META_LOG_DEBUG("testMetaTracer");
+    STEW_LOG_FATAL("testMetaTracer");
+    STEW_LOG_ERROR("testMetaTracer");
+    STEW_LOG_WARNING("testMetaTracer");
+    STEW_LOG_INFO("testMetaTracer");
+    STEW_LOG_DEBUG("testMetaTracer");
     // Ensure the log happens.
-    meta::Library::instance().threadPool()->schedule(std::chrono::milliseconds(10));
+    stew::Library::instance().threadPool()->schedule(std::chrono::milliseconds(10));
 }
 
 TEST_F(MetaTraceStressTest, stressTrace)
@@ -157,9 +157,9 @@ TEST_F(MetaTraceStressTest, stressTrace)
 
     for (auto i = 0; i < stressCount; ++i)
     {
-        META_LOG_INFO("stress #" << (i + 1));
+        STEW_LOG_INFO("stress #" << (i + 1));
     }
-    meta::yield();
+    stew::yield();
     auto diag = m_tracer->getDiagnostics();
     std::cerr << "number of push() retries: " << diag.bufferOverflowCount << std::endl;
 }

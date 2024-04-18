@@ -39,15 +39,21 @@ template <typename T>
 concept not_any = !is_any<T>::value;
 }
 
+/// A dynamic type. It can store only copy-constructible types.
 class STEW_API Variable
 {
     std::any m_data;
 
 public:
+    /// Default constructor.
+    Variable() = default;
+
+    /// Constructor. Creates a variable from an any.
     Variable(std::any data) :
         m_data(data)
     {
     }
+    /// Constructor. Creates a variable from a value that is not an any.
     template <typename T>
         requires not_any<T>
     Variable(T value) :
@@ -55,23 +61,34 @@ public:
     {
     }
 
-    Variable& operator=(std::any data)
-    {
-        m_data = std::move(data);
-        return *this;
-    }
-    template <typename T>
-        requires not_any<T>
-    Variable& operator=(T data)
+    /// Assignment operator.
+    Variable& operator=(const std::any& data)
     {
         m_data = data;
         return *this;
     }
+    /// Assignment operator.
+    Variable& operator=(std::any&& data)
+    {
+        m_data = std::forward<std::any>(data);
+        return *this;
+    }
+    /// Assignment operator.
+    template <typename T>
+        requires not_any<T>
+    Variable& operator=(T&& data)
+    {
+        m_data = std::forward<T>(data);
+        return *this;
+    }
 
+    /// Returns the current type of the variable.
     TypeInfo getType() const;
 
+    /// Returns if this variable is of RTTI type.
     bool isTypeOf(const std::type_info& type) const;
 
+    /// Returns if this variable is of type T.
     template <typename T>
     bool isTypeOf()
     {
@@ -83,15 +100,19 @@ public:
     /// \return The value stored.
     /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
     template <class T>
-    operator T() const
-    {
-        if (typeid(T) == m_data.type())
-        {
-            return std::any_cast<T>(m_data);
-        }
-        // TODO: convert.
-    }
+    operator T() const;
 };
+
+//------------------Implementation------------------
+template <class T>
+Variable::operator T() const
+{
+    if (typeid(T) == m_data.type())
+    {
+        return std::any_cast<T>(m_data);
+    }
+    // TODO: convert.
+}
 
 }
 

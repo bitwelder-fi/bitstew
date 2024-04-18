@@ -39,6 +39,13 @@ using VariableTests = VariableTestBase;
 
 }
 
+TEST_F(VariableTests, unasigned)
+{
+    stew::Variable var;
+    auto type = var.getType();
+    EXPECT_EQ(typeid(void), type);
+}
+
 TEST_F(VariableTests, create_fromAny)
 {
     auto var = stew::Variable(std::any(7));

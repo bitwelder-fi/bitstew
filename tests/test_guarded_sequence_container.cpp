@@ -18,14 +18,14 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/containers/guarded_sequence_container.hpp>
+#include <stew/standalone/container/guarded_sequence_container.hpp>
 
 #include <concepts>
 #include <cstdlib>
 #include <deque>
 #include <limits>
 #include <memory>
-#include <meta/utility/concepts.hpp>
+#include <stew/standalone/utility/concepts.hpp>
 #include <vector>
 
 namespace
@@ -107,12 +107,12 @@ protected:
         return std::numeric_limits<value_type>::quiet_NaN();
     }
     auto getInvalidElement() const
-        requires concepts::raw_pointer<value_type>
+        requires stew::raw_pointer<value_type>
     {
         return nullptr;
     }
     auto getInvalidElement() const
-        requires concepts::smart_pointer<value_type>
+        requires stew::smart_pointer<value_type>
     {
         return value_type();
     }
@@ -122,12 +122,12 @@ protected:
         return EnumType::Invalid;
     }
     auto getInvalidElement() const
-        requires concepts::std_string<value_type>
+        requires stew::std_string<value_type>
     {
         return std::string("");
     }
     auto getInvalidElement() const
-        requires concepts::std_string_view<value_type>
+        requires stew::std_string_view<value_type>
     {
         return std::string_view("");
     }
@@ -146,13 +146,13 @@ protected:
         return new value_type();
     }
     value_type generateValue() const
-        requires traits::is_unique_pointer_v<value_type>
+        requires stew::is_unique_pointer_v<value_type>
     {
         using data_type = typename value_type::element_type;
         return std::make_unique<data_type>();
     }
     value_type generateValue() const
-        requires traits::is_shared_pointer_v<value_type>
+        requires stew::is_shared_pointer_v<value_type>
     {
         using data_type = typename value_type::element_type;
         return std::make_shared<data_type>();
@@ -163,12 +163,12 @@ protected:
         return EnumType::Three;
     }
     value_type generateValue() const
-        requires traits::is_std_string_v<value_type>
+        requires stew::is_std_string_v<value_type>
     {
         return std::to_string(rand());
     }
     value_type generateValue() const
-        requires traits::is_std_string_view_v<value_type>
+        requires stew::is_std_string_view_v<value_type>
     {
         return std::string_view("test");
     }

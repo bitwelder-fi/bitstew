@@ -27,7 +27,7 @@ namespace
 template <typename TClass, bool value>
 struct BoolParam
 {
-    const meta::MetaClass* metaClass = TClass::getStaticMetaClass();
+    const stew::MetaClass* metaClass = TClass::getStaticMetaClass();
     bool test = value;
 };
 
@@ -37,8 +37,8 @@ struct TwoTypesRelationTest
     using BaseClass = TBaseClass;
     using DerivedClass = TDerivedClass;
 
-    const meta::MetaClass* baseClass = TBaseClass::getStaticMetaClass();
-    const meta::MetaClass* derivedClass = TDerivedClass::getStaticMetaClass();
+    const stew::MetaClass* baseClass = TBaseClass::getStaticMetaClass();
+    const stew::MetaClass* derivedClass = TDerivedClass::getStaticMetaClass();
     bool test = Result;
 };
 
@@ -62,7 +62,7 @@ using MetaClassTestsIsDerivedFrom = BaseTypedMetaClassTests<Traits>;
 
 INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaNameValidityTest,
                          ::testing::Values(
-                             MetaNameParam("meta.Object", true),
+                             MetaNameParam("stew.Object", true),
                              MetaNameParam("meta:Object", true),
                              MetaNameParam("meta-Object", true),
                              MetaNameParam("meta_Object", true),
@@ -99,13 +99,13 @@ INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaNameValidityTest,
                              MetaNameParam("meta Object", false)));
 TEST_P(MetaNameValidityTest, testMetaClassName)
 {
-    EXPECT_EQ(isValid, meta::isValidMetaName(this->metaClassName));
+    EXPECT_EQ(isValid, stew::isValidMetaName(this->metaClassName));
 }
 
 
-using GetStaticMetaClassTypes = ::testing::Types<meta::MetaObject,
-                                                 meta::Object,
-                                                 meta::ObjectExtension,
+using GetStaticMetaClassTypes = ::testing::Types<stew::MetaObject,
+                                                 stew::Object,
+                                                 stew::ObjectExtension,
                                                  AbstractClass,
                                                  Interface,
                                                  OverrideClass,
@@ -130,7 +130,7 @@ TYPED_TEST(MetaClassTestsGetStaticMetaClass, isSealed)
 }
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClass)
 {
-    meta::ObjectFactory factory;
+    stew::ObjectFactory factory;
     using MetaClassType = typename TestFixture::Traits;
     auto metaClass = MetaClassType::getStaticMetaClass();
 
@@ -139,7 +139,7 @@ TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClass)
 }
 TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClassWithTemplate)
 {
-    meta::ObjectFactory factory;
+    stew::ObjectFactory factory;
     using MetaClassType = typename TestFixture::Traits;
 
     EXPECT_TRUE(factory.registerMetaClass<MetaClassType>());
@@ -148,8 +148,8 @@ TYPED_TEST(MetaClassTestsGetStaticMetaClass, registerMetaClassWithTemplate)
 
 INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaClass_GetName,
                          ::testing::Values(
-                             GetNameParam{meta::MetaObject::getStaticMetaClass(), "meta.MetaObject"},
-                             GetNameParam{meta::Object::getStaticMetaClass(), "meta.Object"},
+                             GetNameParam{stew::MetaObject::getStaticMetaClass(), "stew.MetaObject"},
+                             GetNameParam{stew::Object::getStaticMetaClass(), "stew.Object"},
                              GetNameParam{AbstractClass::getStaticMetaClass(), "AbstractClass"},
                              GetNameParam{Interface::getStaticMetaClass(), "Interface"},
                              GetNameParam{OverrideClass::getStaticMetaClass(), "AbstractClass"},
@@ -164,8 +164,8 @@ TEST_P(MetaClass_GetName, metaClass_getName)
     EXPECT_EQ(this->param.param, this->param.metaClass->getName());
 }
 
-using IsAbstractMetaClassTypes = ::testing::Types<BoolParam<meta::MetaObject, false>,
-                                                  BoolParam<meta::Object, false>,
+using IsAbstractMetaClassTypes = ::testing::Types<BoolParam<stew::MetaObject, false>,
+                                                  BoolParam<stew::Object, false>,
                                                   BoolParam<Interface, true>,
                                                   BoolParam<AbstractClass, true>,
                                                   BoolParam<Object, false>>;
@@ -175,12 +175,12 @@ TYPED_TEST(MetaClassTestsIsAbstractMetaClass, staticMetaClass_isAbstract)
     EXPECT_EQ(this->traits.test, this->traits.metaClass->isAbstract());
 }
 
-using IsDerivedFromTypes = ::testing::Types<TwoTypesRelationTest<meta::MetaObject, meta::MetaObject, false>,
-                                            TwoTypesRelationTest<meta::Object, meta::MetaObject, false>,
-                                            TwoTypesRelationTest<meta::MetaObject, meta::Object, true>,
-                                            TwoTypesRelationTest<meta::MetaObject, Object, true>,
+using IsDerivedFromTypes = ::testing::Types<TwoTypesRelationTest<stew::MetaObject, stew::MetaObject, false>,
+                                            TwoTypesRelationTest<stew::Object, stew::MetaObject, false>,
+                                            TwoTypesRelationTest<stew::MetaObject, stew::Object, true>,
+                                            TwoTypesRelationTest<stew::MetaObject, Object, true>,
                                             TwoTypesRelationTest<Interface, AbstractClass, false>,
-                                            TwoTypesRelationTest<meta::MetaObject, AbstractClass, true>,
+                                            TwoTypesRelationTest<stew::MetaObject, AbstractClass, true>,
                                             TwoTypesRelationTest<Interface, Object, true>>;
 TYPED_TEST_SUITE(MetaClassTestsIsDerivedFrom, IsDerivedFromTypes);
 TYPED_TEST(MetaClassTestsIsDerivedFrom, staticMetaClass_isDerivedFrom)
@@ -192,8 +192,8 @@ TYPED_TEST(MetaClassTestsIsDerivedFrom, staticMetaClass_isDerivedFrom)
 
 INSTANTIATE_TEST_SUITE_P(MetaClassTests, MetaClass_FindExtension,
                          ::testing::Values(
-                             FindExtensionParam{meta::MetaObject::getStaticMetaClass(), {}},
-                             FindExtensionParam{meta::Object::getStaticMetaClass(), {}},
+                             FindExtensionParam{stew::MetaObject::getStaticMetaClass(), {}},
+                             FindExtensionParam{stew::Object::getStaticMetaClass(), {}},
                              FindExtensionParam{AbstractClass::getStaticMetaClass(), {}},
                              FindExtensionParam{Interface::getStaticMetaClass(), {}},
                              FindExtensionParam{OverrideClass::getStaticMetaClass(), {}},
@@ -219,13 +219,13 @@ TEST_F(ObjectFactoryTest, deepRegister)
     EXPECT_NE(nullptr, m_factory->findMetaClass("PreObject"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("stew.Object"));
 }
 
 TEST_F(ObjectFactoryTest, registerAutoMetaClass)
 {
     auto lambda = [](){};
-    using AutoType = meta::Invokable<decltype(lambda), lambda>;
+    using AutoType = stew::Invokable<decltype(lambda), lambda>;
     m_factory->registerMetaClass(AutoType::getStaticMetaClass());
     EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass(AutoType::getStaticMetaClass()->getName()));
@@ -242,13 +242,13 @@ TEST_F(ObjectFactoryTest, deepRegisterOverride)
     EXPECT_TRUE(m_factory->registerMetaClass(AbstractClass::getStaticMetaClass()));
     EXPECT_EQ(m_registrySize + 1u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("stew.Object"));
     EXPECT_EQ(nullptr, m_factory->findMetaClass("Interface"));
 
     EXPECT_TRUE(m_factory->overrideMetaClass(OverrideClass::getStaticMetaClass()));
     EXPECT_EQ(m_registrySize + 2u, std::distance(m_factory->begin(), m_factory->end()));
     EXPECT_NE(nullptr, m_factory->findMetaClass("AbstractClass"));
-    EXPECT_NE(nullptr, m_factory->findMetaClass("meta.Object"));
+    EXPECT_NE(nullptr, m_factory->findMetaClass("stew.Object"));
     EXPECT_NE(nullptr, m_factory->findMetaClass("Interface"));
 }
 
@@ -325,23 +325,23 @@ TEST_F(ObjectFactoryTest, createWithoutFactoryIsMissingMetaExtensions)
 {
     auto object = DynamicObject::create("test");
 
-    auto result = meta::invoke(object, "getName");
+    auto result = stew::invoke(object, "getName");
     EXPECT_EQ(std::nullopt, result);
 }
 
 
 TEST_F(MetaLibraryTest, metaLibrarysHasObjectFactory)
 {
-    auto factory = meta::Library::instance().objectFactory();
+    auto factory = stew::Library::instance().objectFactory();
     EXPECT_NE(nullptr, factory);
 }
 
 TEST_F(MetaLibraryTest, metaLibraryObjectFactoryRegistryDefaultContent)
 {
-    auto factory = meta::Library::instance().objectFactory();
+    auto factory = stew::Library::instance().objectFactory();
     EXPECT_EQ(3u, std::distance(factory->begin(), factory->end()));
 
-    EXPECT_NE(nullptr, factory->findMetaClass("meta.MetaObject"));
-    EXPECT_NE(nullptr, factory->findMetaClass("meta.Object"));
-    EXPECT_NE(nullptr, factory->findMetaClass("meta.ObjectExtension"));
+    EXPECT_NE(nullptr, factory->findMetaClass("stew.MetaObject"));
+    EXPECT_NE(nullptr, factory->findMetaClass("stew.Object"));
+    EXPECT_NE(nullptr, factory->findMetaClass("stew.ObjectExtension"));
 }

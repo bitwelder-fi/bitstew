@@ -16,12 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/object.hpp>
-#include <meta/object_extensions/connection.hpp>
-#include <meta/object_extensions/signal.hpp>
-#include <meta/containers/view.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/connection.hpp>
+#include <stew/meta/object_extensions/signal.hpp>
+#include <stew/standalone/container/view.hpp>
 
-namespace meta
+namespace stew
 {
 
 SignalExtension::SignalExtension(std::string_view name) :

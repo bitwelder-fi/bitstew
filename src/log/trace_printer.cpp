@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,11 +16,11 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/log/trace.hpp>
-#include <meta/log/trace_printer.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/log/trace_printer.hpp>
 #include <iostream>
 
-namespace meta
+namespace stew
 {
 
 std::string ConsoleOut::format(const TraceRecord& trace) const
@@ -33,4 +33,4 @@ void ConsoleOut::write(std::string text)
     std::cout << text << std::endl;
 }
 
-} // namespace meta
+} // namespace stew

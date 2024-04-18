@@ -22,8 +22,8 @@
 #include <gtest/gtest.h>
 #include "trace_printer_mock.hpp"
 
-#include <meta/library_config.hpp>
-#include <meta/meta.hpp>
+#include <stew/library_config.hpp>
+#include <stew/stew.hpp>
 
 class DomainTestEnvironment : public ::testing::Test
 {
@@ -31,27 +31,27 @@ protected:
     std::shared_ptr<MockPrinter> m_mockPrinter;
     void initializeDomain(bool multiThreaded, bool mockTracePrinter)
     {
-        auto arguments = meta::LibraryArguments();
+        auto arguments = stew::LibraryArguments();
         arguments.threadPool.createThreadPool = multiThreaded;
-        meta::Library::instance().initialize(arguments);
+        stew::Library::instance().initialize(arguments);
 
         if (mockTracePrinter)
         {
-            meta::Library::instance().tracer()->clearTracePrinters();
+            stew::Library::instance().tracer()->clearTracePrinters();
             m_mockPrinter = std::make_shared<MockPrinter>();
-            meta::Library::instance().tracer()->addTracePrinter(m_mockPrinter);
+            stew::Library::instance().tracer()->addTracePrinter(m_mockPrinter);
         }
     }
 
     void TearDown() override
     {
         // Ensure the trace logs are flushed.
-        auto tracer = meta::Library::instance().tracer();
+        auto tracer = stew::Library::instance().tracer();
         if (tracer->isBusy())
         {
             tracer->wait();
         }
-        meta::Library::instance().uninitialize();
+        stew::Library::instance().uninitialize();
     }
 };
 

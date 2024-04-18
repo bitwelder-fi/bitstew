@@ -16,13 +16,13 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
-#include <meta/log/trace.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/metadata/metaclass.hpp>
-#include <meta/metadata/meta_object.hpp>
+#include <stew/core/assert.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/metadata/metaclass.hpp>
+#include <stew/meta/metadata/meta_object.hpp>
 
-namespace meta
+namespace stew
 {
 
 bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
@@ -30,12 +30,12 @@ bool ObjectFactory::registerMetaClass(const MetaClass* metaClass)
     abortIfFail(metaClass);
     if (metaClass->getName().empty())
     {
-        META_LOG_ERROR("Attempt registering stub meta-class.");
+        STEW_LOG_ERROR("Attempt registering stub meta-class.");
         return false;
     }
     if (!isValidMetaName(metaClass->getName()))
     {
-        META_LOG_ERROR("Invalid meta-class name: " << metaClass->getName());
+        STEW_LOG_ERROR("Invalid meta-class name: " << metaClass->getName());
         return false;
     }
 
@@ -75,7 +75,7 @@ const MetaClass* ObjectFactory::findMetaClass(std::string_view className) const
 {
     if (!isValidMetaName(className))
     {
-        META_LOG_ERROR("Invalid meta-class name: " << className);
+        STEW_LOG_ERROR("Invalid meta-class name: " << className);
         return {};
     }
     auto it = m_registry.find(className);

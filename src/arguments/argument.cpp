@@ -16,14 +16,14 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/arguments/argument.hpp>
+#include <stew/arguments/argument.hpp>
 
 #include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
 #include <limits>
 
-namespace meta
+namespace stew
 {
 
 BadArgumentException::BadArgumentException(const std::type_info& actualType, const std::type_info& expectedType) noexcept :

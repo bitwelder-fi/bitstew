@@ -16,25 +16,25 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
-#include <pimpl.hpp>
-#include <preprocessor.hpp>
-#include <meta/utility/function_traits.hpp>
-#include <meta/utility/scope_value.hpp>
-#include <meta/utility/algorithm.hpp>
+#include <stew/core/assert.hpp>
+#include <stew/core/pimpl.hpp>
+#include <stew/core/preprocessor.hpp>
+#include <stew/standalone/utility/function_traits.hpp>
+#include <stew/standalone/utility/scope_value.hpp>
+#include <stew/standalone/utility/algorithm.hpp>
 
-#include <meta/library_config.hpp>
-#include <meta/meta.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
-#include <meta/tasks/thread_pool.hpp>
+#include <stew/library_config.hpp>
+#include <stew/stew.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
+#include <stew/tasks/thread_pool.hpp>
 
-#include <meta/log/trace.hpp>
+#include <stew/log/trace.hpp>
 
 #include <memory>
 
-namespace meta
+namespace stew
 {
 
 namespace

@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/cache/lru_cache.hpp>
+#include <stew/standalone/cache/lru_cache.hpp>
 
 #include <memory>
 #include <string>
@@ -28,7 +28,7 @@ namespace
 
 struct UserType {};
 
-class META_API TestClock
+class STEW_API TestClock
 {
 public:
     using duration      = std::size_t;
@@ -65,13 +65,13 @@ private:
     std::size_t m_count = 0u;
 };
 
-#ifdef META_TEST_MOCK_TTL_CLOCK
+#ifdef STEW_TEST_MOCK_TTL_CLOCK
 
 using CacheClock = TestClock;
 
 #else
 
-using CacheClock = meta::TtlClock;
+using CacheClock = stew::TtlClock;
 
 #endif
 
@@ -87,7 +87,7 @@ protected:
 class LruCacheTests : public LruCacheTestBase
 {
 protected:
-    using TestCache = meta::LruCache<int, int, meta::no_lock, CacheClock>;
+    using TestCache = stew::LruCache<int, int, stew::no_lock, CacheClock>;
 
     void SetUp() override
     {
@@ -117,7 +117,7 @@ class LruCacheCreateTests : public LruCacheTestBase
 protected:
     using key_type = typename TestTraits::key_type;
     using cached_type = typename TestTraits::cached_type;
-    using CacheType = meta::LruCache<key_type, cached_type>;
+    using CacheType = stew::LruCache<key_type, cached_type>;
 };
 
 template <class Key, class Element>

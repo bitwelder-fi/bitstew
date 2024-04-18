@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,12 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
-#include <meta/tasks/job.hpp>
+#include <stew/core/assert.hpp>
+#include <stew/tasks/job.hpp>
 
 #include <future>
 
-namespace meta
+namespace stew
 {
 
 struct Job::Descriptor
@@ -161,4 +161,4 @@ void Job::wait()
     descriptor->worker.get_future().wait();
 }
 
-} // namespace meta
+} // namespace stew

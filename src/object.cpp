@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 bitWelder
+ * Copyright (C) 2024 bitWelder
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,11 +16,11 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/object_extensions/object_extension.hpp>
-#include <meta/object.hpp>
-#include <meta/log/trace.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/log/trace.hpp>
 
-namespace meta
+namespace stew
 {
 
 Object::Object(std::string_view name) :
@@ -65,7 +65,7 @@ void Object::addExtension(ObjectExtensionPtr extension)
 {
     if (extension->getObject().get() == this)
     {
-        META_LOG_ERROR("Extension '" << extension->getName() <<"' already extends the object.");
+        STEW_LOG_ERROR("Extension '" << extension->getName() <<"' already extends the object.");
         return;
     }
 
@@ -87,7 +87,7 @@ bool Object::removeExtension(ObjectExtension& extension)
         m_extensions.erase(it);
         return true;
     }
-    META_LOG_ERROR("Extension " << extension.getName() <<" does not extend the object.");
+    STEW_LOG_ERROR("Extension " << extension.getName() <<" does not extend the object.");
     return false;
 }
 

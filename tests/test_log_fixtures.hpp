@@ -18,24 +18,24 @@
 
 #include <gtest/gtest.h>
 
-#include <meta/meta.hpp>
-#include <meta/library_config.hpp>
-#include <meta/log/trace.hpp>
-#include <meta/log/trace.hpp>
-#include <meta/log/trace_printer.hpp>
+#include <stew/stew.hpp>
+#include <stew/library_config.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/log/trace_printer.hpp>
 #include "utils/domain_test_environment.hpp"
 
 #include <filesystem>
 #include <tuple>
 
-namespace meta_test
+namespace stew_test
 {
 
-class FakeTracer : public meta::Tracer
+class FakeTracer : public stew::Tracer
 {
 public:
     explicit FakeTracer() :
-        meta::Tracer(nullptr)
+        stew::Tracer(nullptr)
     {
     }
 };
@@ -57,17 +57,17 @@ public:
     void setupLogLevelFileLineFunctionHeader()
     {
         const auto path = std::filesystem::current_path();
-        meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-        printer = std::make_shared<meta::MessageSeparator>(printer);
-        printer = std::make_unique<meta::FunctionDecorator>(printer);
-        printer = std::make_unique<meta::FileLineDecorator>(printer, path.native() + std::filesystem::path::preferred_separator);
-        printer = std::make_unique<meta::LogLevelDecorator>(printer);
+        stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+        printer = std::make_shared<stew::MessageSeparator>(printer);
+        printer = std::make_unique<stew::FunctionDecorator>(printer);
+        printer = std::make_unique<stew::FileLineDecorator>(printer, path.native() + std::filesystem::path::preferred_separator);
+        printer = std::make_unique<stew::LogLevelDecorator>(printer);
         m_tracer->addTracePrinter(printer);
     }
 };
 
 
-using LogLevelTestParam = std::tuple<meta::LogLevel, int, int, int, int, int>;
+using LogLevelTestParam = std::tuple<stew::LogLevel, int, int, int, int, int>;
 class LogLineTestParam : public FakeTracerTest, public ::testing::WithParamInterface<LogLevelTestParam>
 {
 public:
@@ -81,13 +81,13 @@ public:
     {
         FakeTracerTest::SetUp();
 
-        meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-        printer = std::make_shared<meta::MessageSeparator>(printer);
-        printer = std::make_unique<meta::LogLevelDecorator>(printer);
+        stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+        printer = std::make_shared<stew::MessageSeparator>(printer);
+        printer = std::make_unique<stew::LogLevelDecorator>(printer);
         m_tracer->addTracePrinter(printer);
 
         auto params = GetParam();
-        m_tracer->setLogLevel(std::get<meta::LogLevel>(params));
+        m_tracer->setLogLevel(std::get<stew::LogLevel>(params));
         fatalCount = std::get<1>(params);
         errorCount = std::get<2>(params);
         warningCount = std::get<3>(params);
@@ -99,19 +99,19 @@ public:
 class MetaTraceStressTest : public DomainTestEnvironment
 {
 protected:
-    meta::Tracer* m_tracer;
+    stew::Tracer* m_tracer;
 
     void SetUp() override
     {
         initializeDomain(true, true);
-        m_tracer = meta::Library::instance().tracer();
+        m_tracer = stew::Library::instance().tracer();
     }
 };
 
 class MetaTraceTest : public ::testing::Test, public ::testing::WithParamInterface<LogLevelTestParam>
 {
 protected:
-    meta::Tracer* m_tracer;
+    stew::Tracer* m_tracer;
     int fatalCount = 0;
     int errorCount = 0;
     int warningCount = 0;
@@ -120,17 +120,17 @@ protected:
 
     void SetUp() override
     {
-        meta::Library::instance().initialize(meta::LibraryArguments());
-        m_tracer = meta::Library::instance().tracer();
+        stew::Library::instance().initialize(stew::LibraryArguments());
+        m_tracer = stew::Library::instance().tracer();
         m_tracer->clearTracePrinters();
 
-        meta::TracePrinterPtr printer = std::make_shared<MockPrinter>();
-        printer = std::make_shared<meta::MessageSeparator>(printer);
-        printer = std::make_shared<meta::LogLevelDecorator>(printer);
+        stew::TracePrinterPtr printer = std::make_shared<MockPrinter>();
+        printer = std::make_shared<stew::MessageSeparator>(printer);
+        printer = std::make_shared<stew::LogLevelDecorator>(printer);
         m_tracer->addTracePrinter(printer);
 
         auto params = GetParam();
-        m_tracer->setLogLevel(std::get<meta::LogLevel>(params));
+        m_tracer->setLogLevel(std::get<stew::LogLevel>(params));
         fatalCount = std::get<1>(params);
         errorCount = std::get<2>(params);
         warningCount = std::get<3>(params);
@@ -140,7 +140,7 @@ protected:
     void TearDown() override
     {
         m_tracer->clearTracePrinters();
-        meta::Library::instance().uninitialize();
+        stew::Library::instance().uninitialize();
     }
 };
 

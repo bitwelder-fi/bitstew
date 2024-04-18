@@ -16,16 +16,16 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <meta/object_extensions/connection.hpp>
-#include <meta/object_extensions/object_extension.hpp>
-#include <meta/object_extensions/signal.hpp>
-#include <meta/meta.hpp>
-#include <meta/object.hpp>
-#include <meta/containers/view.hpp>
+#include <stew/meta/object_extensions/connection.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
+#include <stew/meta/object_extensions/signal.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/standalone/container/view.hpp>
+#include <stew/stew.hpp>
 
-#include <meta/log/trace.hpp>
+#include <stew/log/trace.hpp>
 
-namespace meta
+namespace stew
 {
 
 Connection::Connection(ObjectExtension& source, ObjectExtension& target) :

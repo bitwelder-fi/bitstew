@@ -20,13 +20,13 @@
 #define TRACE_PRINTER_MOC_HPP
 
 #include <gmock/gmock.h>
-#include <meta/log/trace.hpp>
-#include <meta/log/trace_printer.hpp>
+#include <stew/log/trace.hpp>
+#include <stew/log/trace_printer.hpp>
 
-class MockPrinter : public meta::TracePrinter
+class MockPrinter : public stew::TracePrinter
 {
 public:
-    std::string format(const meta::TraceRecord& trace) const
+    std::string format(const stew::TraceRecord& trace) const
     {
         return trace.message;
     }

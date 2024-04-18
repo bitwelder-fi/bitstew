@@ -19,7 +19,7 @@ jobs:
     - name: Build debug
       run: |
         cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_GMOCK=ON -DBUILD_SHARED_LIBS=ON -DINSTALL_GTEST=ON -DBUILD_WITH_TESTS=ON -S ${{ github.workspace }}
-        cmake --build . --config Debug --target all --
+        cmake --build . --config Debug --target all -- -j8
     - name: Run unit tests
       run: |
         tests/unittests

@@ -18,28 +18,28 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <meta/meta.hpp>
-#include <meta/metadata/factory.hpp>
-#include <meta/object.hpp>
-#include <meta/object_extensions/object_extension.hpp>
+#include <stew/stew.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
 
 namespace
 {
 
-class FunctionExtension : public meta::ObjectExtension
+class FunctionExtension : public stew::ObjectExtension
 {
 public:
     using FunctionType = std::function<void(FunctionExtension&)>;
     explicit FunctionExtension(std::string_view name) :
-        meta::ObjectExtension(name)
+        stew::ObjectExtension(name)
     {
         m_function = [](auto&)
         {
-            META_LOG_INFO("default");
+            STEW_LOG_INFO("default");
         };
     }
 
-    META_CLASS("FunctionExtension", FunctionExtension, meta::ObjectExtension)
+    STEW_CLASS("FunctionExtension", FunctionExtension, stew::ObjectExtension)
     {
     };
 
@@ -54,7 +54,7 @@ public:
     }
 
 protected:
-    meta::ReturnValue runOverride(meta::PackagedArguments) final
+    stew::ReturnValue runOverride(stew::PackagedArguments) final
     {
         if (m_function)
         {
@@ -70,16 +70,16 @@ protected:
 class ObjectExtensionTestBase : public DomainTestEnvironment
 {
 protected:
-    meta::ObjectPtr testObject;
+    stew::ObjectPtr testObject;
     std::shared_ptr<FunctionExtension> functor;
 
     void SetUp() override
     {
         // Single threaded
         initializeDomain(false, true);
-        meta::Library::instance().objectFactory()->registerMetaClass(FunctionExtension::getStaticMetaClass());
+        stew::Library::instance().objectFactory()->registerMetaClass(FunctionExtension::getStaticMetaClass());
 
-        testObject = meta::Object::create("test");
+        testObject = stew::Object::create("test");
         functor = FunctionExtension::create("functor");
         testObject->addExtension(functor);
     }
@@ -105,7 +105,7 @@ TEST_F(ObjectExtensionTests, changeFunction)
 {
     auto lambda = [](FunctionExtension& self)
     {
-        META_LOG_INFO(self.getObject()->getName() << " " << self.getName() << " with custom lambda");
+        STEW_LOG_INFO(self.getObject()->getName() << " " << self.getName() << " with custom lambda");
     };
     functor->setFunction(lambda);
     EXPECT_CALL(*m_mockPrinter, log("test functor with custom lambda"));

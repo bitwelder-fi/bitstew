@@ -19,9 +19,9 @@
 #ifndef STEW_LRU_CACHE_HPP
 #define STEW_LRU_CACHE_HPP
 
-#include <stew/cache/ttl_clock.hpp>
-#include <stew/detail/lru_cache.hpp>
-#include <stew/utility/lockable.hpp>
+#include <stew/standalone/cache/ttl_clock.hpp>
+#include <stew/standalone/cache/detail/lru_cache.hpp>
+#include <stew/standalone/utility/lockable.hpp>
 
 #include <utility>
 

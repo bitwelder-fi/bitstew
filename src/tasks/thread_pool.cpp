@@ -18,8 +18,8 @@
 
 #include <stew/tasks/job.hpp>
 #include <stew/tasks/thread_pool.hpp>
-#include <assert.hpp>
-#include <stew/utility/scope_value.hpp>
+#include <stew/core/assert.hpp>
+#include <stew/standalone/utility/scope_value.hpp>
 
 #include <atomic>
 #include <condition_variable>

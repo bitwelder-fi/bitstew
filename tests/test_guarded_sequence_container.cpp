@@ -18,14 +18,14 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <stew/containers/guarded_sequence_container.hpp>
+#include <stew/standalone/container/guarded_sequence_container.hpp>
 
 #include <concepts>
 #include <cstdlib>
 #include <deque>
 #include <limits>
 #include <memory>
-#include <stew/utility/concepts.hpp>
+#include <stew/standalone/utility/concepts.hpp>
 #include <vector>
 
 namespace

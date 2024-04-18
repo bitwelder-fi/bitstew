@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 #include <stew/log/trace.hpp>
 #include <stew/metadata/factory.hpp>
 #include <stew/metadata/metaclass.hpp>

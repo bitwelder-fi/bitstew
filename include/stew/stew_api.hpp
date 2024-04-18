@@ -19,7 +19,7 @@
 #ifndef STEW_API_HPP
 #define STEW_API_HPP
 
-#include <preprocessor.hpp>
+#include <stew/core/preprocessor.hpp>
 
 #ifdef CONFIG_LIBRARY
 #   define STEW_API             EXPORT_API

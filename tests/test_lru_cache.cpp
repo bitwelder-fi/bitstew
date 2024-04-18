@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <stew/cache/lru_cache.hpp>
+#include <stew/standalone/cache/lru_cache.hpp>
 
 #include <memory>
 #include <string>

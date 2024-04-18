@@ -19,7 +19,7 @@
 #ifndef TEST_UTILS_HPP
 #define TEST_UTILS_HPP
 
-#include <preprocessor.hpp>
+#include <stew/core/preprocessor.hpp>
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
 

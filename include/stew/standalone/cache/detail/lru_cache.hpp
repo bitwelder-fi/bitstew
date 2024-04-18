@@ -20,7 +20,6 @@
 #define STEW_DETAIL_LRU_CACHE_HPP
 
 #include <stew/stew_api.hpp>
-#include <stew/utility/scope_value.hpp>
 
 #include <cstdlib>
 #include <map>

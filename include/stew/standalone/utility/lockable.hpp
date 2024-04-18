@@ -23,7 +23,7 @@
 #include <cstddef>
 #include <mutex>
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 
 namespace stew
 {

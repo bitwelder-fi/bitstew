@@ -21,7 +21,7 @@
 #include <stew/metadata/metaclass.hpp>
 #include <stew/object.hpp>
 #include <stew/object_extensions/object_extension.hpp>
-#include <stew/utility/scope_value.hpp>
+#include <stew/standalone/utility/scope_value.hpp>
 
 namespace stew
 {

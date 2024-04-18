@@ -27,7 +27,7 @@
 #include <stew/library_config.hpp>
 #include <stew/object.hpp>
 #include <stew/object_extensions/invokable.hpp>
-#include <stew/utility/scope_value.hpp>
+#include <stew/standalone/utility/scope_value.hpp>
 
 #include "utils/domain_test_environment.hpp"
 

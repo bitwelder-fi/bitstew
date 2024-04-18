@@ -19,11 +19,11 @@
 #ifndef STEW_GUARDED_SEQUENCE_CONTAINER_HPP
 #define STEW_GUARDED_SEQUENCE_CONTAINER_HPP
 
-#include <stew/containers/iterator.hpp>
-#include <stew/containers/view.hpp>
-#include <stew/utility/concepts.hpp>
-#include <stew/utility/type_traits.hpp>
-#include <stew/utility/reference_counted.hpp>
+#include <stew/standalone/container/iterator.hpp>
+#include <stew/standalone/container/view.hpp>
+#include <stew/standalone/utility/concepts.hpp>
+#include <stew/standalone/utility/type_traits.hpp>
+#include <stew/standalone/utility/reference_counted.hpp>
 
 #include <algorithm>
 #include <cmath>

@@ -19,8 +19,8 @@
 #ifndef STEW_HPP
 #define STEW_HPP
 
-#include <pimpl.hpp>
-#include <preprocessor.hpp>
+#include <stew/core/pimpl.hpp>
+#include <stew/core/preprocessor.hpp>
 #include <stew/stew_api.hpp>
 #include <string_view>
 

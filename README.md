@@ -1,13 +1,17 @@
-# Meta
-A library of metaprogramming
+# Stew
+A library of everything. 
 
-This is a fresh remake of MOX, with different comncepts, based on elements from C++20.
+This is a fresh remake of MOX, with different concepts, based on elements from C++20. And a bit of all kinds of extras, utilities.
 
 *under construction*
 
-# The library
+[TOC]
 
-**Meta** library is a utility for you to provide a bridge between scripting and your native C++ code. The library consists of a set of lose-coupled components, and utilities. The core components are grouped in a singleton, the [Library](./include/meta/meta.hpp), which you must initialize at your application startup, and respectively uninitialize on application tear down.
+# The story
+
+Stew was started as a library for meta-programming, and to support dynamic typing. And then it slowly got moved towards a toolkit, and became an amalgam of all sorts of utility modules, and it is intended to grow in that direction. The repo structure is organized so that it is easy to extract modules by their header, and source. Standalone, pure header modules are located under `include/stew/standalone` folder, which may only rely on the core of stew, located in `include/stew/core`. Each module is described by a separate read.me file.
+
+The **Stew** library is a set of utilities for you to provide a bridge between scripting and your native C++ code. The library consists of a set of lose-coupled components, and utilities. The core components are grouped in a singleton, the [Library](./include/meta/meta.hpp), which you must initialize at your application startup, and respectively uninitialize on application tear down.
 
 ```cpp
 #include <meta/meta.hpp>
@@ -27,6 +31,26 @@ int main(...)
 ```
 
 # Library components
+
+## The core
+
+## The standalone
+
+The folder contains header-only tools you can reuse in your projects for various purposes. Type traits, function traits, caches, guarded containers, etc. The majority of these depend on some of the core headers.
+
+### Caches
+
+The sub-module contains various caches. Read more [here](./include/stew/standalone/cache/README.md).
+
+### Containers
+
+These are guarded containers, with invalid element-safe iterators and range views. Read more [here](./include/stew/standalone/container/README.md).
+
+### Utilities
+
+You can read more about utilities [here](./include/stew/standalone/utility/README.md). 
+
+
 
 ## Packaging arguments
 

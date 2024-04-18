@@ -1,3 +1,5 @@
+[TOC]
+
 # Guarded Containers
 
 Guarded containers are wrapers around the usual standard library containers. They guard the containers agains desctructive operations where recursive application logic requires insertion, adding or removing elements of the container. To ensure the content is properly guarded, lock the container using [LockView](./view.hpp#LockView).
@@ -6,7 +8,7 @@ Guarded containers are wrapers around the usual standard library containers. The
 
 When creating guarded containers, you must set the invalid element for the container. Guarded containers set this value on erase or clear operations when the container is guard-locked.
 
-The template argument of a guarded container gets the container type to guard. Meta deducts the value type from the container type to know the type of the invalid element.
+The template argument of a guarded container gets the container type to guard. The value type gets deducted from the container type to know the type of the invalid element.
 
 The following example declares a vector of signed integers, and initializes the container with the minimum value of the integer as invalid element.
 
@@ -39,3 +41,14 @@ When you guard-lock a container, that creates a locked view of the actual contai
 * You can erase elements inside or outside of the guarded view.
 
 Use iterators to access elements of a guarded container.
+
+
+
+# Safe queues
+
+**Stew** provides two types of thread safe queues:
+
+- [CircularBuffer<>](./safe_queue.hpp#CircularBuffer) - a thread-safe non-locking buffer of finite number of elements.
+- [SharedQueue<>](./safe_queue.hpp#SharedQueue) - a thread-safe locking buffer of infinite number of elements.
+
+You can use these queues in your jobs to implement reschedulable jobs (preferably with `CircularBuffer`), or locking queues (with `SharedQueue`).

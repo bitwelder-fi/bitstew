@@ -16,12 +16,12 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
-#include <pimpl.hpp>
-#include <preprocessor.hpp>
-#include <stew/utility/function_traits.hpp>
-#include <stew/utility/scope_value.hpp>
-#include <stew/utility/algorithm.hpp>
+#include <stew/core/assert.hpp>
+#include <stew/core/pimpl.hpp>
+#include <stew/core/preprocessor.hpp>
+#include <stew/standalone/utility/function_traits.hpp>
+#include <stew/standalone/utility/scope_value.hpp>
+#include <stew/standalone/utility/algorithm.hpp>
 
 #include <stew/library_config.hpp>
 #include <stew/stew.hpp>

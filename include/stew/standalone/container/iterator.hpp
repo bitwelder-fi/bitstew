@@ -19,7 +19,7 @@
 #ifndef STEW_ITERATOR_HPP
 #define STEW_ITERATOR_HPP
 
-#include <stew/utility/type_traits.hpp>
+#include <stew/standalone/utility/type_traits.hpp>
 
 namespace containers
 {

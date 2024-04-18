@@ -19,7 +19,7 @@
 #ifndef STEW_METACLASS_HPP
 #define STEW_METACLASS_HPP
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 #include <stew/arguments/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
 #include <stew/stew_api.hpp>

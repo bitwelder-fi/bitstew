@@ -21,7 +21,7 @@
 
 #include <stew/stew_api.hpp>
 #include <stew/arguments/argument.hpp>
-#include <stew/utility/function_traits.hpp>
+#include <stew/standalone/utility/function_traits.hpp>
 
 #include <memory>
 #include <vector>

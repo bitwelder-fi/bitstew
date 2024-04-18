@@ -22,7 +22,7 @@
 #include <stew/arguments/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
 #include <stew/metadata/meta_object.hpp>
-#include <pimpl.hpp>
+#include <stew/core/pimpl.hpp>
 
 #include <memory>
 #include <unordered_map>

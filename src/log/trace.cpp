@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 #include <stew/log/trace.hpp>
 #include <stew/log/trace_printer.hpp>
 #include <stew/tasks/thread_pool.hpp>

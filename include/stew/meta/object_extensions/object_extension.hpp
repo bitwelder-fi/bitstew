@@ -23,9 +23,9 @@
 #include <stew/forwards.hpp>
 #include <stew/stew_api.hpp>
 #include <stew/metadata/meta_object.hpp>
-#include <stew/containers/guarded_sequence_container.hpp>
+#include <stew/standalone/container/guarded_sequence_container.hpp>
 
-#include <pimpl.hpp>
+#include <stew/core/pimpl.hpp>
 
 #include <deque>
 

@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 #include <stew/tasks/job.hpp>
 
 #include <future>

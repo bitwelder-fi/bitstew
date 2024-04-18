@@ -20,7 +20,7 @@
 #define STEW_DETAIL_PACKAGED_ARGUMENTS_HPP
 
 #include <tuple>
-#include <stew/utility/function_traits.hpp>
+#include <stew/standalone/utility/function_traits.hpp>
 
 namespace stew {
 

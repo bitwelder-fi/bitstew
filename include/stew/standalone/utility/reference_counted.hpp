@@ -19,7 +19,7 @@
 #ifndef STEW_REFERENCE_COUNTED_HPP
 #define STEW_REFERENCE_COUNTED_HPP
 
-#include <assert.hpp>
+#include <stew/core/assert.hpp>
 
 #include <atomic>
 #include <cstddef>

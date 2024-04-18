@@ -20,7 +20,7 @@
 #define STEW_CONCEPTS_HPP
 
 #include <concepts>
-#include <stew/utility/type_traits.hpp>
+#include <stew/standalone/utility/type_traits.hpp>
 
 namespace stew
 {

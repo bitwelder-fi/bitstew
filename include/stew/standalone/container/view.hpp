@@ -22,7 +22,6 @@
 #include <stew/stew_api.hpp>
 
 #include <algorithm>
-#include <concepts>
 #include <ranges>
 
 namespace containers

@@ -19,7 +19,7 @@
 #include <stew/object.hpp>
 #include <stew/object_extensions/connection.hpp>
 #include <stew/object_extensions/signal.hpp>
-#include <stew/containers/view.hpp>
+#include <stew/standalone/container/view.hpp>
 
 namespace stew
 {

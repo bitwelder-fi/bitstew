@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/utility/algorithm.hpp>
+#include <stew/standalone/utility/algorithm.hpp>
 #include <stew/metadata/metaclass.hpp>
 
 namespace stew

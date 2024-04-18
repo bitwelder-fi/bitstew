@@ -22,6 +22,7 @@
 #include <cstring>
 #include <cxxabi.h>
 #include <limits>
+#include <memory>
 
 namespace stew
 {

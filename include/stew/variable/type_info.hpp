@@ -30,11 +30,6 @@ namespace stew
 /// The type info of a variable.
 struct STEW_API TypeInfo
 {
-    template <typename T>
-    TypeInfo() :
-        m_typeInfo(typeinfo<T>())
-    {
-    }
     TypeInfo(const std::type_info& typeInfo) :
         m_typeInfo(typeInfo)
     {

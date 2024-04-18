@@ -22,11 +22,11 @@
 #include <gtest/gtest.h>
 
 #include <stew/stew.hpp>
-#include <stew/metadata/factory.hpp>
-#include <stew/metadata/metaclass.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/metadata/metaclass.hpp>
 #include <stew/library_config.hpp>
-#include <stew/object.hpp>
-#include <stew/object_extensions/invokable.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/invokable.hpp>
 #include <stew/standalone/utility/scope_value.hpp>
 
 #include "utils/domain_test_environment.hpp"

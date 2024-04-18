@@ -16,10 +16,10 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/object_extensions/connection.hpp>
-#include <stew/object_extensions/object_extension.hpp>
-#include <stew/object_extensions/signal.hpp>
-#include <stew/object.hpp>
+#include <stew/meta/object_extensions/connection.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
+#include <stew/meta/object_extensions/signal.hpp>
+#include <stew/meta/object.hpp>
 #include <stew/standalone/container/view.hpp>
 #include <stew/stew.hpp>
 

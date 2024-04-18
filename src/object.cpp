@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/object_extensions/object_extension.hpp>
-#include <stew/object.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
+#include <stew/meta/object.hpp>
 #include <stew/log/trace.hpp>
 
 namespace stew

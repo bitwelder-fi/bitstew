@@ -23,7 +23,7 @@
 #include <stew/forwards.hpp>
 #include <stew/log/trace.hpp>
 #include <stew/stew_api.hpp>
-#include <stew/object_extensions/object_extension.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
 
 #include <string_view>
 

@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-#include <stew/detail/packaged_arguments.hpp>
+#include <stew/arguments/detail/packaged_arguments.hpp>
 
 namespace stew
 {

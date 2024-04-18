@@ -255,7 +255,7 @@ private:
 
 } // namespace stew
 
-#include <stew/metadata/metaclass_impl.hpp>
+#include <stew/meta/metadata/metaclass_impl.hpp>
 
 
 /// Defines the static metadata of a class. The first argument is the name of the metaclass, followed

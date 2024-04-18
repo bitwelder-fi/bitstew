@@ -22,8 +22,8 @@
 #include <stew/arguments/packaged_arguments.hpp>
 #include <stew/stew_api.hpp>
 #include <stew/forwards.hpp>
-#include <stew/object.hpp>
-#include <stew/object_extensions/object_extension.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
 
 #include <string_view>
 

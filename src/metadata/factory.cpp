@@ -18,9 +18,9 @@
 
 #include <stew/core/assert.hpp>
 #include <stew/log/trace.hpp>
-#include <stew/metadata/factory.hpp>
-#include <stew/metadata/metaclass.hpp>
-#include <stew/metadata/meta_object.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/metadata/metaclass.hpp>
+#include <stew/meta/metadata/meta_object.hpp>
 
 namespace stew
 {

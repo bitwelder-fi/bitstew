@@ -19,7 +19,7 @@
 #ifndef STEW_FACTORY_HPP
 #define STEW_FACTORY_HPP
 
-#include <stew/metadata/metaclass.hpp>
+#include <stew/meta/metadata/metaclass.hpp>
 
 #include <string_view>
 #include <unordered_map>

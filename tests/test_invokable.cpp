@@ -18,8 +18,8 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <stew/object_extensions/invokable.hpp>
-#include <stew/object.hpp>
+#include <stew/meta/object_extensions/invokable.hpp>
+#include <stew/meta/object.hpp>
 
 namespace
 {

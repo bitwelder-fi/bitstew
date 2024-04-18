@@ -12,11 +12,11 @@ tasks/job.cpp
 tasks/thread_pool.cpp
 template.cpp
 ../include/stew/arguments/argument.hpp
+../include/stew/arguments/detail/packaged_arguments.hpp
 ../include/stew/arguments/packaged_arguments.hpp
 ../include/stew/core/assert.hpp
 ../include/stew/core/pimpl.hpp
 ../include/stew/core/preprocessor.hpp
-../include/stew/detail/packaged_arguments.hpp
 ../include/stew/forwards.hpp
 ../include/stew/library_config.hpp
 ../include/stew/log/trace.hpp

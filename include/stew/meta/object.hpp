@@ -21,7 +21,7 @@
 
 #include <stew/arguments/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
-#include <stew/metadata/meta_object.hpp>
+#include <stew/meta/metadata/meta_object.hpp>
 #include <stew/core/pimpl.hpp>
 
 #include <memory>

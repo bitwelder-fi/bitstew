@@ -19,7 +19,7 @@
 #ifndef STEW_SAFE_QUEUE_HPP
 #define STEW_SAFE_QUEUE_HPP
 
-#include <stew/detail/safe_queue.hpp>
+#include <stew/standalone/container/detail/safe_queue.hpp>
 #include <stew/stew_api.hpp>
 
 #include <atomic>

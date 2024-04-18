@@ -25,9 +25,9 @@
 
 #include <stew/library_config.hpp>
 #include <stew/stew.hpp>
-#include <stew/metadata/factory.hpp>
-#include <stew/object.hpp>
-#include <stew/object_extensions/object_extension.hpp>
+#include <stew/meta/metadata/factory.hpp>
+#include <stew/meta/object.hpp>
+#include <stew/meta/object_extensions/object_extension.hpp>
 #include <stew/tasks/thread_pool.hpp>
 
 #include <stew/log/trace.hpp>

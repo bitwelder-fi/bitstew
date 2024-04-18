@@ -22,7 +22,7 @@
 #include <stew/stew.hpp>
 #include <stew/tasks/job.hpp>
 #include <stew/log/trace_printer.hpp>
-#include <stew/safe_queue.hpp>
+#include <stew/standalone/container/safe_queue.hpp>
 
 #include <atomic>
 #include <chrono>

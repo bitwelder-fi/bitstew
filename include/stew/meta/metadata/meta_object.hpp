@@ -20,7 +20,7 @@
 #define STEW_METAOBJECT_HPP
 
 #include <stew/stew.hpp>
-#include <stew/metadata/metaclass.hpp>
+#include <stew/meta/metadata/metaclass.hpp>
 
 namespace stew
 {

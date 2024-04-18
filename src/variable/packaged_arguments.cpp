@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/arguments/argument.hpp>
-#include <stew/arguments/packaged_arguments.hpp>
+#include <stew/variable/argument.hpp>
+#include <stew/variable/packaged_arguments.hpp>
 
 namespace stew
 {

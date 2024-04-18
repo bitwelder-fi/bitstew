@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/arguments/argument.hpp>
+#include <stew/variable/argument.hpp>
 
 #include <cstdlib>
 #include <cstring>

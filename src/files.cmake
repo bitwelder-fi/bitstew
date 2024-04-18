@@ -1,6 +1,4 @@
 set(SOURCES
-arguments/argument.cpp
-arguments/packaged_arguments.cpp
 log/trace.cpp
 log/trace_printer.cpp
 metadata/factory.cpp
@@ -11,9 +9,10 @@ object_extensions/signal.cpp
 tasks/job.cpp
 tasks/thread_pool.cpp
 template.cpp
-../include/stew/arguments/argument.hpp
-../include/stew/arguments/detail/packaged_arguments.hpp
-../include/stew/arguments/packaged_arguments.hpp
+variable/argument.cpp
+variable/packaged_arguments.cpp
+variable/type_info.cpp
+variable/variable.cpp
 ../include/stew/core/assert.hpp
 ../include/stew/core/pimpl.hpp
 ../include/stew/core/preprocessor.hpp
@@ -49,4 +48,9 @@ template.cpp
 ../include/stew/stew_api.hpp
 ../include/stew/tasks/job.hpp
 ../include/stew/tasks/thread_pool.hpp
+../include/stew/variable/argument.hpp
+../include/stew/variable/detail/packaged_arguments.hpp
+../include/stew/variable/packaged_arguments.hpp
+../include/stew/variable/type_info.hpp
+../include/stew/variable/variable.hpp
 )

@@ -19,7 +19,7 @@
 #ifndef STEW_INVOKABLE_HPP
 #define STEW_INVOKABLE_HPP
 
-#include <stew/variable/packaged_arguments.hpp>
+#include <stew/dynamic_type/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
 #include <stew/log/trace.hpp>
 #include <stew/stew_api.hpp>

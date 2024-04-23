@@ -16,44 +16,30 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef STEW_TYPE_INFO_HPP
-#define STEW_TYPE_INFO_HPP
+#include <stew/dynamic_type/type_info.hpp>
 
-#include <stew/stew_api.hpp>
-
-#include <typeinfo>
-#include <string>
+#include <cstdlib>
+#include <cstring>
+#include <cxxabi.h>
+#include <limits>
+#include <memory>
 
 namespace stew
 {
 
-/// The type info of a variable.
-struct STEW_API TypeInfo
+std::string TypeInfo::getName() const
 {
-    TypeInfo(const std::type_info& typeInfo) :
-        m_typeInfo(typeInfo)
-    {
-    }
+    int status = std::numeric_limits<int>::infinity();
 
-    /// Returns the name of the type.
-    std::string getName() const;
+    std::unique_ptr<char, void(*)(void*)> res
+        {
+            abi::__cxa_demangle(m_typeInfo.name(), NULL, NULL, &status),
+            std::free
+        };
 
-    /// Returns the type info of the type.
-    const std::type_info& getType() const
-    {
-        return m_typeInfo;
-    }
-
-    /// Equality comparison.
-    friend bool operator==(const TypeInfo& lhs, const TypeInfo& rhs)
-    {
-        return lhs.m_typeInfo == rhs.m_typeInfo;
-    }
-
-private:
-    const std::type_info& m_typeInfo;
-};
-
+    return (status == 0) ? res.get() : m_typeInfo.name();
 }
 
-#endif // STEW_TYPE_INFO_HPP
+
+
+} // namespace stew

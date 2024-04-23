@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <stew/variable/packaged_arguments.hpp>
+#include <stew/dynamic_type/packaged_arguments.hpp>
 #include <stew/stew.hpp>
 
 namespace

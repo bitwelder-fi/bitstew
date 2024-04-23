@@ -16,20 +16,38 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/variable/variable.hpp>
+#include <stew/dynamic_type/type_converter.hpp>
 
 namespace stew
 {
-
-TypeInfo Variable::getType() const
+TypeConverter::TypeConverter(VTable vTable) :
+    v_table(std::move(vTable))
 {
-    return TypeInfo(m_data.type());
 }
 
-bool Variable::isTypeOf(const std::type_info& type) const
+bool TypeConverter::isValid() const
 {
-    return m_data.type() == type;
+    return v_table.target && v_table.convert;
 }
 
+TypeInfo TypeConverter::target() const
+{
+    if (!isValid())
+    {
+        // TODO: get a better exception.
+        throw std::exception();
+    }
+    return v_table.target();
+}
+
+std::any TypeConverter::convert(std::any value)
+{
+    if (!isValid())
+    {
+        // TODO: get a better exception.
+        throw std::exception();
+    }
+    return v_table.convert(value);
+}
 
 }

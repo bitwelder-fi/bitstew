@@ -19,8 +19,10 @@
 #ifndef STEW_VARIABLE_HPP
 #define STEW_VARIABLE_HPP
 
-#include <stew/stew_api.hpp>
-#include <stew/variable/type_info.hpp>
+#include <stew/dynamic_type/bad_variable_exception.hpp>
+#include <stew/dynamic_type/type_converter.hpp>
+#include <stew/dynamic_type/type_info.hpp>
+#include <stew/dynamic_type/type_registry.hpp>
 
 #include <any>
 
@@ -39,7 +41,8 @@ template <typename T>
 concept not_any = !is_any<T>::value;
 }
 
-/// A dynamic type. It can store only copy-constructible types.
+/// A dynamic type. Stores only copy-constructible type values.
+///
 class STEW_API Variable
 {
     std::any m_data;
@@ -83,7 +86,7 @@ public:
     }
 
     /// Returns the current type of the variable.
-    TypeInfo getType() const;
+    TypeInfo type() const;
 
     /// Returns if this variable is of RTTI type.
     bool isTypeOf(const std::type_info& type) const;
@@ -111,7 +114,14 @@ Variable::operator T() const
     {
         return std::any_cast<T>(m_data);
     }
-    // TODO: convert.
+
+    auto converter = TypeRegistry::instance().findConverter(m_data.type(), typeid(T));
+    if (converter)
+    {
+        return std::any_cast<T>(converter.convert(m_data));
+    }
+
+    throw ConversionException(m_data.type(), typeid(T));
 }
 
 }

@@ -16,30 +16,24 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/variable/type_info.hpp>
-
-#include <cstdlib>
-#include <cstring>
-#include <cxxabi.h>
-#include <limits>
-#include <memory>
+#include <stew/dynamic_type/variable.hpp>
 
 namespace stew
 {
 
-std::string TypeInfo::getName() const
+TypeInfo Variable::type() const
 {
-    int status = std::numeric_limits<int>::infinity();
+    if (!m_data.has_value())
+    {
+        throw std::bad_typeid();
+    }
+    return TypeInfo(m_data.type());
+}
 
-    std::unique_ptr<char, void(*)(void*)> res
-        {
-            abi::__cxa_demangle(m_typeInfo.name(), NULL, NULL, &status),
-            std::free
-        };
-
-    return (status == 0) ? res.get() : m_typeInfo.name();
+bool Variable::isTypeOf(const std::type_info& type) const
+{
+    return m_data.type() == type;
 }
 
 
-
-} // namespace stew
+}

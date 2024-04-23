@@ -20,13 +20,13 @@
 #define STEW_PACKAGED_ARGUMENTS_HPP
 
 #include <stew/stew_api.hpp>
-#include <stew/variable/argument.hpp>
+#include <stew/dynamic_type/argument.hpp>
 #include <stew/standalone/utility/function_traits.hpp>
 
 #include <memory>
 #include <vector>
 
-#include <stew/variable/detail/packaged_arguments.hpp>
+#include <stew/dynamic_type/detail/packaged_arguments.hpp>
 
 namespace stew
 {

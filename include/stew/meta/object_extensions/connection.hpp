@@ -19,7 +19,7 @@
 #ifndef STEW_CONNECTION_HPP
 #define STEW_CONNECTION_HPP
 
-#include <stew/variable/packaged_arguments.hpp>
+#include <stew/dynamic_type/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
 #include <stew/stew_api.hpp>
 

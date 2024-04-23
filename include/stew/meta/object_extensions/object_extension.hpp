@@ -19,7 +19,7 @@
 #ifndef STEW_OBJECT_EXTENSION_HPP
 #define STEW_OBJECT_EXTENSION_HPP
 
-#include <stew/variable/packaged_arguments.hpp>
+#include <stew/dynamic_type/packaged_arguments.hpp>
 #include <stew/forwards.hpp>
 #include <stew/stew_api.hpp>
 #include <stew/meta/metadata/meta_object.hpp>

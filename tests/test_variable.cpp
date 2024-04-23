@@ -18,7 +18,7 @@
 
 #include "utils/domain_test_environment.hpp"
 
-#include <stew/variable/variable.hpp>
+#include <stew/dynamic_type/variable.hpp>
 
 using namespace std::string_literals;
 
@@ -32,6 +32,13 @@ protected:
     {
         // Single threaded
         initializeDomain(false, true);
+        stew::TypeRegistry::instance();
+    }
+
+    void TearDown() override
+    {
+        stew::TypeRegistry::instance().uninitialize();
+        DomainTestEnvironment::TearDown();
     }
 };
 
@@ -42,20 +49,26 @@ using VariableTests = VariableTestBase;
 TEST_F(VariableTests, unasigned)
 {
     stew::Variable var;
-    auto type = var.getType();
-    EXPECT_EQ(typeid(void), type);
+    EXPECT_THROW(var.type(), std::bad_typeid);
+}
+
+TEST_F(VariableTests, assignToUnassigned)
+{
+    stew::Variable var;
+    var = "delta"s;
+    EXPECT_TRUE(var.isTypeOf<std::string>());
 }
 
 TEST_F(VariableTests, create_fromAny)
 {
     auto var = stew::Variable(std::any(7));
-    EXPECT_EQ(typeid(int), var.getType());
+    EXPECT_EQ(typeid(int), var.type());
 }
 
 TEST_F(VariableTests, create_fromType)
 {
     auto var = stew::Variable(7);
-    EXPECT_EQ(typeid(int), var.getType());
+    EXPECT_EQ(typeid(int), var.type());
 }
 
 TEST_F(VariableTests, assign_fromAny)
@@ -77,4 +90,11 @@ TEST_F(VariableTests, reAssignWithDifferentType)
 
     var = "alpha"s;
     EXPECT_TRUE(var.isTypeOf<std::string>());
+}
+
+TEST_F(VariableTests, boolToChar)
+{
+    stew::Variable var = true;
+    std::string s = var;
+    EXPECT_EQ("1", s);
 }

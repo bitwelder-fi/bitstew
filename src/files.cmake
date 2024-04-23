@@ -1,9 +1,11 @@
 set(SOURCES
 dynamic_type/argument.cpp
-dynamic_type/bad_variable_exception.cpp
+dynamic_type/core.cpp
+dynamic_type/exceptions.cpp
 dynamic_type/packaged_arguments.cpp
 dynamic_type/type_converter.cpp
 dynamic_type/type_info.cpp
+dynamic_type/type_operators.cpp
 dynamic_type/type_registry.cpp
 dynamic_type/variable.cpp
 log/trace.cpp
@@ -20,11 +22,12 @@ template.cpp
 ../include/stew/core/pimpl.hpp
 ../include/stew/core/preprocessor.hpp
 ../include/stew/dynamic_type/argument.hpp
-../include/stew/dynamic_type/bad_variable_exception.hpp
 ../include/stew/dynamic_type/detail/packaged_arguments.hpp
+../include/stew/dynamic_type/exceptions.hpp
 ../include/stew/dynamic_type/packaged_arguments.hpp
 ../include/stew/dynamic_type/type_converter.hpp
 ../include/stew/dynamic_type/type_info.hpp
+../include/stew/dynamic_type/type_operators.hpp
 ../include/stew/dynamic_type/type_registry.hpp
 ../include/stew/dynamic_type/variable.hpp
 ../include/stew/forwards.hpp

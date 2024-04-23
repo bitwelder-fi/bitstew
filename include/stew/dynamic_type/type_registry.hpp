@@ -22,6 +22,7 @@
 #include <stew/stew_api.hpp>
 #include <stew/dynamic_type/type_info.hpp>
 #include <stew/dynamic_type/type_converter.hpp>
+#include <stew/dynamic_type/type_operators.hpp>
 
 #include <typeindex>
 #include <unordered_map>
@@ -38,19 +39,36 @@ public:
     static TypeRegistry& instance();
     void uninitialize();
 
-    void registerType(const TypeInfo& type);
+    void registerType(const TypeInfo& type, TypeOperators operators);
+    TypeOperators& getTypeOperators(const TypeInfo& type);
+    TypeOperators* findTypeOperators(const TypeInfo& type);
     void registerTypeConverter(const TypeInfo& type, TypeConverter converter);
-    TypeConverter findConverter(const TypeInfo& source, const TypeInfo& target);
+    TypeConverter* findConverter(const TypeInfo& source, const TypeInfo& target);
 
 private:
     using ConverterMap = std::unordered_map<std::type_index, TypeConverter>;
-    using TypeMap = std::unordered_map<std::type_index, ConverterMap>;
+    using TypeConvertersMap = std::unordered_map<std::type_index, ConverterMap>;
+    using TypeMap = std::unordered_map<std::type_index, TypeOperators>;
 
     void initialize();
 
-    TypeMap m_registry;
+    TypeMap m_types;
+    TypeConvertersMap m_converters;
     bool m_isInitialized = false;
 };
+
+
+template <class Type>
+void registerDynamicType(TypeOperators operators)
+{
+    TypeRegistry::instance().registerType(typeid(Type), std::move(operators));
+}
+
+template <class Type>
+void registerDynamicTypeConverter(TypeConverter converter)
+{
+    TypeRegistry::instance().registerTypeConverter(typeid(Type), std::move(converter));
+}
 
 }
 

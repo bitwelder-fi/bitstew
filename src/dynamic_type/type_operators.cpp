@@ -17,36 +17,54 @@
  */
 
 #include <stew/dynamic_type/exceptions.hpp>
-#include <stew/dynamic_type/type_converter.hpp>
+#include <stew/dynamic_type/type_operators.hpp>
 
 namespace stew
 {
-TypeConverter::TypeConverter(VTable vTable) :
+TypeOperators::TypeOperators(VTable vTable) :
     v_table(std::move(vTable))
 {
 }
 
-bool TypeConverter::isValid() const
+bool TypeOperators::isValid() const
 {
-    return v_table.target && v_table.convert;
+    return v_table.add || v_table.sub || v_table.mul || v_table.div;
 }
 
-TypeInfo TypeConverter::target() const
+std::any TypeOperators::add(const std::any& lhs, const std::any& rhs)
 {
     if (!isValid())
     {
-        throw InvalidConverter();
+        throw UndefinedOperator("+");
     }
-    return v_table.target();
+    return v_table.add(lhs, rhs);
 }
 
-std::any TypeConverter::convert(std::any value)
+std::any TypeOperators::sub(const std::any& lhs, const std::any& rhs)
 {
     if (!isValid())
     {
-        throw InvalidConverter();
+        throw UndefinedOperator("-");
     }
-    return v_table.convert(value);
+    return v_table.sub(lhs, rhs);
+}
+
+std::any TypeOperators::mul(const std::any& lhs, const std::any& rhs)
+{
+    if (!isValid())
+    {
+        throw UndefinedOperator("*");
+    }
+    return v_table.mul(lhs, rhs);
+}
+
+std::any TypeOperators::div(const std::any& lhs, const std::any& rhs)
+{
+    if (!isValid())
+    {
+        throw UndefinedOperator("/");
+    }
+    return v_table.div(lhs, rhs);
 }
 
 }

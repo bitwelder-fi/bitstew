@@ -92,9 +92,19 @@ TEST_F(VariableTests, reAssignWithDifferentType)
     EXPECT_TRUE(var.isTypeOf<std::string>());
 }
 
+// Converters
 TEST_F(VariableTests, boolToChar)
 {
     stew::Variable var = true;
     std::string s = var;
     EXPECT_EQ("1", s);
+}
+
+// Operators
+TEST_F(VariableTests, addition)
+{
+    stew::Variable var = 10;
+    var = var + "12"s;
+
+    EXPECT_EQ(22, int(var));
 }

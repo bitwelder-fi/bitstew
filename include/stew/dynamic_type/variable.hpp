@@ -19,7 +19,7 @@
 #ifndef STEW_VARIABLE_HPP
 #define STEW_VARIABLE_HPP
 
-#include <stew/dynamic_type/bad_variable_exception.hpp>
+#include <stew/dynamic_type/exceptions.hpp>
 #include <stew/dynamic_type/type_converter.hpp>
 #include <stew/dynamic_type/type_info.hpp>
 #include <stew/dynamic_type/type_registry.hpp>
@@ -96,7 +96,7 @@ public:
     bool isTypeOf()
     {
         return isTypeOf(typeid(T));
-    }
+    }    
 
     /// Cast operator, returns the data stored by the Variable.
     /// \tparam T The type of the casted value.
@@ -104,7 +104,42 @@ public:
     /// \throws Throws std::bad_any_cast if the type to cast to is not the type the data is stored.
     template <class T>
     operator T() const;
+
+    /// \name Operators
+    /// \{
+
+    Variable& operator +=(const Variable& rhs);
+    Variable& operator -=(const Variable& rhs);
+    Variable& operator *=(const Variable& rhs);
+    Variable& operator /=(const Variable& rhs);
+    /// \}
+
+private:
+    friend std::any convert(Variable& value, const TypeInfo& targetType);
+    friend std::any convert(const Variable& value, const TypeInfo& targetType);
 };
+
+/// \name Free functions
+/// \{
+
+/// Converts a variable to a target type. Returns the type-safe container with the converted value.
+/// \param value The value to convert.
+/// \param targetType The type to convert the value.
+/// \return The converted value
+/// \throws ConversionException - when cannot convert the value to target type.
+/// \throws ConversionException - when cannot convert the value to target type.
+STEW_API std::any convert(Variable& value, const TypeInfo& targetType);
+STEW_API std::any convert(const Variable& value, const TypeInfo& targetType);
+
+template <class T>
+STEW_API Variable operator +(const Variable& lhs, const T& rhs)
+{
+    Variable result = lhs;
+    result += rhs;
+    return result;
+}
+
+/// \}
 
 //------------------Implementation------------------
 template <class T>
@@ -115,13 +150,7 @@ Variable::operator T() const
         return std::any_cast<T>(m_data);
     }
 
-    auto converter = TypeRegistry::instance().findConverter(m_data.type(), typeid(T));
-    if (converter)
-    {
-        return std::any_cast<T>(converter.convert(m_data));
-    }
-
-    throw ConversionException(m_data.type(), typeid(T));
+    return std::any_cast<T>(convert(*this, typeid(T)));
 }
 
 }

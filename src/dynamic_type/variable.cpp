@@ -35,5 +35,85 @@ bool Variable::isTypeOf(const std::type_info& type) const
     return m_data.type() == type;
 }
 
+Variable& Variable::operator +=(const Variable& rhs)
+{
+    if (auto& ops = TypeRegistry::instance().getTypeOperators(type()); type() != rhs.type())
+    {
+        auto rvalue = convert(rhs, type());
+        m_data = ops.add(m_data, rvalue);
+    }
+    else
+    {
+        m_data = ops.add(m_data, rhs.m_data);
+    }
+
+    return *this;
+}
+
+Variable& Variable::operator -=(const Variable& rhs)
+{
+    if (auto& ops = TypeRegistry::instance().getTypeOperators(type()); type() != rhs.type())
+    {
+        auto rvalue = convert(rhs, type());
+        m_data = ops.sub(m_data, rvalue);
+    }
+    else
+    {
+        m_data = ops.sub(m_data, rhs.m_data);
+    }
+
+    return *this;
+}
+
+Variable& Variable::operator *=(const Variable& rhs)
+{
+    if (auto& ops = TypeRegistry::instance().getTypeOperators(type()); type() != rhs.type())
+    {
+        auto rvalue = convert(rhs, type());
+        m_data = ops.mul(m_data, rvalue);
+    }
+    else
+    {
+        m_data = ops.mul(m_data, rhs.m_data);
+    }
+
+    return *this;
+}
+
+Variable& Variable::operator /=(const Variable& rhs)
+{
+    if (auto& ops = TypeRegistry::instance().getTypeOperators(type()); type() != rhs.type())
+    {
+        auto rvalue = convert(rhs, type());
+        m_data = ops.div(m_data, rvalue);
+    }
+    else
+    {
+        m_data = ops.div(m_data, rhs.m_data);
+    }
+
+    return *this;
+}
+
+
+std::any convert(Variable& value, const TypeInfo& targetType)
+{
+    if (auto converter = TypeRegistry::instance().findConverter(value.type(), targetType); converter)
+    {
+        return converter->convert(value.m_data);
+    }
+
+    throw ConversionException(value.type(), targetType);
+}
+
+std::any convert(const Variable& value, const TypeInfo& targetType)
+{
+    if (auto converter = TypeRegistry::instance().findConverter(value.type(), targetType); converter)
+    {
+        return converter->convert(value.m_data);
+    }
+
+    throw ConversionException(value.type(), targetType);
+}
 
 }

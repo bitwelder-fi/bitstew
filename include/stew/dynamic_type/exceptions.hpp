@@ -16,8 +16,8 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#ifndef STEW_BAD_VARIABLE_EXCEPTION_HPP
-#define STEW_BAD_VARIABLE_EXCEPTION_HPP
+#ifndef STEW_DYNAMIC_TYPE_EXCEPTIONS_HPP
+#define STEW_DYNAMIC_TYPE_EXCEPTIONS_HPP
 
 #include <stew/stew_api.hpp>
 
@@ -44,6 +44,23 @@ protected:
     std::unique_ptr<char, void(*)(void*)> message;
 };
 
+class UnregisteredType : public Exception
+{
+public:
+    UnregisteredType(const TypeInfo& type) noexcept;
+};
+
+class InvalidConverter : public Exception
+{
+public:
+    InvalidConverter() noexcept;
+};
+
+class UndefinedOperator : public Exception
+{
+public:
+    UndefinedOperator(std::string_view opSignature) noexcept;
+};
 
 /// The exception thrown when the argument type to retrieve differs from the stored type.
 class STEW_API BadVariableException : public Exception
@@ -68,4 +85,4 @@ public:
 
 }
 
-#endif // STEW_BAD_VARIABLE_EXCEPTION_HPP
+#endif // STEW_DYNAMIC_TYPE_EXCEPTIONS_HPP

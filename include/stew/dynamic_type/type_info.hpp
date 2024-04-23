@@ -21,6 +21,7 @@
 
 #include <stew/stew_api.hpp>
 
+#include <typeindex>
 #include <typeinfo>
 #include <string>
 
@@ -39,6 +40,9 @@ struct STEW_API TypeInfo
 
     /// Returns the name of the type.
     std::string getName() const;
+
+    /// Returns the type index of the type.
+    std::type_index index() const;
 
     /// Returns the type info of the type.
     operator const std::type_info&() const

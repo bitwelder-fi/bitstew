@@ -16,7 +16,7 @@
  * <http://www.gnu.org/licenses/>
  */
 
-#include <stew/dynamic_type/bad_variable_exception.hpp>
+#include <stew/dynamic_type/exceptions.hpp>
 #include <stew/dynamic_type/type_info.hpp>
 
 #include <cstdlib>
@@ -50,6 +50,24 @@ const char* Exception::what() const noexcept
         return "Unknown Variable Exception.";
     }
     return message.get();
+}
+
+
+UnregisteredType::UnregisteredType(const TypeInfo& type) noexcept
+{
+    setMessage("Unregistered type: " + type.getName());
+}
+
+
+InvalidConverter::InvalidConverter() noexcept
+{
+    setMessage("Invalid converter registered for the type");
+}
+
+
+UndefinedOperator::UndefinedOperator(std::string_view opSignature) noexcept
+{
+    setMessage("Operator '" + std::string(opSignature) + "'not defined for type");
 }
 
 

@@ -40,6 +40,9 @@ std::string TypeInfo::getName() const
     return (status == 0) ? res.get() : m_typeInfo.name();
 }
 
-
+std::type_index TypeInfo::index() const
+{
+    return m_typeInfo;
+}
 
 } // namespace stew

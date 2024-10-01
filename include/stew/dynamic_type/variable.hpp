@@ -29,6 +29,8 @@
 namespace stew
 {
 
+class Variable;
+
 namespace
 {
 template <typename T>
@@ -38,7 +40,7 @@ template <>
 struct is_any<std::any> : std::true_type {};
 
 template <typename T>
-concept not_any = !is_any<T>::value;
+concept generic_type = !is_any<T>::value && !std::is_same_v<Variable, T>;
 }
 
 /// A dynamic type. Stores only copy-constructible type values.
@@ -46,39 +48,29 @@ concept not_any = !is_any<T>::value;
 class STEW_API Variable
 {
     std::any m_data;
+    TypeOperators* m_ops = nullptr;
 
 public:
     /// Default constructor.
     Variable() = default;
 
     /// Constructor. Creates a variable from an any.
-    Variable(std::any data) :
-        m_data(data)
-    {
-    }
-    /// Constructor. Creates a variable from a value that is not an any.
+    Variable(std::any data);
+    /// Constructor. Creates a variable from a value that is not an any or a Variable.
     template <typename T>
-        requires not_any<T>
+        requires generic_type<T>
     Variable(T value) :
-        m_data(value)
+        Variable(std::any(value))
     {
     }
 
     /// Assignment operator.
-    Variable& operator=(const std::any& data)
-    {
-        m_data = data;
-        return *this;
-    }
+    Variable& operator=(const std::any& data);
     /// Assignment operator.
-    Variable& operator=(std::any&& data)
-    {
-        m_data = std::forward<std::any>(data);
-        return *this;
-    }
+    Variable& operator=(std::any&& data);
     /// Assignment operator.
     template <typename T>
-        requires not_any<T>
+        requires generic_type<T>
     Variable& operator=(T&& data)
     {
         m_data = std::forward<T>(data);
@@ -112,6 +104,31 @@ public:
     Variable& operator -=(const Variable& rhs);
     Variable& operator *=(const Variable& rhs);
     Variable& operator /=(const Variable& rhs);
+
+    Variable& operator&=(const Variable& rhs);
+    Variable& operator|=(const Variable& rhs);
+    Variable& operator^=(const Variable& rhs);
+    Variable& operator <<=(std::size_t count);
+    Variable& operator >>=(std::size_t count);
+
+    void* operator ->();
+    const void* operator ->() const;
+
+    friend bool operator &&(const Variable& lhs, const Variable& rhs);
+    friend bool operator ||(const Variable& lhs, const Variable& rhs);
+    friend bool operator ==(const Variable& lhs, const Variable& rhs);
+    friend bool operator <(const Variable& lhs, const Variable& rhs);
+    friend bool operator <=(const Variable& lhs, const Variable& rhs);
+    friend bool operator >(const Variable& lhs, const Variable& rhs);
+    friend bool operator >=(const Variable& lhs, const Variable& rhs);
+    friend Variable operator &(const Variable& lhs, const Variable& rhs);
+    friend Variable operator |(const Variable& lhs, const Variable& rhs);
+    friend Variable operator ^(const Variable& lhs, const Variable& rhs);
+    friend Variable operator !(const Variable& rhs);
+    friend Variable operator ~(const Variable& rhs);
+    friend Variable operator <<(const Variable& lhs, std::size_t count);
+    friend Variable operator >>(const Variable& lhs, std::size_t count);
+
     /// \}
 
 private:
@@ -127,15 +144,86 @@ private:
 /// \param targetType The type to convert the value.
 /// \return The converted value
 /// \throws ConversionException - when cannot convert the value to target type.
-/// \throws ConversionException - when cannot convert the value to target type.
+/// \throws InvalidConverter - when the type converter is invalid.
 STEW_API std::any convert(Variable& value, const TypeInfo& targetType);
 STEW_API std::any convert(const Variable& value, const TypeInfo& targetType);
 
+STEW_API Variable operator +(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator -(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator *(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator /(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator &&(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator ||(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator ==(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator <(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator <=(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator >(const Variable& lhs, const Variable& rhs);
+STEW_API bool operator >=(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator &(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator |(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator ^(const Variable& lhs, const Variable& rhs);
+STEW_API Variable operator !(const Variable& rhs);
+STEW_API Variable operator ~(const Variable& rhs);
+STEW_API Variable operator <<(const Variable& lhs, std::size_t count);
+STEW_API Variable operator >>(const Variable& lhs, std::size_t count);
+
 template <class T>
-STEW_API Variable operator +(const Variable& lhs, const T& rhs)
+STEW_TEMPLATE_API Variable operator +(const Variable& lhs, const T& rhs)
 {
     Variable result = lhs;
     result += rhs;
+    return result;
+}
+template <class T>
+STEW_TEMPLATE_API Variable operator +(const T& lhs, const Variable& rhs)
+{
+    Variable result = lhs;
+    result += rhs;
+    return result;
+}
+
+template <class T>
+STEW_TEMPLATE_API Variable operator -(const Variable& lhs, const T& rhs)
+{
+    Variable result = lhs;
+    result -= rhs;
+    return result;
+}
+template <class T>
+STEW_TEMPLATE_API Variable operator -(const T& lhs, const Variable& rhs)
+{
+    Variable result = lhs;
+    result -= rhs;
+    return result;
+}
+
+template <class T>
+STEW_TEMPLATE_API Variable operator *(const Variable& lhs, const T& rhs)
+{
+    Variable result = lhs;
+    result *= rhs;
+    return result;
+}
+template <class T>
+STEW_TEMPLATE_API Variable operator *(const T& lhs, const Variable& rhs)
+{
+    Variable result = lhs;
+    result *= rhs;
+    return result;
+}
+
+template <class T>
+STEW_TEMPLATE_API Variable operator /(const Variable& lhs, const T& rhs)
+{
+    Variable result = lhs;
+    result /= rhs;
+    return result;
+}
+template <class T>
+STEW_TEMPLATE_API Variable operator /(const T& lhs, const Variable& rhs)
+{
+    Variable result = lhs;
+    result /= rhs;
     return result;
 }
 

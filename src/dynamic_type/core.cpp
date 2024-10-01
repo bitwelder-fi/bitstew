@@ -35,6 +35,12 @@ namespace
 {
 
 template <typename T>
+using is_bool = std::is_same<T, bool>;
+
+template <typename T>
+concept std_bool = is_bool<T>::value;
+
+template <typename T>
 concept std_byte = std::is_same_v<T, std::byte>;
 
 template <typename T>
@@ -59,6 +65,8 @@ concept stoull_number = std::is_same_v<T, unsigned long long>;
 template <class Type>
 struct BaseTypeOperators : TypeOperators::VTable
 {
+    using Self = BaseTypeOperators<Type>;
+
     static std::any _add(const std::any& lhs, const std::any& rhs)
     {
         return std::any_cast<Type>(lhs) + std::any_cast<Type>(rhs);
@@ -79,6 +87,75 @@ struct BaseTypeOperators : TypeOperators::VTable
         return std::any_cast<Type>(lhs) / std::any_cast<Type>(rhs);
     }
 
+    static bool _land(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) && std::any_cast<Type>(rhs);
+    }
+    static bool _lor(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) || std::any_cast<Type>(rhs);
+    }
+    static std::any _lnot(const std::any& rhs)
+    {
+        return !std::any_cast<Type>(rhs);
+    }
+    static bool _eq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) == std::any_cast<Type>(rhs);
+    }
+    static bool _less(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) < std::any_cast<Type>(rhs);
+    }
+    static bool _leq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) <= std::any_cast<Type>(rhs);
+    }
+    static bool _gt(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) > std::any_cast<Type>(rhs);
+    }
+    static bool _geq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) >= std::any_cast<Type>(rhs);
+    }
+
+    /// Bitwise operations.
+    static std::any _bw_and(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) & std::any_cast<Type>(rhs);
+    }
+    static std::any _bw_or(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) | std::any_cast<Type>(rhs);
+    }
+    static std::any _bw_xor(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) ^ std::any_cast<Type>(rhs);
+    }
+    static std::any _bw_not(const std::any& rhs)
+    {
+        return ~std::any_cast<Type>(rhs);
+    }
+    static std::any _bw_shl(const std::any& value, std::size_t count)
+    {
+        return std::any_cast<Type>(value) << count;
+    }
+    static std::any _bw_shr(const std::any& value, std::size_t count)
+    {
+        return std::any_cast<Type>(value) >> count;
+    }
+
+    /// Pointer operations.
+    static void* _ptr(const std::any&)
+    {
+
+    }
+    static const void* _cptr(const std::any&)
+    {
+
+    }
+
     BaseTypeOperators()
     {
         add = &_add;
@@ -87,33 +164,110 @@ struct BaseTypeOperators : TypeOperators::VTable
             sub = &_sub;
             mul = &_mul;
             div = &_div;
+
+            if constexpr (!std_bool<Type> && !std::floating_point<Type>)
+            {
+                bw_and = &_bw_and;
+                bw_or = &_bw_or;
+                bw_xor = &_bw_xor;
+                bw_not = &_bw_not;
+                bw_shl = &_bw_shl;
+                bw_shr = &_bw_shr;
+            }
         }
+        land = &_land;
+        lor = &_lor;
+        lnot = &_lnot;
+        eq = &_eq;
+        less = &_less;
+        leq = &_leq;
+        gt = &_gt;
+        geq = &_geq;
     }
 };
 
 struct ByteOperators : TypeOperators::VTable
 {
     using DataType = std::underlying_type_t<std::byte>;
+    static constexpr auto get_data(const std::any& b)
+    {
+        return std::to_integer<DataType>(std::any_cast<std::byte>(b));
+    }
 
     static std::any _add(const std::any& lhs, const std::any& rhs)
     {
-        return std::byte(std::to_integer<DataType>(std::any_cast<std::byte>(lhs)) +
-                         std::to_integer<DataType>(std::any_cast<std::byte>(rhs)));
+        return std::byte(get_data(lhs) + get_data(rhs));
     }
     static std::any _sub(const std::any& lhs, const std::any& rhs)
     {
-        return std::byte(std::to_integer<DataType>(std::any_cast<std::byte>(lhs)) -
-                         std::to_integer<DataType>(std::any_cast<std::byte>(rhs)));
+        return std::byte(get_data(lhs) - get_data(rhs));
     }
     static std::any _mul(const std::any& lhs, const std::any& rhs)
     {
-        return std::byte(std::to_integer<DataType>(std::any_cast<std::byte>(lhs)) *
-                         std::to_integer<DataType>(std::any_cast<std::byte>(rhs)));
+        return std::byte(get_data(lhs) * get_data(rhs));
     }
     static std::any _div(const std::any& lhs, const std::any& rhs)
     {
-        return std::byte(std::to_integer<DataType>(std::any_cast<std::byte>(lhs)) /
-                         std::to_integer<DataType>(std::any_cast<std::byte>(rhs)));
+        return std::byte(get_data(lhs) / get_data(rhs));
+    }
+
+    static bool _land(const std::any& lhs, const std::any& rhs)
+    {
+        return get_data(lhs) && get_data(rhs);
+    }
+    static bool _lor(const std::any& lhs, const std::any& rhs)
+    {
+        return get_data(lhs) || get_data(rhs);
+    }
+    static std::any _lnot(const std::any& rhs)
+    {
+        return std::byte(!get_data(rhs));
+    }
+    static bool _eq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) == std::any_cast<std::byte>(rhs);
+    }
+    static bool _less(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) < std::any_cast<std::byte>(rhs);
+    }
+    static bool _leq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) <= std::any_cast<std::byte>(rhs);
+    }
+    static bool _gt(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) > std::any_cast<std::byte>(rhs);
+    }
+    static bool _geq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) >= std::any_cast<std::byte>(rhs);
+    }
+
+    /// Bitwise operations.
+    static std::any _bw_and(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) & std::any_cast<std::byte>(rhs);
+    }
+    static std::any _bw_or(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) | std::any_cast<std::byte>(rhs);
+    }
+    static std::any _bw_xor(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<std::byte>(lhs) ^ std::any_cast<std::byte>(rhs);
+    }
+    static std::any _bw_not(const std::any& rhs)
+    {
+        return ~std::any_cast<std::byte>(rhs);
+    }
+    static std::any _bw_shl(const std::any& value, std::size_t count)
+    {
+        return std::any_cast<std::byte>(value) << count;
+    }
+    static std::any _bw_shr(const std::any& value, std::size_t count)
+    {
+        return std::any_cast<std::byte>(value) >> count;
     }
 
     ByteOperators()
@@ -122,6 +276,67 @@ struct ByteOperators : TypeOperators::VTable
         sub = &_sub;
         mul = &_mul;
         div = &_div;
+
+        land = &_land;
+        lor = &_lor;
+        lnot = &_lnot;
+        eq = &_eq;
+        less = &_less;
+        leq = &_leq;
+        gt = &_gt;
+        geq = &_geq;
+
+        bw_and = &_bw_and;
+        bw_or = &_bw_or;
+        bw_xor = &_bw_xor;
+        bw_not = &_bw_not;
+        bw_shl = &_bw_shl;
+        bw_shr = &_bw_shr;
+    }
+};
+
+template <class Type>
+struct StringTypeOperators : TypeOperators::VTable
+{
+    using Self = StringTypeOperators<Type>;
+
+    static std::any _add(const std::any& lhs, const std::any& rhs)
+        requires std::is_base_of_v<std::string, Type>
+    {
+        return std::any_cast<Type>(lhs) + std::any_cast<Type>(rhs);
+    }
+    static bool _eq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) == std::any_cast<Type>(rhs);
+    }
+    static bool _less(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) < std::any_cast<Type>(rhs);
+    }
+    static bool _leq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) <= std::any_cast<Type>(rhs);
+    }
+    static bool _gt(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) > std::any_cast<Type>(rhs);
+    }
+    static bool _geq(const std::any& lhs, const std::any& rhs)
+    {
+        return std::any_cast<Type>(lhs) >= std::any_cast<Type>(rhs);
+    }
+
+    StringTypeOperators()
+    {
+        if constexpr (std::is_base_of_v<std::string, Type>)
+        {
+            add = &_add;
+        }
+        eq = &_eq;
+        less = &_less;
+        leq = &_leq;
+        gt = &_gt;
+        geq = &_geq;
     }
 };
 
@@ -313,8 +528,8 @@ void TypeRegistry::initialize()
     registerType(typeid(unsigned long long), BaseTypeOperators<unsigned long long>());
     registerType(typeid(float), BaseTypeOperators<float>());
     registerType(typeid(double), BaseTypeOperators<double>());
-    registerType(typeid(std::string), BaseTypeOperators<std::string>());
-    registerType(typeid(std::string_view), TypeOperators());
+    registerType(typeid(std::string), StringTypeOperators<std::string>());
+    registerType(typeid(std::string_view), StringTypeOperators<std::string_view>());
 
     // bool
     registerAtomicConverter<bool, char>(*this);

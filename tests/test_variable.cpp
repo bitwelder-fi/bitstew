@@ -44,6 +44,55 @@ protected:
 
 using VariableTests = VariableTestBase;
 
+enum class OpCode
+{
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    Less,
+    Leq,
+    Gt,
+    Geq,
+    BwAnd,
+    BwOr,
+    BwXor,
+    BwNot,
+    BwShl,
+    BwShr,
+    Ptr,
+    CPtr,
+};
+
+
+struct OpTest
+{
+    stew::Variable lhs;
+    stew::Variable rhs;
+    stew::Variable expected;
+    OpCode op;
+    bool throws;
+};
+
+class OpTestRunner : public VariableTestBase, public ::testing::WithParamInterface<OpTest>
+{
+protected:
+    OpTest param;
+    explicit OpTestRunner()
+    {
+        this->param = GetParam();
+    }
+    stew::Variable runOp() const
+    {
+        if (this->param.op == OpCode::Add)
+        {
+            return this->param.lhs + this->param.rhs;
+        }
+        return {};
+    }
+};
+
 }
 
 TEST_F(VariableTests, unasigned)
@@ -108,3 +157,12 @@ TEST_F(VariableTests, addition)
 
     EXPECT_EQ(22, int(var));
 }
+
+INSTANTIATE_TEST_SUITE_P(VariableOperationTest,
+                         OpTestRunner,
+                         ::testing::Values(OpTest{.lhs=int(10), .rhs=int(12), .expected=int(22), .op=OpCode::Add, .throws=false}));
+TEST_P(OpTestRunner, run)
+{
+    EXPECT_EQ(this->param.expected, this->runOp());
+}
+

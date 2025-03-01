@@ -19,7 +19,7 @@
 #ifndef STEW_SIGNAL_HPP
 #define STEW_SIGNAL_HPP
 
-#include <stew/arguments/packaged_arguments.hpp>
+#include <stew/dynamic_type/packaged_arguments.hpp>
 #include <stew/stew_api.hpp>
 #include <stew/forwards.hpp>
 #include <stew/meta/object.hpp>
